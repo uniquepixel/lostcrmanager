@@ -2,6 +2,7 @@ package util;
 
 import java.awt.Color;
 
+import lostcrmanager.Bot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
@@ -11,7 +12,7 @@ public class MessageUtil {
 		INFO, SUCCESS, ERROR
 	}
 
-	public static String footer = "CR Manager | Made by Pixel";
+	public static String footer = "CR Manager | Made by Pixel | " + Bot.VERSION;
 
 	public static MessageEmbed buildEmbed(String title, String description, EmbedType type) {
 		EmbedBuilder embedreply = new EmbedBuilder();

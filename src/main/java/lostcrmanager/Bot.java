@@ -32,6 +32,7 @@ public class Bot extends ListenerAdapter {
 	private final static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
 	private static JDA jda;
+	public static String VERSION;
 	public static String guild_id;
 	public static String api_key;
 	public static String url;
@@ -39,7 +40,7 @@ public class Bot extends ListenerAdapter {
 	public static String password;
 
 	public static void main(String[] args) throws Exception {
-
+		VERSION = "1.0";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
