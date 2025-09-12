@@ -14,7 +14,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 public class verify extends ListenerAdapter {
 
 	
-	// TODO: Don't know how to verify API Token 
+	// Command Disabled, API doesn't offer an Endpoint for Token Verification
 	
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
