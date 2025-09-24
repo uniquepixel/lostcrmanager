@@ -1,4 +1,4 @@
-package commands;
+package commands.memberlist;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,13 +58,13 @@ public class listmembers extends ListenerAdapter {
 		}
 		String desc = "## " + c.getInfoString() + "\n";
 		desc += "**Anführer:**\n";
-		desc += leaderlist == "" ? "---\n\n" : leaderlist + "\n";
+		desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
 		desc += "**Vize-Anführer:**\n";
-		desc += coleaderlist == "" ? "---\n\n" : coleaderlist + "\n";
+		desc += coleaderlist == "" ? "---\n\n" : MessageUtil.unformat(coleaderlist) + "\n";
 		desc += "**Ältester:**\n";
-		desc += elderlist == "" ? "---\n\n" : elderlist + "\n";
+		desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
 		desc += "**Mitglied:**\n";
-		desc += memberlist == "" ? "---\n\n" : memberlist + "\n";
+		desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
 		desc += "\nInsgesamte Mitglieder des Clans: " + playerlist.size();
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO)).queue();

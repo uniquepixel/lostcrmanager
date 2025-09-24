@@ -85,7 +85,7 @@ public class Player {
 	private ArrayList<Kickpoint> createKickpointList() {
 		kickpoints = new ArrayList<>();
 		String sql = "SELECT id FROM kickpoints WHERE player_tag = ?";
-		for (Integer id : DBUtil.getArrayListFromSQL(sql, Integer.class, tag)) {
+		for (Long id : DBUtil.getArrayListFromSQL(sql, Long.class, tag)) {
 			Kickpoint kp = new Kickpoint(id);
 			if (kp.getExpirationDate().isAfter(OffsetDateTime.now())) {
 				kickpoints.add(kp);

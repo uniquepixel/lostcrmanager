@@ -1,4 +1,4 @@
-package commands;
+package commands.memberlist;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import sql.Clan;
 import sql.DBManager;
 import sql.DBUtil;
 import sql.User;
@@ -101,8 +102,8 @@ public class addmember extends ListenerAdapter {
 						: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
 		String desc = null;
 		try {
-			desc = "Der Spieler " + p.getInfoString() + " wurde erfolgreich dem Clan " + DBManager.getClanName(clantag)
-					+ " als " + rolestring + " hinzugefügt.";
+			desc = "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " wurde erfolgreich dem Clan "
+					+ new Clan(clantag).getInfoString() + " als " + rolestring + " hinzugefügt.";
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

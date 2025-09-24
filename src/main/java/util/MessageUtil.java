@@ -5,6 +5,7 @@ import java.awt.Color;
 import lostcrmanager.Bot;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 
 public class MessageUtil {
 
@@ -12,12 +13,15 @@ public class MessageUtil {
 		INFO, SUCCESS, ERROR
 	}
 
-	public static String footer = "CR Manager | Made by Pixel | " + Bot.VERSION;
+	public static String footer = "CR Manager | Made by Pixel | v" + Bot.VERSION;
 
-	public static MessageEmbed buildEmbed(String title, String description, EmbedType type) {
+	public static MessageEmbed buildEmbed(String title, String description, EmbedType type, Field... fields) {
 		EmbedBuilder embedreply = new EmbedBuilder();
 		embedreply.setTitle(title);
 		embedreply.setDescription(description);
+		for (int i = 0; i < fields.length; i++) {
+			embedreply.addField(fields[i]);
+		}
 		embedreply.setFooter(footer);
 		switch (type) {
 		case INFO:
@@ -34,9 +38,8 @@ public class MessageUtil {
 	}
 
 	public static String unformat(String s) {
-		return s.replaceAll("_", "\\_").replaceAll("\\*", "\\\\*").replaceAll("~", "\\~")
-				.replaceAll("`", "\\`").replaceAll("\\|", "\\\\|").replaceAll(">", "\\>")
-				.replaceAll("-", "\\-").replaceAll("#", "\\#");
+		return s.replaceAll("_", "\\_").replaceAll("\\*", "\\\\*").replaceAll("~", "\\~").replaceAll("`", "\\`")
+				.replaceAll("\\|", "\\\\|").replaceAll(">", "\\>").replaceAll("-", "\\-").replaceAll("#", "\\#");
 	}
 
 }

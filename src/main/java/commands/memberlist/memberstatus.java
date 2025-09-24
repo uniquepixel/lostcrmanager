@@ -1,4 +1,4 @@
-package commands;
+package commands.memberlist;
 
 import java.util.ArrayList;
 import java.util.List;

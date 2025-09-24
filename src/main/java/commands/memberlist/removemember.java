@@ -1,4 +1,4 @@
-package commands;
+package commands.memberlist;
 
 import java.util.List;
 
@@ -87,7 +87,7 @@ public class removemember extends ListenerAdapter {
 		DBUtil.executeUpdate("DELETE FROM clan_members WHERE player_tag = ?", playertag);
 		String desc = null;
 		try {
-			desc = "Der Spieler " + player.getInfoString() + " wurde aus dem Clan " + clanname + " entfernt.";
+			desc = "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde aus dem Clan " + clanname + " entfernt.";
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

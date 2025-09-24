@@ -1,4 +1,4 @@
-package commands;
+package commands.links;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -51,13 +51,14 @@ public class link extends ListenerAdapter {
 			}
 			if (!DBManager.PlayerTagIsLinked(tag)) {
 				DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", tag, userid, playername);
-				String desc = "Der Spieler " + playername + " mit dem Tag " + tag + " wurde erfolgreich mit dem User <@" + userid
+				Player player = new Player(tag);
+				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde erfolgreich mit dem User <@" + userid
 						+ "> verknüpft.";
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
 			} else {
 				Player player = new Player(tag);
 				String linkeduserid = player.getUser().getUserID();
-				String desc = "Der Spieler " + playername + " mit dem Tag " + tag + " ist bereits mit <@" + linkeduserid
+				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " ist bereits mit <@" + linkeduserid
 						+ "> verknüpft. Bitte verwende zuerst ``/unlink``.";
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR)).queue();
 			}

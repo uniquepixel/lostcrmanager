@@ -1,8 +1,9 @@
-package commands;
+package commands.links;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -71,14 +72,33 @@ public class playerinfo extends ListenerAdapter {
 
 		if (conv == ConvertionType.ACCTOUSER) {
 			try {
-				desc += "## " + player.getInfoString() + "\n";
+				desc += "## " + MessageUtil.unformat(player.getInfoString()) + "\n";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			desc += "Verlinkter Discord Account: <@" + userid + ">\n";
-			desc += "Clan: " + player.getClan().getInfoString() + "\n";
+			if (player.getClan() != null) {
+				desc += "Clan: " + player.getClan().getInfoString() + "\n";
+			} else {
+				desc += "Clan: ---\n";
+			}
 			desc += "Aktuelle Anzahl Kickpunkte: " + player.getActiveKickpoints().size() + "\n";
 			desc += "Ingesamte Anzahl Kickpunkte: " + player.getTotalKickpoints();
+
+			final String uuid = userid;
+			MessageChannelUnion channel = event.getChannel();
+			channel.sendMessage(".").queue(sentMessage -> {
+				new Thread(() -> {
+					try {
+						Thread.sleep(100);
+						sentMessage.editMessage("<@" + uuid + ">").queue();
+						Thread.sleep(100);
+						sentMessage.delete().queue();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}).start();
+			});
 		}
 		if (conv == ConvertionType.USERTOACCS) {
 			try {
@@ -91,12 +111,20 @@ public class playerinfo extends ListenerAdapter {
 			} else {
 				desc += "Verlinkte Accounts: \n";
 				for (Player p : linkedaccs) {
-					desc += "	- " + MessageUtil.unformat(p.getInfoString()) + "\n";
+					desc += "   \\- " + MessageUtil.unformat(p.getInfoString()) + "\n";
 				}
 			}
 		}
-
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO)).queue();
+		final String descr = desc;
+		new Thread(() -> {
+			try {
+				Thread.sleep(500);
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, descr, MessageUtil.EmbedType.INFO))
+						.queue();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}).start();
 
 	}
 

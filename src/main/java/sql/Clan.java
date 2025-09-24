@@ -11,8 +11,8 @@ public class Clan {
 	private String clan_tag;
 	private String name;
 	private ArrayList<Player> playerlist;
-	private int max_kickpoints;
-	private int kickpoints_expire_after_days;
+	private Long max_kickpoints;
+	private Integer kickpoints_expire_after_days;
 	private ArrayList<KickpointReason> kickpoint_reasons;
 
 	public Clan(String clantag) {
@@ -22,22 +22,22 @@ public class Clan {
 	// all public getter Methods
 
 	public String getInfoString() {
-		return getName() + " (" + clan_tag + ") ";
+		return getName() + " (" + clan_tag + ")";
 	}
 
 	public String getTag() {
 		return clan_tag;
 	}
-	
+
 	public ArrayList<Player> getPlayers() {
 		return createPlayerList();
 	}
 
-	public int getMaxKickpoints() {
+	public Long getMaxKickpoints() {
 		return createMaxKickpoints();
 	}
 
-	public int getDaysKickpointsExpireAfter() {
+	public Integer getDaysKickpointsExpireAfter() {
 		return createKickpointsExpire();
 	}
 
@@ -63,13 +63,13 @@ public class Clan {
 		return playerlist;
 	}
 
-	private int createMaxKickpoints() {
+	private Long createMaxKickpoints() {
 		String sql = "SELECT max_kickpoints FROM clan_settings WHERE clan_tag = ?";
-		max_kickpoints = DBUtil.getValueFromSQL(sql, Integer.class, clan_tag);
+		max_kickpoints = DBUtil.getValueFromSQL(sql, Long.class, clan_tag);
 		return max_kickpoints;
 	}
 
-	private int createKickpointsExpire() {
+	private Integer createKickpointsExpire() {
 		String sql = "SELECT kickpoints_expire_after_days FROM clan_settings WHERE clan_tag = ?";
 		kickpoints_expire_after_days = DBUtil.getValueFromSQL(sql, Integer.class, clan_tag);
 		return kickpoints_expire_after_days;

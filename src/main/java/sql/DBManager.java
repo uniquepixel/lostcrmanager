@@ -14,6 +14,19 @@ public class DBManager {
 		INCLAN, NOTINCLAN, ALL
 	}
 
+	public static boolean KickpointReasonExists(String reason) {
+		String sql = "SELECT 1 FROM kickpoint_reasons WHERE name = ?";
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, reason);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next(); // true, wenn mindestens eine Zeile existiert
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	public static boolean PlayerTagIsLinked(String crTag) {
 		String sql = "SELECT 1 FROM players WHERE cr_tag = ?";
 		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
@@ -53,6 +66,51 @@ public class DBManager {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public static List<Command.Choice> getKPReasonsAutocomplete(String input, String clantag) {
+		List<Command.Choice> choices = new ArrayList<>();
+
+		String sql = "SELECT name, clan_tag FROM kickpoint_reasons WHERE clan_tag = ?";
+
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, clantag);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					String name = rs.getString("name");
+
+					if (name.toLowerCase().contains(input.toLowerCase())) {
+						choices.add(new Command.Choice(name, name));
+						if (choices.size() == 25) {
+							break;
+						}
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return choices;
+	}
+
+	public static int getAvailableKPID() {
+		String sql = "SELECT id FROM kickpoints";
+		int available = 0;
+
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			try (ResultSet rs = pstmt.executeQuery()) {
+				ArrayList<Integer> used = new ArrayList<>();
+				while (rs.next()) {
+					used.add(rs.getInt("id"));
+				}
+				while (used.contains(available)) {
+					available++;
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return available;
 	}
 
 	public static List<Command.Choice> getClansAutocomplete(String input) {

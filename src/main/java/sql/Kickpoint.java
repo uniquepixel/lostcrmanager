@@ -4,51 +4,30 @@ import java.time.OffsetDateTime;
 
 public class Kickpoint {
 
-	private int id;
+	private long id;
 	private String description;
-	private int amount;
+	private long amount;
 	private Player player;
 	private OffsetDateTime kpdate;
 	private OffsetDateTime givendate;
 	private OffsetDateTime expirationdate;
 	private User givenby;
 
-	public Kickpoint(String kpplayer_tag, KickpointReason reason, OffsetDateTime date, int daystoexpire, User given) {
-		description = reason.getReason();
-		amount = reason.getAmount();
-		player = new Player(kpplayer_tag);
-		kpdate = date;
-		givendate = OffsetDateTime.now();
-		expirationdate = kpdate.plusDays(daystoexpire);
-		givenby = given;
-	}
-
-	public Kickpoint(String kpplayer_tag, String reason, int amount, OffsetDateTime date, int daystoexpire,
-			User given) {
-		description = reason;
-		this.amount = amount;
-		player = new Player(kpplayer_tag);
-		kpdate = date;
-		givendate = OffsetDateTime.now();
-		expirationdate = kpdate.plusDays(daystoexpire);
-		givenby = given;
-	}
-
-	public Kickpoint(int id) {
+	public Kickpoint(long id) {
 		this.id = id;
 	}
 
 	// all public getter Methods
 
-	public int getID() {
-		return createID();
+	public long getID() {
+		return id;
 	}
 
 	public String getDescription() {
 		return createDescription();
 	}
 
-	public int getAmount() {
+	public long getAmount() {
 		return createAmount();
 	}
 
@@ -74,18 +53,13 @@ public class Kickpoint {
 
 	// all private Methods to set Attributes correctly
 
-	private int createID() {
-		id = DBUtil.getValueFromSQL("SELECT COUNT(*) FROM kickpoints", Integer.class);
-		return id;
-	}
-
 	private String createDescription() {
 		description = DBUtil.getValueFromSQL("SELECT description FROM kickpoints WHERE id = ?", String.class, id);
 		return description;
 	}
 
-	private int createAmount() {
-		amount = DBUtil.getValueFromSQL("SELECT amount FROM kickpoints WHERE id = ?", Integer.class, id);
+	private long createAmount() {
+		amount = DBUtil.getValueFromSQL("SELECT amount FROM kickpoints WHERE id = ?", Long.class, id);
 		return amount;
 	}
 
