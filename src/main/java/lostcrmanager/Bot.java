@@ -160,7 +160,7 @@ public class Bot extends ListenerAdapter {
 							Commands.slash("kpmember", "Zeige alle Kickpunkte eines Spielers an.")
 									.addOptions(new OptionData(OptionType.STRING, "player",
 											"Der Spieler, welcher angezeigt werden soll.", true).setAutoComplete(true)),
-							Commands.slash("kpremove", "Zeige alle Kickpunkte eines Spielers an.")
+							Commands.slash("kpremove", "Lösche einen Kickpunkt.")
 									.addOptions(new OptionData(OptionType.INTEGER, "id",
 											"Die ID des Kickpunkts. Ist unter /kpmember zu sehen.", true)),
 							Commands.slash("kpedit", "Editiere einen Kickpunkt.")
