@@ -2,15 +2,21 @@ package commands.memberlist;
 
 import java.util.List;
 
+import datautil.DBManager;
+import datautil.DBUtil;
+import datawrapper.Clan;
+import datawrapper.Player;
+import datawrapper.User;
+import lostcrmanager.Bot;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.DBUtil;
-import sql.User;
 import util.MessageUtil;
 
 public class removemember extends ListenerAdapter {
@@ -21,18 +27,6 @@ public class removemember extends ListenerAdapter {
 			return;
 		event.deferReply().queue();
 		String title = "Memberverwaltung";
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER
-				|| userexecuted.getPermissions() == User.PermissionType.COLEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
 
 		OptionMapping playeroption = event.getOption("player");
 
@@ -45,35 +39,18 @@ public class removemember extends ListenerAdapter {
 
 		String playertag = playeroption.getAsString();
 
-		sql.Player player = new sql.Player(playertag);
+		Player player = new Player(playertag);
 
-		sql.Player.RoleType role = player.getRole();
-
-		Clan playerclan = player.getClan();
-
-		if (role == sql.Player.RoleType.LEADER && userexecuted.getPermissions() != User.PermissionType.ADMIN) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Um jemanden als Leader zu entfernen, musst du Admin sein.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-		if (role == sql.Player.RoleType.COLEADER && !(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Um jemanden als Vize-Anführer zu entfernen, musst du Admin oder Anführer sein.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		if (!DBManager.PlayerTagIsLinked(playertag)) {
+		if (!player.IsLinked()) {
 			event.getHook().editOriginalEmbeds(
 					MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
+
+		Player.RoleType role = player.getRole();
+
+		Clan playerclan = player.getClanDB();
 
 		if (playerclan == null) {
 			event.getHook().editOriginalEmbeds(
@@ -82,15 +59,76 @@ public class removemember extends ListenerAdapter {
 			return;
 		}
 
-		String clanname = playerclan.getName();
+		String clantag = playerclan.getTag();
+
+		User userexecuted = new User(event.getUser().getId());
+		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		if (role == Player.RoleType.LEADER && userexecuted.getClanRoles().get(clantag) != Player.RoleType.ADMIN) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Um jemanden als Leader zu entfernen, musst du Admin sein.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		if (role == Player.RoleType.COLEADER && !(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER)) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Um jemanden als Vize-Anführer zu entfernen, musst du Admin oder Anführer sein.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		String clanname = playerclan.getNameDB();
 
 		DBUtil.executeUpdate("DELETE FROM clan_members WHERE player_tag = ?", playertag);
-		String desc = null;
-		try {
-			desc = "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde aus dem Clan " + clanname + " entfernt.";
-		} catch (Exception e) {
-			e.printStackTrace();
+		String desc = "";
+		if (!playerclan.getTag().equals("warteliste")) {
+			try {
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde aus dem Clan "
+						+ clanname + " entfernt.";
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString())
+						+ " wurde aus der Warteliste entfernt.";
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+
+		if (!playerclan.getTag().equals("warteliste")) {
+			String userid = player.getUser().getUserID();
+			Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
+			Member member = guild.getMemberById(userid);
+			String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
+			Role memberrole = guild.getRoleById(memberroleid);
+			if (member.getRoles().contains(memberrole)) {
+				desc += "\n\n";
+				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+						+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
+			} else {
+				desc += "\n\n";
+				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid + "> bereits nicht mehr.**\n";
+			}
+
+			MessageChannelUnion channel = event.getChannel();
+			MessageUtil.sendUserPingHidden(channel, userid);
+		}
+
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
 
 	}

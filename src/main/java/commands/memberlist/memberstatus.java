@@ -3,16 +3,15 @@ package commands.memberlist;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.DBManager;
+import datawrapper.Clan;
+import datawrapper.Player;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.Player;
 import util.MessageUtil;
-import util.Tuple;
 
 public class memberstatus  extends ListenerAdapter {
 
@@ -34,45 +33,50 @@ public class memberstatus  extends ListenerAdapter {
 
 		String clantag = clanOption.getAsString();
 
+		if(clantag.equals("wartelist")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
 		Clan c = new Clan(clantag);
 
-		ArrayList<Player> playerlistdb = c.getPlayers();
-		
+		ArrayList<Player> playerlistdb = c.getPlayersDB();
+
 		ArrayList<String> taglistdb = new ArrayList<>();
 		playerlistdb.forEach(p -> taglistdb.add(p.getTag()));
 
-		ArrayList<String> taglistapi = new ArrayList<>();
-		ArrayList<Tuple<String, String>> tagnamelistapi = api.Clan.getMemberTagNameList(clantag);
+		ArrayList<Player> playerlistapi = c.getPlayersAPI();
 
-		for(Tuple<String, String> t : tagnamelistapi) {
-			taglistapi.add(t.getFirst());
-		}
-		
-		ArrayList<String> membernotinclan = new ArrayList<>();
-		ArrayList<Tuple<String, String>> inclannotmember = new ArrayList<>();
-		
-		for(String s : taglistdb) {
-			if(!taglistapi.contains(s)) {
-				membernotinclan.add(s);
+		ArrayList<String> taglistapi = new ArrayList<>();
+		playerlistapi.forEach(p -> taglistapi.add(p.getTag()));
+
+		ArrayList<Player> membernotinclan = new ArrayList<>();
+		ArrayList<Player> inclannotmember = new ArrayList<>();
+
+		for (String s : taglistdb) {
+			if (!taglistapi.contains(s)) {
+				membernotinclan.add(new Player(s));
 			}
 		}
-		
-		for(Tuple<String, String> t : tagnamelistapi) {
-			if(!taglistdb.contains(t.getFirst())) {
-				inclannotmember.add(t);
+
+		for (String s : taglistapi) {
+			if (!taglistdb.contains(s)) {
+				inclannotmember.add(new Player(s));
 			}
 		}
-		
+
 		String membernotinclanstr = "";
-		
-		for(String s : membernotinclan) {
-			membernotinclanstr += new sql.Player(s).getInfoString() +  "\n";
+
+		for (Player p : membernotinclan) {
+			membernotinclanstr += p.getInfoString() + "\n";
 		}
-		
+
 		String inclannotmemberstr = "";
-		
-		for(Tuple<String, String> t : inclannotmember) {
-			inclannotmemberstr += t.getSecond() + " (" + t.getFirst() + ")" + "\n";
+
+		for (Player p : inclannotmember) {
+			inclannotmemberstr += p.getInfoString() + "\n";
 		}
 		
 
@@ -96,7 +100,7 @@ public class memberstatus  extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 
 			event.replyChoices(choices).queue();
 		}

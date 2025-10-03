@@ -1,4 +1,4 @@
-package sql;
+package datautil;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

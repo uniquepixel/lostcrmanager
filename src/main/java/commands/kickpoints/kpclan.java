@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import datautil.DBManager;
+import datawrapper.Clan;
+import datawrapper.Kickpoint;
+import datawrapper.Player;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.Kickpoint;
-import sql.Player;
 import util.MessageUtil;
 
 public class kpclan extends ListenerAdapter {
@@ -40,18 +40,26 @@ public class kpclan extends ListenerAdapter {
 
 		Clan c = new Clan(clantag);
 
-		if (!DBManager.ClanExists(clantag)) {
+		if (!c.ExistsDB()) {
 			event.getHook()
 					.editOriginalEmbeds(
 							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
+		
+		if(clantag.equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
 		String desc = "### Kickpunkte aller Spieler des Clans " + c.getInfoString() + ":\n";
 
 		HashMap<String, Integer> kpamounts = new HashMap<>();
 
-		for (Player p : c.getPlayers()) {
+		for (Player p : c.getPlayersDB()) {
 			ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
 			int totalkps = 0;
@@ -86,7 +94,7 @@ public class kpclan extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 
 			event.replyChoices(choices).queue();
 		}

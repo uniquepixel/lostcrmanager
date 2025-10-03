@@ -3,16 +3,16 @@ package commands.memberlist;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.DBManager;
+import datautil.DBUtil;
+import datawrapper.Clan;
+import datawrapper.Player;
+import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.DBUtil;
-import sql.Player;
-import sql.User;
 import util.MessageUtil;
 
 public class editmember extends ListenerAdapter {
@@ -23,18 +23,6 @@ public class editmember extends ListenerAdapter {
 			return;
 		event.deferReply().queue();
 		String title = "Memberverwaltung";
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER
-				|| userexecuted.getPermissions() == User.PermissionType.COLEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
 
 		OptionMapping playeroption = event.getOption("player");
 		OptionMapping roleoption = event.getOption("role");
@@ -49,6 +37,42 @@ public class editmember extends ListenerAdapter {
 		String playertag = playeroption.getAsString();
 		String role = roleoption.getAsString();
 
+		Player p = new Player(playertag);
+		Clan c = p.getClanDB();
+
+		if (!p.IsLinked()) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		if (c == null) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Der Spieler ist in keinem Clan.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		if(c.getTag().equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
+		String clantag = c.getTag();
+		User userexecuted = new User(event.getUser().getId());
+		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+			event.getHook()
+			.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+					MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
 		if (!(role.equals("leader") || role.equals("coleader") || role.equals("elder") || role.equals("member"))) {
 			event.getHook()
 					.editOriginalEmbeds(
@@ -56,35 +80,19 @@ public class editmember extends ListenerAdapter {
 					.queue();
 			return;
 		}
-		if (role.equals("leader") && userexecuted.getPermissions() != User.PermissionType.ADMIN) {
+		if (role.equals("leader") && userexecuted.getClanRoles().get(clantag) != Player.RoleType.ADMIN) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 							"Um jemanden als Leader hinzuzufügen, musst du Admin sein.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
-		if (role.equals("coleader") && !(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER)) {
+		if (role.equals("coleader") && !(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER)) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 							"Um jemanden als Vize-Anführer hinzuzufügen, musst du Admin oder Anführer sein.",
 							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		if (!DBManager.PlayerTagIsLinked(playertag)) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-		Player p = new Player(playertag);
-		Clan c = p.getClan();
-
-		if (c == null) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Der Spieler ist in keinem Clan.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -113,7 +121,7 @@ public class editmember extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("player")) {
-			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.INCLAN);
+			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteNoWaitlist(input, DBManager.InClanType.INCLAN);
 
 			event.replyChoices(choices).queue();
 		}

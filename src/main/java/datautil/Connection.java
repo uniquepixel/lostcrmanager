@@ -1,4 +1,4 @@
-package sql;
+package datautil;
 
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;

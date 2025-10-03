@@ -2,6 +2,11 @@ package commands.kickpoints;
 
 import java.util.List;
 
+import datautil.DBManager;
+import datautil.DBUtil;
+import datawrapper.Clan;
+import datawrapper.Player;
+import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -12,10 +17,6 @@ import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.Modal;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import sql.Clan;
-import sql.DBManager;
-import sql.DBUtil;
-import sql.User;
 import util.MessageUtil;
 
 public class clanconfig extends ListenerAdapter {
@@ -25,16 +26,6 @@ public class clanconfig extends ListenerAdapter {
 		if (!event.getName().equals("clanconfig"))
 			return;
 		String title = "Clanconfig";
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER
-				|| userexecuted.getPermissions() == User.PermissionType.COLEADER)) {
-			event.replyEmbeds(MessageUtil.buildEmbed(title,
-					"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-					MessageUtil.EmbedType.ERROR)).queue();
-			return;
-		}
 
 		OptionMapping clanOption = event.getOption("clan");
 
@@ -47,12 +38,27 @@ public class clanconfig extends ListenerAdapter {
 
 		String clantag = clanOption.getAsString();
 
+		User userexecuted = new User(event.getUser().getId());
+		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+			event.replyEmbeds(MessageUtil.buildEmbed(title,
+					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+					MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+		
 		Clan c = new Clan(clantag);
 
-		if (c.getInfoString() != null) {
-
-		} else {
+		if (!c.ExistsDB()) {
 			event.replyEmbeds(MessageUtil.buildEmbed(title, "Gib einen gültigen Clan an!", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
+		if(clantag.equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -135,7 +141,7 @@ public class clanconfig extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 
 			event.replyChoices(choices).queue();
 		}

@@ -10,6 +10,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
+import datautil.DBManager;
+import datautil.DBUtil;
+import datawrapper.Clan;
+import datawrapper.Kickpoint;
+import datawrapper.KickpointReason;
+import datawrapper.Player;
+import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -20,13 +27,6 @@ import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.Modal;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import sql.Clan;
-import sql.DBManager;
-import sql.DBUtil;
-import sql.Kickpoint;
-import sql.KickpointReason;
-import sql.Player;
-import sql.User;
 import util.MessageUtil;
 
 public class kpadd extends ListenerAdapter {
@@ -36,16 +36,6 @@ public class kpadd extends ListenerAdapter {
 		if (!event.getName().equals("kpadd"))
 			return;
 		String title = "Kickpunkte";
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER
-				|| userexecuted.getPermissions() == User.PermissionType.COLEADER)) {
-			event.replyEmbeds(MessageUtil.buildEmbed(title,
-					"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-					MessageUtil.EmbedType.ERROR)).queue();
-			return;
-		}
 
 		OptionMapping playeroption = event.getOption("player");
 		OptionMapping reasonoption = event.getOption("reason");
@@ -62,33 +52,48 @@ public class kpadd extends ListenerAdapter {
 		}
 		String playertag = playeroption.getAsString();
 		Player p = new Player(playertag);
+		Clan c = p.getClanDB();
 
-		if (p.getClan() == null) {
+		if (c == null) {
 			event.replyEmbeds(MessageUtil.buildEmbed(title, "Dieser Spieler existiert nicht oder ist in keinem Clan.",
 					MessageUtil.EmbedType.ERROR)).queue();
 			return;
 		}
-		if (p.getClan().getDaysKickpointsExpireAfter() == null || p.getClan().getMaxKickpoints() == null) {
+
+		String clantag = c.getTag();
+
+		if (clantag.equals("warteliste")) {
+			event.replyEmbeds(MessageUtil.buildEmbed(title,
+					"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		User userexecuted = new User(event.getUser().getId());
+		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+			event.replyEmbeds(MessageUtil.buildEmbed(title,
+					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+					MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
+		if (p.getClanDB().getDaysKickpointsExpireAfter() == null || p.getClanDB().getMaxKickpoints() == null) {
 			event.replyEmbeds(MessageUtil.buildEmbed(title,
 					"Es müssen zuerst die Clanconfigs eingestellt werden. Nutze /clanconfig.",
 					MessageUtil.EmbedType.ERROR)).queue();
 			return;
 		}
 
-		String clantag = p.getClan().getTag();
-
-		KickpointReason kpreason = null;
-
-		if (DBManager.KickpointReasonExists(reason)) {
-			kpreason = new KickpointReason(reason, clantag);
-		}
+		KickpointReason kpreason = new KickpointReason(reason, clantag);
 
 		TextInput reasonti;
 		TextInput kpamountti;
 		if (reason != null) {
 			reasonti = TextInput.create("reason", "Grund", TextInputStyle.SHORT).setPlaceholder("z.B. CW vergessen")
 					.setValue(reason).setMinLength(1).build();
-			if (kpreason != null) {
+			if (kpreason.Exists()) {
 				kpamountti = TextInput.create("amount", "Anzahl Kickpunkte", TextInputStyle.SHORT)
 						.setPlaceholder("z.B. 1").setValue(kpreason.getAmount() + "").setMinLength(1).build();
 			} else {
@@ -134,7 +139,7 @@ public class kpadd extends ListenerAdapter {
 			String playertag = event.getValue("tag").getAsString();
 
 			Player p = new Player(playertag);
-			Clan c = p.getClan();
+			Clan c = p.getClanDB();
 			if (c == null) {
 				event.getHook()
 						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -204,14 +209,15 @@ public class kpadd extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("player")) {
-			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.INCLAN);
+			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteNoWaitlist(input,
+					DBManager.InClanType.INCLAN);
 
 			event.replyChoices(choices).queue();
 		}
 		if (focused.equals("reason")) {
 			String playertag = event.getOption("player").getAsString();
 			Player p = new Player(playertag);
-			Clan c = p.getClan();
+			Clan c = p.getClanDB();
 			if (c == null) {
 				return;
 			}

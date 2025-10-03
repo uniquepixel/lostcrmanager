@@ -1,0 +1,296 @@
+package datawrapper;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+
+import org.json.JSONObject;
+
+import datautil.APIUtil;
+import datautil.Connection;
+import datautil.DBUtil;
+import lostcrmanager.Bot;
+
+public class Player {
+
+	public enum RoleType {
+		ADMIN, LEADER, COLEADER, ELDER, MEMBER
+	};
+
+	private JSONObject apiresult;
+	private String tag;
+	private String namedb;
+	private String nameapi;
+	private User user;
+	private Clan clandb;
+	private Clan clanapi;
+	private Integer PathofLegendLeagueNumber;
+	private Integer trophies;
+	private Integer PathofLegendTrophies;
+	private ArrayList<Kickpoint> kickpoints;
+	private Integer kickpointstotal = -1;
+	private RoleType role;
+
+	public Player(String tag) {
+		this.tag = tag;
+	}
+
+	public Player refreshData() {
+		apiresult = null;
+		namedb = null;
+		nameapi = null;
+		user = null;
+		clandb = null;
+		clanapi = null;
+		kickpoints = null;
+		kickpointstotal = null;
+		role = null;
+		PathofLegendLeagueNumber = null;
+		trophies = null;
+		PathofLegendTrophies = null;
+		return this;
+	}
+
+	public Player setNameDB(String name) {
+		this.namedb = name;
+		return this;
+	}
+
+	public Player setNameAPI(String name) {
+		this.nameapi = name;
+		return this;
+	}
+
+	public Player setUser(User user) {
+		this.user = user;
+		return this;
+	}
+
+	public Player setClanDB(Clan clan) {
+		this.clandb = clan;
+		return this;
+	}
+
+	public Player setClanAPI(Clan clan) {
+		this.clanapi = clan;
+		return this;
+	}
+
+	public Player setKickpoints(ArrayList<Kickpoint> kickpoints) {
+		this.kickpoints = kickpoints;
+		return this;
+	}
+
+	public Player setKickpointsTotal(Integer kptotal) {
+		this.kickpointstotal = kptotal;
+		return this;
+	}
+
+	public Player setRole(RoleType role) {
+		this.role = role;
+		return this;
+	}
+
+	public boolean IsLinked() {
+		String sql = "SELECT 1 FROM players WHERE cr_tag = ?";
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, tag);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next(); // true, wenn mindestens eine Zeile existiert
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public boolean AccExists() {
+		try {
+			String encodedTag = URLEncoder.encode(tag, "UTF-8");
+			URL url = new URL("https://api.clashroyale.com/v1/players/" + encodedTag);
+
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("GET");
+			connection.setRequestProperty("Authorization", "Bearer " + Bot.api_key);
+			connection.setRequestProperty("Accept", "application/json");
+
+			int responseCode = connection.getResponseCode();
+
+			if (responseCode == 200) {
+				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				String line;
+				StringBuilder responseContent = new StringBuilder();
+				while ((line = in.readLine()) != null) {
+					responseContent.append(line);
+				}
+				in.close();
+
+				return true;
+			} else {
+				System.out.println("Verifizierung fehlgeschlagen. Fehlercode: " + responseCode);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	// all public getter Methods
+
+	public String getInfoString() {
+		try {
+			return getNameDB() + " (" + tag + ")";
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public String getTag() {
+		return tag;
+	}
+
+	public String getNameDB() {
+		if (namedb == null) {
+			namedb = DBUtil.getValueFromSQL("SELECT name FROM players WHERE cr_tag = ?", String.class, tag);
+		}
+		return namedb;
+	}
+
+	public String getNameAPI() {
+		if (nameapi == null) {
+			JSONObject jsonObject = new JSONObject(APIUtil.getPlayerJson(tag));
+			return jsonObject.getString("name");
+		}
+		return nameapi;
+	}
+
+	public User getUser() {
+		if (user == null) {
+			String value = DBUtil.getValueFromSQL("SELECT discord_id FROM players WHERE cr_tag = ?", String.class, tag);
+			user = value == null ? null : new User(value);
+		}
+		return user;
+	}
+
+	public Clan getClanDB() {
+		if (clandb == null) {
+			String value = DBUtil.getValueFromSQL("SELECT clan_tag FROM clan_members WHERE player_tag = ?",
+					String.class, tag);
+			clandb = value == null ? null : new Clan(value);
+		}
+		return clandb;
+	}
+
+	public Clan getClanAPI() {
+		if (clanapi == null) {
+			JSONObject jsonObject = new JSONObject(APIUtil.getPlayerJson(tag));
+
+			// Prüfen, ob der Schlüssel "clan" vorhanden ist und nicht null
+			if (jsonObject.has("clan") && !jsonObject.isNull("clan")) {
+				JSONObject clanObject = jsonObject.getJSONObject("clan");
+				if (clanObject.has("tag")) {
+					clanapi = new Clan(clanObject.getString("tag"));
+				}
+			}
+		}
+		return clanapi;
+	}
+
+	public ArrayList<Kickpoint> getActiveKickpoints() {
+		if (kickpoints == null) {
+			kickpoints = new ArrayList<>();
+			String sql = "SELECT id FROM kickpoints WHERE player_tag = ?";
+			for (Long id : DBUtil.getArrayListFromSQL(sql, Long.class, tag)) {
+				Kickpoint kp = new Kickpoint(id);
+				if (kp.getExpirationDate().isAfter(OffsetDateTime.now())) {
+					kickpoints.add(kp);
+				}
+			}
+		}
+		return kickpoints;
+	}
+
+	public int getTotalKickpoints() {
+		if (kickpointstotal == null) {
+			ArrayList<Kickpoint> a = new ArrayList<>();
+			String sql = "SELECT id FROM kickpoints WHERE player_tag = ?";
+			for (Integer id : DBUtil.getArrayListFromSQL(sql, Integer.class, tag)) {
+				a.add(new Kickpoint(id));
+			}
+			kickpointstotal = a.size();
+		}
+		return kickpointstotal;
+	}
+
+	public RoleType getRole() {
+		if (role == null) {
+			if (new Player(tag).getClanDB() == null) {
+				return null;
+			}
+			String sql = "SELECT clan_role FROM clan_members WHERE player_tag = ?";
+			try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+				pstmt.setString(1, tag);
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next()) {
+						String rolestring = rs.getString("clan_role");
+						role = rolestring.equals("leader") ? RoleType.LEADER
+								: rolestring.equals("coleader") ? RoleType.COLEADER
+										: rolestring.equals("elder") ? RoleType.ELDER
+												: rolestring.equals("member") ? RoleType.MEMBER : null;
+					}
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return role;
+	}
+
+	public Integer getTrophies() {
+		if (trophies == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			trophies = apiresult.getInt("trophies");
+		}
+		return trophies;
+	}
+
+	public Integer getPoLLeagueNumber() {
+		if (PathofLegendLeagueNumber == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("currentPathOfLegendSeasonResult")
+					&& !apiresult.isNull("currentPathOfLegendSeasonResult")) {
+				JSONObject currentPathOfLegendSeasonResult = apiresult.getJSONObject("currentPathOfLegendSeasonResult");
+				PathofLegendLeagueNumber = currentPathOfLegendSeasonResult.getInt("leagueNumber");
+			}
+		}
+		return PathofLegendLeagueNumber;
+	}
+
+	public Integer getPoLTrophies() {
+		if (PathofLegendTrophies == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("currentPathOfLegendSeasonResult")
+					&& !apiresult.isNull("currentPathOfLegendSeasonResult")) {
+				JSONObject currentPathOfLegendSeasonResult = apiresult.getJSONObject("currentPathOfLegendSeasonResult");
+				PathofLegendTrophies = currentPathOfLegendSeasonResult.getInt("trophies");
+			}
+		}
+		return PathofLegendTrophies;
+	}
+
+}

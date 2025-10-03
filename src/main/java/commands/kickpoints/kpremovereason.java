@@ -2,15 +2,17 @@ package commands.kickpoints;
 
 import java.util.List;
 
+import datautil.DBManager;
+import datautil.DBUtil;
+import datawrapper.Clan;
+import datawrapper.KickpointReason;
+import datawrapper.Player;
+import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.DBUtil;
-import sql.User;
 import util.MessageUtil;
 
 public class kpremovereason extends ListenerAdapter {
@@ -21,18 +23,6 @@ public class kpremovereason extends ListenerAdapter {
 			return;
 		event.deferReply().queue();
 		String title = "Kickpunkt-Grund Vorlage";
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN
-				|| userexecuted.getPermissions() == User.PermissionType.LEADER
-				|| userexecuted.getPermissions() == User.PermissionType.COLEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
 
 		OptionMapping clanOption = event.getOption("clan");
 		OptionMapping reasonoption = event.getOption("reason");
@@ -46,8 +36,20 @@ public class kpremovereason extends ListenerAdapter {
 
 		String reason = reasonoption.getAsString();
 		String clantag = clanOption.getAsString();
+		Clan clan = new Clan(clantag);
 
-		if (!DBManager.ClanExists(clantag)) {
+		User userexecuted = new User(event.getUser().getId());
+		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+			event.getHook()
+			.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+					MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+		
+		if (!clan.ExistsDB()) {
 			event.getHook()
 					.editOriginalEmbeds(
 							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
@@ -55,7 +57,16 @@ public class kpremovereason extends ListenerAdapter {
 			return;
 		}
 
-		if (!DBManager.KickpointReasonExists(reason)) {
+		if(clantag.equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
+		KickpointReason kpreason = new KickpointReason(reason, clantag);
+		
+		if (!kpreason.Exists()) {
 			event.getHook().editOriginalEmbeds(
 					MessageUtil.buildEmbed(title, "Diese Begründung existiert nicht.", MessageUtil.EmbedType.ERROR))
 					.queue();
@@ -64,7 +75,6 @@ public class kpremovereason extends ListenerAdapter {
 
 		DBUtil.executeUpdate("DELETE FROM kickpoint_reasons WHERE name = ? AND clan_tag = ?", reason, clantag);
 
-		Clan clan = new Clan(clantag);
 
 		String desc = "Der Kickpunkt-Grund wurde als Vorlage gelöscht.\n";
 		desc += "Grund: " + reason + "\n";
@@ -83,7 +93,7 @@ public class kpremovereason extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 
 			event.replyChoices(choices).queue();
 		}

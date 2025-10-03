@@ -3,15 +3,15 @@ package commands.kickpoints;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.DBManager;
+import datawrapper.Clan;
+import datawrapper.KickpointReason;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.KickpointReason;
 import util.MessageUtil;
 
 public class kpinfo extends ListenerAdapter {
@@ -36,7 +36,7 @@ public class kpinfo extends ListenerAdapter {
 
 		Clan c = new Clan(clantag);
 
-		if (!DBManager.ClanExists(clantag)) {
+		if (!c.ExistsDB()) {
 			event.getHook()
 					.editOriginalEmbeds(
 							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
@@ -44,6 +44,13 @@ public class kpinfo extends ListenerAdapter {
 			return;
 		}
 
+		if(clantag.equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
 		String desc = "";
 
 		ArrayList<KickpointReason> kpreasons = c.getKickpointReasons();
@@ -105,7 +112,7 @@ public class kpinfo extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 
 			event.replyChoices(choices).queue();
 		}

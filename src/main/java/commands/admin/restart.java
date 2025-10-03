@@ -1,8 +1,8 @@
 package commands.admin;
 
+import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import sql.User;
 import util.MessageUtil;
 
 public class restart extends ListenerAdapter {
@@ -15,7 +15,7 @@ public class restart extends ListenerAdapter {
 		String title = "Restart";
 
 		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getPermissions() == User.PermissionType.ADMIN)) {
+		if (!(userexecuted.isAdmin())) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 							"Du musst Admin sein, um diesen Befehl ausführen zu können.", MessageUtil.EmbedType.ERROR))

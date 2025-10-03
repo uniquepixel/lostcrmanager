@@ -3,15 +3,15 @@ package commands.links;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.DBManager;
+import datawrapper.Player;
+import datawrapper.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.DBManager;
-import sql.Player;
-import sql.User;
 import util.MessageUtil;
 
 public class playerinfo extends ListenerAdapter {
@@ -57,8 +57,8 @@ public class playerinfo extends ListenerAdapter {
 		}
 		if (playerOption != null) {
 			playertag = playerOption.getAsString();
-			if (DBManager.PlayerTagIsLinked(playertag)) {
-				player = new Player(playertag);
+			player = new Player(playertag);
+			if (player.IsLinked()) {
 				userid = player.getUser().getUserID();
 				conv = ConvertionType.ACCTOUSER;
 			} else {
@@ -77,28 +77,22 @@ public class playerinfo extends ListenerAdapter {
 				e.printStackTrace();
 			}
 			desc += "Verlinkter Discord Account: <@" + userid + ">\n";
-			if (player.getClan() != null) {
-				desc += "Clan: " + player.getClan().getInfoString() + "\n";
+			if (player.getClanDB() != null) {
+				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoString() + "\n";
 			} else {
-				desc += "Clan: ---\n";
+				desc += "Eingetragen in Clan: ---\n";
+			}
+			if (player.getClanAPI() != null) {
+				desc += "Ingame in Clan: " + player.getClanAPI().getInfoString() + "\n";
+			} else {
+				desc += "Ingame in Clan: ---\n";
 			}
 			desc += "Aktuelle Anzahl Kickpunkte: " + player.getActiveKickpoints().size() + "\n";
 			desc += "Ingesamte Anzahl Kickpunkte: " + player.getTotalKickpoints();
 
 			final String uuid = userid;
 			MessageChannelUnion channel = event.getChannel();
-			channel.sendMessage(".").queue(sentMessage -> {
-				new Thread(() -> {
-					try {
-						Thread.sleep(100);
-						sentMessage.editMessage("<@" + uuid + ">").queue();
-						Thread.sleep(100);
-						sentMessage.delete().queue();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}).start();
-			});
+			MessageUtil.sendUserPingHidden(channel, uuid);
 		}
 		if (conv == ConvertionType.USERTOACCS) {
 			try {
@@ -116,15 +110,13 @@ public class playerinfo extends ListenerAdapter {
 			}
 		}
 		final String descr = desc;
-		new Thread(() -> {
-			try {
-				Thread.sleep(500);
+		new java.util.Timer().schedule(new java.util.TimerTask() {
+			@Override
+			public void run() {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, descr, MessageUtil.EmbedType.INFO))
 						.queue();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
 			}
-		}).start();
+		}, 500);
 
 	}
 

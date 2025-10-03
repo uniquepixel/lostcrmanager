@@ -7,6 +7,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.DBManager;
+import datawrapper.Clan;
+import datawrapper.Kickpoint;
+import datawrapper.Player;
 import lostcrmanager.Bot;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
@@ -14,10 +18,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import sql.Clan;
-import sql.DBManager;
-import sql.Kickpoint;
-import sql.Player;
 import util.MessageUtil;
 
 public class kpmember extends ListenerAdapter {
@@ -40,7 +40,7 @@ public class kpmember extends ListenerAdapter {
 		String playertag = playerOption.getAsString();
 
 		Player p = new Player(playertag);
-		Clan c = p.getClan();
+		Clan c = p.getClanDB();
 
 		if (c == null) {
 			event.replyEmbeds(MessageUtil.buildEmbed(title, "Dieser Spieler existiert nicht oder ist in keinem Clan.",
@@ -48,12 +48,17 @@ public class kpmember extends ListenerAdapter {
 			return;
 		}
 
-		String clantag = c.getTag();
-
-		if (!DBManager.ClanExists(clantag)) {
+		if (!c.ExistsDB()) {
 			event.getHook()
 					.editOriginalEmbeds(
 							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		
+		if(c.getTag().equals("warteliste")) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -130,7 +135,7 @@ public class kpmember extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("player")) {
-			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.INCLAN);
+			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteNoWaitlist(input, DBManager.InClanType.INCLAN);
 
 			event.replyChoices(choices).queue();
 		}
