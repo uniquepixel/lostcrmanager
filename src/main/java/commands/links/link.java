@@ -50,6 +50,9 @@ public class link extends ListenerAdapter {
 		}
 
 		String tag = tagOption.getAsString();
+		if (!tag.startsWith("#")) {
+			tag = "#" + tag;
+		}
 		String userid;
 		if (useroption != null) {
 			userid = useroption.getAsMentionable().getId();
