@@ -23,6 +23,7 @@ import commands.memberlist.editmember;
 import commands.memberlist.listmembers;
 import commands.memberlist.memberstatus;
 import commands.memberlist.removemember;
+import commands.memberlist.transfermember;
 import commands.util.leaguetrophylist;
 import datautil.DBUtil;
 import datawrapper.Player;
@@ -52,9 +53,10 @@ public class Bot extends ListenerAdapter {
 	public static String user;
 	public static String password;
 	public static String exmemberroleid;
+	public static String seasonstringfallback;
 
 	public static void main(String[] args) throws Exception {
-		VERSION = "1.2";
+		VERSION = "1.2.1";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
@@ -80,13 +82,14 @@ public class Bot extends ListenerAdapter {
 						new removemember(), new listmembers(), new editmember(), new playerinfo(), new memberstatus(),
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
-						new leaguetrophylist())
+						new leaguetrophylist(), new transfermember())
 				.build();
 	}
 
 	public static void registerCommands(JDA jda, String guildId) {
 		Guild guild = jda.getGuildById(guildId);
 		if (guild != null) {
+			guild.updateCommands().addCommands().queue();
 			guild.updateCommands().addCommands(
 					Commands.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User.")
 							.addOption(OptionType.STRING, "tag", "Der Tag des Clash Royale Accounts", true)
@@ -168,8 +171,14 @@ public class Bot extends ListenerAdapter {
 					Commands.slash("clanconfig", "Ändere Einstellungen an einem Clan.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, welcher bearbeitet werden soll.", true).setAutoComplete(true)),
-					Commands.slash("leaguetrophylist", "Sortierte Rangliste.").addOptions(
-							new OptionData(OptionType.STRING, "clan", "Der/Die Clan(s), welche ausgegeben werden.", true)
+					Commands.slash("leaguetrophylist", "Sortierte Rangliste.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der/Die Clan(s), welche ausgegeben werden.", true).setAutoComplete(true)),
+					Commands.slash("transfermember", "Transferiere einen Spieler in einen anderen Clan.")
+							.addOptions(new OptionData(OptionType.STRING, "player",
+									"Der Spieler, welcher transferiert werden soll", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, zu welchem der Spieler hinzugefügt werden soll", true)
 									.setAutoComplete(true)))
 					.queue();
 		}
@@ -178,7 +187,7 @@ public class Bot extends ListenerAdapter {
 	@Override
 	public void onReady(ReadyEvent event) {
 		setJda(event.getJDA());
-		registerCommands(event.getJDA(), guild_id);
+		// registerCommands(event.getJDA(), guild_id);
 	}
 
 	@Override
@@ -195,22 +204,25 @@ public class Bot extends ListenerAdapter {
 	}
 
 	public static void startNameUpdates() {
-		Runnable task = () -> {
-			System.out.println("Alle 2h werden nun die Namen aktualisiert. " + System.currentTimeMillis());
+		Thread thread = new Thread(() -> {
+			Runnable task = () -> {
+				System.out.println("Alle 2h werden nun die Namen aktualisiert. " + System.currentTimeMillis());
 
-			String sql = "SELECT cr_tag FROM players";
-			for (String tag : DBUtil.getArrayListFromSQL(sql, String.class)) {
-				try {
-					Player p = new Player(tag);
-					DBUtil.executeUpdate("UPDATE players SET name = ? WHERE cr_tag = ?", p.getNameAPI(), tag);
-				} catch (Exception e) {
-					System.out.println(
-							"Beim Updaten des Namens von Spieler mit Tag " + tag + " ist ein Fehler aufgetreten.");
+				String sql = "SELECT cr_tag FROM players";
+				for (String tag : DBUtil.getArrayListFromSQL(sql, String.class)) {
+					try {
+						Player p = new Player(tag);
+						DBUtil.executeUpdate("UPDATE players SET name = ? WHERE cr_tag = ?", p.getNameAPI(), tag);
+					} catch (Exception e) {
+						System.out.println(
+								"Beim Updaten des Namens von Spieler mit Tag " + tag + " ist ein Fehler aufgetreten.");
+					}
 				}
-			}
 
-		};
-		scheduler.scheduleAtFixedRate(task, 0, 2, TimeUnit.HOURS);
+			};
+			scheduler.scheduleAtFixedRate(task, 0, 2, TimeUnit.HOURS);
+		});
+		thread.start();
 	}
 
 	public void stopScheduler() {

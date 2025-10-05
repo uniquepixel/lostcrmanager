@@ -1,6 +1,7 @@
 package commands.admin;
 
 import datawrapper.User;
+import lostcrmanager.Bot;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import util.MessageUtil;
@@ -15,7 +16,7 @@ public class restart extends ListenerAdapter {
 		String title = "Restart";
 
 		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.isAdmin())) {
+		if (!userexecuted.isAdmin()) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 							"Du musst Admin sein, um diesen Befehl ausführen zu können.", MessageUtil.EmbedType.ERROR))
@@ -27,13 +28,15 @@ public class restart extends ListenerAdapter {
 				.editOriginalEmbeds(
 						MessageUtil.buildEmbed(title, "Der Bot wird neugestartet.", MessageUtil.EmbedType.SUCCESS))
 				.queue();
-		
+
+		Bot.registerCommands(Bot.getJda(), Bot.guild_id);
+
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
+
 		System.exit(0);
 
 	}

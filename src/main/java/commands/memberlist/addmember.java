@@ -45,15 +45,31 @@ public class addmember extends ListenerAdapter {
 		String role = roleoption.getAsString();
 
 		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
-				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
-				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
+		if (!clantag.equals("warteliste")) {
+			if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		} else {
+			boolean b = false;
+			for (String clantags : DBManager.getAllClans()) {
+				if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
+						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
+						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
+					b = true;
+					break;
+				}
+			}
+			if (b == false) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
 		}
 
 		if (!(role.equals("leader") || role.equals("coleader") || role.equals("elder") || role.equals("member"))) {
@@ -132,11 +148,16 @@ public class addmember extends ListenerAdapter {
 			Member member = guild.getMemberById(userid);
 			String memberroleid = c.getRoleID(Clan.Role.MEMBER);
 			Role memberrole = guild.getRoleById(memberroleid);
-			if (member.getRoles().contains(memberrole)) {
-				desc += "\n\n**Der User <@" + userid + "> hat bereits die Rolle <@&" + memberroleid + ">.**";
+			if (member != null) {
+				if (member.getRoles().contains(memberrole)) {
+					desc += "\n\n**Der User <@" + userid + "> hat bereits die Rolle <@&" + memberroleid + ">.**";
+				} else {
+					guild.addRoleToMember(member, memberrole).queue();
+					desc += "\n\n**Dem User <@" + userid + "> wurde die Rolle <@&" + memberroleid + "> hinzugefügt.**";
+				}
 			} else {
-				guild.addRoleToMember(member, memberrole).queue();
-				desc += "\n\n**Dem User <@" + userid + "> wurde die Rolle <@&" + memberroleid + "> hinzugefügt.**";
+				desc += "\n\n**Der User <@" + userid
+						+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
 			}
 
 			MessageChannelUnion channel = event.getChannel();

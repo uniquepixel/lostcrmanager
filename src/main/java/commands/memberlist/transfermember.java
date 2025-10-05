@@ -19,25 +19,35 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import util.MessageUtil;
 
-public class removemember extends ListenerAdapter {
+public class transfermember extends ListenerAdapter {
 
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-		if (!event.getName().equals("removemember"))
+		if (!event.getName().equals("transfermember"))
 			return;
 		event.deferReply().queue();
 		String title = "Memberverwaltung";
 
 		OptionMapping playeroption = event.getOption("player");
+		OptionMapping clanoption = event.getOption("clan");
 
-		if (playeroption == null) {
+		if (playeroption == null || clanoption == null) {
 			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Der Parameter ist erforderlich!", MessageUtil.EmbedType.ERROR))
+					MessageUtil.buildEmbed(title, "Beide Parameter sind erforderlich!", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
 
 		String playertag = playeroption.getAsString();
+		String newclantag = clanoption.getAsString();
+		Clan newclan = new Clan(newclantag);
+
+		if (!newclan.ExistsDB()) {
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Dieser Clan ist existiert nicht.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
 
 		Player player = new Player(playertag);
 
@@ -67,7 +77,7 @@ public class removemember extends ListenerAdapter {
 					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
 					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+						"Du musst mindestens Vize-Anführer des Clans sein, in dem der Spieler gerade ist, um diesen Befehl ausführen zu können.",
 						MessageUtil.EmbedType.ERROR)).queue();
 				return;
 			}
@@ -89,6 +99,22 @@ public class removemember extends ListenerAdapter {
 			}
 		}
 
+		if (!(userexecuted.getClanRoles().get(newclantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.LEADER
+				|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.COLEADER)) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Du musst mindestens Vize-Anführer des Clans sein, in den du den Spieler transferieren möchtest, um diesen Befehl ausführen zu können.",
+					MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
+		if (clantag.equals(newclantag)) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Du kannst einen Spieler nicht in den gleichen Clan verschieben.", MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
 		if (role == Player.RoleType.LEADER && userexecuted.getClanRoles().get(clantag) != Player.RoleType.ADMIN) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -106,30 +132,26 @@ public class removemember extends ListenerAdapter {
 			return;
 		}
 
-		String clanname = playerclan.getNameDB();
+		DBUtil.executeUpdate("UPDATE clan_members SET clan_tag = ?, clan_role = ? WHERE player_tag = ?", newclantag,
+				"member", playertag);
 
-		DBUtil.executeUpdate("DELETE FROM clan_members WHERE player_tag = ?", playertag);
 		String desc = "";
-		if (!playerclan.getTag().equals("warteliste")) {
-			try {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde aus dem Clan "
-						+ clanname + " entfernt.";
-			} catch (Exception e) {
-				e.printStackTrace();
+		if (!clantag.equals("warteliste")) {
+			if (!newclantag.equals("warteliste")) {
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde vom Clan "
+						+ playerclan.getInfoString() + " zum Clan " + newclan.getInfoString() + " verschoben.";
+			} else {
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde vom Clan "
+						+ playerclan.getInfoString() + " zur Warteliste verschoben.";
 			}
 		} else {
-			try {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString())
-						+ " wurde aus der Warteliste entfernt.";
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString())
+					+ " wurde von der Warteliste zum Clan " + newclan.getInfoString() + " verschoben.";
 		}
-
-		if (!playerclan.getTag().equals("warteliste")) {
-			String userid = player.getUser().getUserID();
-			Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
-			Member member = guild.getMemberById(userid);
+		String userid = player.getUser().getUserID();
+		Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
+		Member member = guild.getMemberById(userid);
+		if (!clantag.equals("warteliste")) {
 			String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
 			Role memberrole = guild.getRoleById(memberroleid);
 			if (member.getRoles().contains(memberrole)) {
@@ -140,10 +162,21 @@ public class removemember extends ListenerAdapter {
 				desc += "\n\n";
 				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid + "> bereits nicht mehr.**\n";
 			}
-
-			MessageChannelUnion channel = event.getChannel();
-			MessageUtil.sendUserPingHidden(channel, userid);
 		}
+		if (!newclantag.equals("warteliste")) {
+			String newmemberroleid = newclan.getRoleID(Clan.Role.MEMBER);
+			Role newmemberrole = guild.getRoleById(newmemberroleid);
+			if (member.getRoles().contains(newmemberrole)) {
+				desc += "\n\n";
+				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + newmemberroleid + "> bereits.**\n";
+			} else {
+				guild.addRoleToMember(member, newmemberrole);
+				desc += "\n\n";
+				desc += "**Dem User <@" + userid + "> wurde die Rolle <@&" + newmemberroleid + "> gegeben.**\n";
+			}
+		}
+		MessageChannelUnion channel = event.getChannel();
+		MessageUtil.sendUserPingHidden(channel, userid);
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
 
@@ -151,7 +184,7 @@ public class removemember extends ListenerAdapter {
 
 	@Override
 	public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
-		if (!event.getName().equals("removemember"))
+		if (!event.getName().equals("transfermember"))
 			return;
 
 		String focused = event.getFocusedOption().getName();
@@ -159,6 +192,26 @@ public class removemember extends ListenerAdapter {
 
 		if (focused.equals("player")) {
 			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.INCLAN);
+
+			event.replyChoices(choices).queue();
+		}
+		if (focused.equals("clan")) {
+			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			Player p = new Player(event.getOption("player").getAsString());
+			Clan c = p.getClanDB();
+			Command.Choice todelete = null;
+			if (c != null) {
+				for (Command.Choice choice : choices) {
+					if (choice.getAsString().equals(c.getTag())) {
+						todelete = choice;
+						break;
+					}
+				}
+			}
+			if(todelete != null) {
+				choices.remove(todelete);
+			}
+			
 
 			event.replyChoices(choices).queue();
 		}

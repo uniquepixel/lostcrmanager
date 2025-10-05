@@ -106,17 +106,39 @@ public class leaguetrophylist extends ListenerAdapter {
 				}
 			}
 			allplayers.sort(Comparator
-					.comparingInt(
-							(Player p) -> p.getPoLLeagueNumber() != null ? p.getPoLLeagueNumber() : Integer.MIN_VALUE)
-					.thenComparingInt(p -> p.getPoLTrophies() != null ? p.getPoLTrophies() : Integer.MIN_VALUE)
+					.comparingInt((Player p) -> p.getPoLLeagueNumber() != null
+							? (p.getPoLLeagueNumber() != 1 ? p.getPoLLeagueNumber() : Integer.MIN_VALUE)
+							: Integer.MIN_VALUE)
+					.thenComparingInt(p -> p.getPoLTrophies() != null
+							? (p.getPoLTrophies() != 0 ? p.getPoLTrophies() : Integer.MIN_VALUE)
+							: Integer.MIN_VALUE)
+					.thenComparingInt(p -> p.getSTRTrophies() != null
+							? (p.getSTRTrophies() != 10000 ? p.getSTRTrophies() : Integer.MIN_VALUE)
+							: Integer.MIN_VALUE)
 					.thenComparingInt(Player::getTrophies));
 			Collections.reverse(allplayers);
 
-			for (Player p : allplayers) {
-				content += p.getInfoString() + ":" + System.lineSeparator() + "  LeagueNumber: "
-						+ p.getPoLLeagueNumber() + System.lineSeparator() + "  PathOfLegendTrophies: "
-						+ p.getPoLTrophies() + System.lineSeparator() + "  Trophies: " + p.getTrophies()
-						+ System.lineSeparator();
+			for (int i = 1; i <= allplayers.size(); i++) {
+				Player p = allplayers.get(i - 1);
+				if (p.getTrophies() == 10000) {
+					if (p.getPoLLeagueNumber() == 7) {
+						content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
+								+ ":" + System.lineSeparator() + "  Aktuelle PathOfLegendSeason-Trophäen: "
+								+ p.getPoLTrophies() + System.lineSeparator()
+								+ "  Aktuelle Seasonal-Trophy-Road-Trophäen: " + p.getSTRTrophies()
+								+ System.lineSeparator() + "  LeagueNumber: " + p.getPoLLeagueNumber()
+								+ System.lineSeparator();
+					} else {
+						content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
+								+ ":" + System.lineSeparator() + "  Aktuelle Seasonal-Trophy-Road-Trophäen: "
+								+ p.getSTRTrophies() + System.lineSeparator() + "  LeagueNumber: "
+								+ p.getPoLLeagueNumber() + System.lineSeparator();
+					}
+				} else {
+					content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
+							+ ":" + System.lineSeparator() + "  Aktuelle Trophäen: " + p.getTrophies()
+							+ System.lineSeparator();
+				}
 			}
 
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));

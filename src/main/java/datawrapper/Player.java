@@ -33,9 +33,10 @@ public class Player {
 	private Clan clanapi;
 	private Integer PathofLegendLeagueNumber;
 	private Integer trophies;
+	private Integer strtrophies;
 	private Integer PathofLegendTrophies;
 	private ArrayList<Kickpoint> kickpoints;
-	private Integer kickpointstotal = -1;
+	private Integer kickpointstotal;
 	private RoleType role;
 
 	public Player(String tag) {
@@ -54,6 +55,7 @@ public class Player {
 		role = null;
 		PathofLegendLeagueNumber = null;
 		trophies = null;
+		strtrophies = null;
 		PathofLegendTrophies = null;
 		return this;
 	}
@@ -263,6 +265,47 @@ public class Player {
 			trophies = apiresult.getInt("trophies");
 		}
 		return trophies;
+	}
+
+	public Integer getSTRTrophies() {
+		if (strtrophies == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			String currentseasonstring = Bot.seasonstringfallback;
+			if (apiresult.has("leagueStatistics")) {
+				JSONObject leagueStatistics = apiresult.getJSONObject("leagueStatistics");
+				if (leagueStatistics.has("previousSeason")) {
+					JSONObject previousSeason = leagueStatistics.getJSONObject("previousSeason");
+					String previousseasonid = previousSeason.getString("id");
+					int previousseasonyear = Integer.valueOf(previousseasonid.split("-")[0]);
+					int previousseasonmonth = Integer.valueOf(previousseasonid.split("-")[1]);
+					int currentseasonyear;
+					int currentseasonmonth;
+					if (previousseasonmonth + 1 == 13) {
+						currentseasonyear = previousseasonyear + 1;
+						currentseasonmonth = 1;
+					} else {
+						currentseasonyear = previousseasonyear;
+						currentseasonmonth = previousseasonmonth + 1;
+					}
+					currentseasonstring = "" + currentseasonyear;
+					if (currentseasonmonth < 10) {
+						currentseasonstring += "0" + currentseasonmonth;
+					} else {
+						currentseasonstring += currentseasonmonth;
+					}
+				}
+			}
+			if (currentseasonstring != null) {
+				Bot.seasonstringfallback = currentseasonstring;
+				JSONObject progress = apiresult.getJSONObject("progress");
+				JSONObject seasontrophyroad = progress.getJSONObject("seasonal-trophy-road-" + currentseasonstring);
+				strtrophies = seasontrophyroad.getInt("trophies");
+			}
+
+		}
+		return strtrophies;
 	}
 
 	public Integer getPoLLeagueNumber() {
