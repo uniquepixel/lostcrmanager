@@ -151,29 +151,35 @@ public class transfermember extends ListenerAdapter {
 		String userid = player.getUser().getUserID();
 		Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
 		Member member = guild.getMemberById(userid);
-		if (!clantag.equals("warteliste")) {
-			String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
-			Role memberrole = guild.getRoleById(memberroleid);
-			if (member.getRoles().contains(memberrole)) {
-				desc += "\n\n";
-				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
-						+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
-			} else {
-				desc += "\n\n";
-				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid + "> bereits nicht mehr.**\n";
+		if (member != null) {
+			if (!clantag.equals("warteliste")) {
+				String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
+				Role memberrole = guild.getRoleById(memberroleid);
+				if (member.getRoles().contains(memberrole)) {
+					desc += "\n\n";
+					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+							+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
+				} else {
+					desc += "\n\n";
+					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+							+ "> bereits nicht mehr.**\n";
+				}
 			}
-		}
-		if (!newclantag.equals("warteliste")) {
-			String newmemberroleid = newclan.getRoleID(Clan.Role.MEMBER);
-			Role newmemberrole = guild.getRoleById(newmemberroleid);
-			if (member.getRoles().contains(newmemberrole)) {
-				desc += "\n\n";
-				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + newmemberroleid + "> bereits.**\n";
-			} else {
-				guild.addRoleToMember(member, newmemberrole);
-				desc += "\n\n";
-				desc += "**Dem User <@" + userid + "> wurde die Rolle <@&" + newmemberroleid + "> gegeben.**\n";
+			if (!newclantag.equals("warteliste")) {
+				String newmemberroleid = newclan.getRoleID(Clan.Role.MEMBER);
+				Role newmemberrole = guild.getRoleById(newmemberroleid);
+				if (member.getRoles().contains(newmemberrole)) {
+					desc += "\n\n";
+					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + newmemberroleid + "> bereits.**\n";
+				} else {
+					guild.addRoleToMember(member, newmemberrole).queue();
+					desc += "\n\n";
+					desc += "**Dem User <@" + userid + "> wurde die Rolle <@&" + newmemberroleid + "> gegeben.**\n";
+				}
 			}
+		} else {
+			desc += "\n\n**Der User <@" + userid
+					+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
 		}
 		MessageChannelUnion channel = event.getChannel();
 		MessageUtil.sendUserPingHidden(channel, userid);
@@ -208,10 +214,9 @@ public class transfermember extends ListenerAdapter {
 					}
 				}
 			}
-			if(todelete != null) {
+			if (todelete != null) {
 				choices.remove(todelete);
 			}
-			
 
 			event.replyChoices(choices).queue();
 		}

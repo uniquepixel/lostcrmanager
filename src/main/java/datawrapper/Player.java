@@ -299,9 +299,14 @@ public class Player {
 			}
 			if (currentseasonstring != null) {
 				Bot.seasonstringfallback = currentseasonstring;
-				JSONObject progress = apiresult.getJSONObject("progress");
-				JSONObject seasontrophyroad = progress.getJSONObject("seasonal-trophy-road-" + currentseasonstring);
-				strtrophies = seasontrophyroad.getInt("trophies");
+				if (apiresult.has("progress")) {
+					JSONObject progress = apiresult.getJSONObject("progress");
+					if (progress.has("seasonal-trophy-road-" + currentseasonstring)) {
+						JSONObject seasontrophyroad = progress
+								.getJSONObject("seasonal-trophy-road-" + currentseasonstring);
+						strtrophies = seasontrophyroad.getInt("trophies");
+					}
+				}
 			}
 
 		}

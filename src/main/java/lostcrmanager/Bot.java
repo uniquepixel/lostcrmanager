@@ -91,7 +91,7 @@ public class Bot extends ListenerAdapter {
 		if (guild != null) {
 			guild.updateCommands().addCommands().queue();
 			guild.updateCommands().addCommands(
-					Commands.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User.")
+					Commands.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User oder einer UserID.")
 							.addOption(OptionType.STRING, "tag", "Der Tag des Clash Royale Accounts", true)
 							.addOption(OptionType.MENTIONABLE, "user",
 									"Der User, mit dem der Account verlinkt werden soll.")
