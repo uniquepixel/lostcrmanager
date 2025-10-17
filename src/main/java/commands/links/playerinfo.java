@@ -78,7 +78,11 @@ public class playerinfo extends ListenerAdapter {
 			}
 			desc += "Verlinkter Discord Account: <@" + userid + ">\n";
 			if (player.getClanDB() != null) {
-				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoString() + "\n";
+				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoString();
+				if(player.isMarked()) {
+					desc+= " (✗)";
+				}
+				desc += "\n";
 			} else {
 				desc += "Eingetragen in Clan: ---\n";
 			}

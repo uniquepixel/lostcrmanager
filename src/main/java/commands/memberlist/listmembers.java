@@ -1,6 +1,7 @@
 package commands.memberlist;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import datautil.DBManager;
@@ -37,6 +38,10 @@ public class listmembers extends ListenerAdapter {
 
 		ArrayList<Player> playerlist = c.getPlayersDB();
 
+		playerlist.sort(Comparator
+	            .comparing(Player::isMarked).reversed()
+	            .thenComparing(Player::getNameDB));
+
 		String leaderlist = "";
 		String coleaderlist = "";
 		String elderlist = "";
@@ -44,16 +49,32 @@ public class listmembers extends ListenerAdapter {
 
 		for (Player p : playerlist) {
 			if (p.getRole() == Player.RoleType.LEADER) {
-				leaderlist += p.getInfoString() + "\n";
+				leaderlist += p.getInfoString();
+				if(p.isMarked()) {
+					leaderlist += " (✗)";
+				}
+				leaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.COLEADER) {
-				coleaderlist += p.getInfoString() + "\n";
+				coleaderlist += p.getInfoString();
+				if(p.isMarked()) {
+					coleaderlist += " (✗)";
+				}
+				coleaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.ELDER) {
-				elderlist += p.getInfoString() + "\n";
+				elderlist += p.getInfoString();
+				if(p.isMarked()) {
+					elderlist += " (✗)";
+				}
+				elderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.MEMBER) {
-				memberlist += p.getInfoString() + "\n";
+				memberlist += p.getInfoString();
+				if(p.isMarked()) {
+					memberlist += " (✗)";
+				}
+				memberlist += "\n";
 			}
 		}
 		String desc = "## " + c.getInfoString() + "\n";

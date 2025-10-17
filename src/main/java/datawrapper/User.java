@@ -39,9 +39,7 @@ public class User {
 					userid) == null) {
 				DBUtil.executeUpdate("INSERT INTO users (discord_id, is_admin) VALUES (?, ?)", userid, false);
 			}
-			if (DBUtil.getValueFromSQL("SELECT is_admin FROM users WHERE discord_id = ?", Boolean.class, userid)) {
-				isadmin = true;
-			}
+			isadmin = DBUtil.getValueFromSQL("SELECT is_admin FROM users WHERE discord_id = ?", Boolean.class, userid);
 		}
 		return isadmin;
 	}

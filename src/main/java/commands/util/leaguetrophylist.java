@@ -3,14 +3,13 @@ package commands.util;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.Player;
-import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -26,25 +25,6 @@ public class leaguetrophylist extends ListenerAdapter {
 			return;
 		event.deferReply().queue();
 		String title = "League-Trophy Liste";
-
-		boolean b = false;
-		User userexecuted = new User(event.getUser().getId());
-		for (String clantag : DBManager.getAllClans()) {
-			if (userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
-					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
-					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER) {
-				b = true;
-				break;
-			}
-		}
-		if (b == false) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
 
 		OptionMapping clanOption = event.getOption("clan");
 
@@ -92,6 +72,9 @@ public class leaguetrophylist extends ListenerAdapter {
 		}
 		final ArrayList<String> clans = allclantags;
 
+		HashMap<String, String> clantocontentstring = new HashMap<>();
+		HashMap<String, Integer> clantocounter = new HashMap<>();
+
 		ArrayList<Player> allplayers = new ArrayList<>();
 
 		final String description = desc;
@@ -105,40 +88,61 @@ public class leaguetrophylist extends ListenerAdapter {
 					allplayers.add(p);
 				}
 			}
-			allplayers.sort(Comparator
-					.comparingInt((Player p) -> p.getPoLLeagueNumber() != null
+			allplayers.sort(Comparator.comparingInt((Player p) -> p.getRole().ordinal())
+					.thenComparing(Comparator.comparing(Player::isMarked).reversed()) // true zuerst
+					.thenComparing(Comparator.comparingInt((Player p) -> p.getPoLLeagueNumber() != null
 							? (p.getPoLLeagueNumber() != 1 ? p.getPoLLeagueNumber() : Integer.MIN_VALUE)
-							: Integer.MIN_VALUE)
-					.thenComparingInt(p -> p.getPoLTrophies() != null
+							: Integer.MIN_VALUE).reversed())
+					.thenComparing(Comparator.comparingInt((Player p) -> p.getPoLTrophies() != null
 							? (p.getPoLTrophies() != 0 ? p.getPoLTrophies() : Integer.MIN_VALUE)
-							: Integer.MIN_VALUE)
-					.thenComparingInt(p -> p.getSTRTrophies() != null
+							: Integer.MIN_VALUE).reversed())
+					.thenComparing(Comparator.comparingInt((Player p) -> p.getSTRTrophies() != null
 							? (p.getSTRTrophies() != 10000 ? p.getSTRTrophies() : Integer.MIN_VALUE)
-							: Integer.MIN_VALUE)
-					.thenComparingInt(Player::getTrophies));
-			Collections.reverse(allplayers);
+							: Integer.MIN_VALUE).reversed())
+					.thenComparing(Comparator.comparingInt(Player::getTrophies).reversed()));
 
 			for (int i = 1; i <= allplayers.size(); i++) {
 				Player p = allplayers.get(i - 1);
+				String clanplayercontent = "";
+				String marked = p.isMarked() ? " (✗)" : "";
+				String role = p.getRole() == Player.RoleType.ADMIN ? " [Admin]"
+						: p.getRole() == Player.RoleType.LEADER ? " [Leader]"
+								: p.getRole() == Player.RoleType.COLEADER ? " [Co-Leader]"
+										: p.getRole() == Player.RoleType.ELDER ? " [Elder]"
+												: p.getRole() == Player.RoleType.MEMBER ? " [Member]" : "";
 				if (p.getTrophies() == 10000) {
 					if (p.getPoLLeagueNumber() == 7) {
-						content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
-								+ ":" + System.lineSeparator() + "  Aktuelle PathOfLegendSeason-Trophäen: "
-								+ p.getPoLTrophies() + System.lineSeparator()
+						clanplayercontent += p.getInfoString() + role + marked + ":" + System.lineSeparator()
+								+ "  Aktuelle PathOfLegendSeason-Trophäen: " + p.getPoLTrophies()
+								+ System.lineSeparator() + "  Aktuelle Seasonal-Trophy-Road-Trophäen: "
+								+ p.getSTRTrophies() + System.lineSeparator() + "  LeagueNumber: "
+								+ p.getPoLLeagueNumber() + System.lineSeparator();
+					} else {
+						clanplayercontent += p.getInfoString() + role + marked + ":" + System.lineSeparator()
 								+ "  Aktuelle Seasonal-Trophy-Road-Trophäen: " + p.getSTRTrophies()
 								+ System.lineSeparator() + "  LeagueNumber: " + p.getPoLLeagueNumber()
 								+ System.lineSeparator();
-					} else {
-						content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
-								+ ":" + System.lineSeparator() + "  Aktuelle Seasonal-Trophy-Road-Trophäen: "
-								+ p.getSTRTrophies() + System.lineSeparator() + "  LeagueNumber: "
-								+ p.getPoLLeagueNumber() + System.lineSeparator();
 					}
 				} else {
-					content += "#" + i + " | " + p.getInfoString() + " eingetragen in " + p.getClanDB().getNameDB()
-							+ ":" + System.lineSeparator() + "  Aktuelle Trophäen: " + p.getTrophies()
-							+ System.lineSeparator();
+					clanplayercontent += p.getInfoString() + role + marked + ":" + System.lineSeparator()
+							+ "  Aktuelle Trophäen: " + p.getTrophies() + System.lineSeparator();
 				}
+				String clancontent = clantocontentstring.getOrDefault(p.getClanDB().getTag(), "");
+				int counter = clantocounter.getOrDefault(p.getClanDB().getTag(), 1);
+				clancontent += "#" + counter + " | " + clanplayercontent;
+				counter++;
+				clantocounter.put(p.getClanDB().getTag(), counter);
+				clantocontentstring.put(p.getClanDB().getTag(), clancontent);
+			}
+
+			for (String key : clantocontentstring.keySet()) {
+				Clan c = new Clan(key);
+				content += "### " + c.getInfoString() + ":\n";
+				content += "\n";
+				content += clantocontentstring.get(key);
+				content += "\n";
+				content += "---------------------\n";
+				content += "\n";
 			}
 
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));

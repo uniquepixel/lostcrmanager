@@ -38,6 +38,7 @@ public class Player {
 	private ArrayList<Kickpoint> kickpoints;
 	private Integer kickpointstotal;
 	private RoleType role;
+	private Boolean mark;
 
 	public Player(String tag) {
 		this.tag = tag;
@@ -57,6 +58,7 @@ public class Player {
 		trophies = null;
 		strtrophies = null;
 		PathofLegendTrophies = null;
+		mark = null;
 		return this;
 	}
 
@@ -97,6 +99,11 @@ public class Player {
 
 	public Player setRole(RoleType role) {
 		this.role = role;
+		return this;
+	}
+
+	public Player setMark(boolean mark) {
+		this.mark = mark;
 		return this;
 	}
 
@@ -238,20 +245,24 @@ public class Player {
 			if (new Player(tag).getClanDB() == null) {
 				return null;
 			}
-			String sql = "SELECT clan_role FROM clan_members WHERE player_tag = ?";
-			try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-				pstmt.setString(1, tag);
-				try (ResultSet rs = pstmt.executeQuery()) {
-					if (rs.next()) {
-						String rolestring = rs.getString("clan_role");
-						role = rolestring.equals("leader") ? RoleType.LEADER
-								: rolestring.equals("coleader") ? RoleType.COLEADER
-										: rolestring.equals("elder") ? RoleType.ELDER
-												: rolestring.equals("member") ? RoleType.MEMBER : null;
+			if (getUser().isAdmin()) {
+				role = RoleType.ADMIN;
+			} else {
+				String sql = "SELECT clan_role FROM clan_members WHERE player_tag = ?";
+				try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+					pstmt.setString(1, tag);
+					try (ResultSet rs = pstmt.executeQuery()) {
+						if (rs.next()) {
+							String rolestring = rs.getString("clan_role");
+							role = rolestring.equals("leader") ? RoleType.LEADER
+									: rolestring.equals("coleader") ? RoleType.COLEADER
+											: rolestring.equals("elder") ? RoleType.ELDER
+													: rolestring.equals("member") ? RoleType.MEMBER : null;
+						}
 					}
+				} catch (SQLException e) {
+					e.printStackTrace();
 				}
-			} catch (SQLException e) {
-				e.printStackTrace();
 			}
 		}
 		return role;
@@ -339,6 +350,22 @@ public class Player {
 			}
 		}
 		return PathofLegendTrophies;
+	}
+
+	public Boolean isMarked() {
+		if (mark == null) {
+			if (getClanDB() != null) {
+				Boolean marked = DBUtil.getValueFromSQL("SELECT marked FROM clan_members WHERE player_tag = ?",
+						Boolean.class, tag);
+				if (marked == null) {
+					DBUtil.executeUpdate("UPDATE clan_members SET marked = FALSE WHERE player_tag = ?", tag);
+					mark = false;
+				} else {
+					mark = marked;
+				}
+			}
+		}
+		return mark;
 	}
 
 }

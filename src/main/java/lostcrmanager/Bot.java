@@ -23,6 +23,7 @@ import commands.memberlist.editmember;
 import commands.memberlist.listmembers;
 import commands.memberlist.memberstatus;
 import commands.memberlist.removemember;
+import commands.memberlist.togglemark;
 import commands.memberlist.transfermember;
 import commands.util.leaguetrophylist;
 import datautil.DBUtil;
@@ -56,7 +57,7 @@ public class Bot extends ListenerAdapter {
 	public static String seasonstringfallback;
 
 	public static void main(String[] args) throws Exception {
-		VERSION = "1.2.1";
+		VERSION = "1.2.2";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
@@ -82,7 +83,7 @@ public class Bot extends ListenerAdapter {
 						new removemember(), new listmembers(), new editmember(), new playerinfo(), new memberstatus(),
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
-						new leaguetrophylist(), new transfermember())
+						new leaguetrophylist(), new transfermember(), new togglemark())
 				.build();
 	}
 
@@ -113,6 +114,9 @@ public class Bot extends ListenerAdapter {
 					Commands.slash("removemember", "Entferne einen Spieler aus seinem Clan.")
 							.addOptions(new OptionData(OptionType.STRING, "player",
 									"Der Spieler, welcher entfernt werden soll", true).setAutoComplete(true)),
+					Commands.slash("togglemark", "Schaltet die Markierung eines Spielers in einem Clan an/aus.")
+							.addOptions(new OptionData(OptionType.STRING, "player",
+									"Der Spieler, welcher markiert/entmarkiert werden soll", true).setAutoComplete(true)),
 					Commands.slash("listmembers", "Liste aller Spieler in einem Clan.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, welcher ausgegeben werden soll.", true).setAutoComplete(true)),
