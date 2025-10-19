@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 public class MessageUtil {
 
 	public enum EmbedType {
-		INFO, SUCCESS, ERROR
+		INFO, SUCCESS, ERROR, LOADING
 	}
 
 	public static String footer = "CR Manager | Made by Pixel | v" + Bot.VERSION;
@@ -33,6 +33,9 @@ public class MessageUtil {
 			break;
 		case ERROR:
 			embedreply.setColor(Color.RED);
+			break;
+		case LOADING:
+			embedreply.setColor(Color.MAGENTA);
 			break;
 		}
 		return embedreply.build();

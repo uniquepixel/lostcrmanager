@@ -23,7 +23,7 @@ public class DBManager {
 	}
 
 	public static ArrayList<String> getAllClans() {
-		return DBUtil.getArrayListFromSQL("SELECT tag FROM clans", String.class);
+		return DBUtil.getArrayListFromSQL("SELECT tag FROM clans ORDER BY index ASC", String.class);
 	}
 
 	public static List<Command.Choice> getKPReasonsAutocomplete(String input, String clantag) {

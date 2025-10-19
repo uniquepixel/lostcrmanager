@@ -57,7 +57,7 @@ public class Bot extends ListenerAdapter {
 	public static String seasonstringfallback;
 
 	public static void main(String[] args) throws Exception {
-		VERSION = "1.2.2";
+		VERSION = "1.2.3";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
@@ -90,7 +90,6 @@ public class Bot extends ListenerAdapter {
 	public static void registerCommands(JDA jda, String guildId) {
 		Guild guild = jda.getGuildById(guildId);
 		if (guild != null) {
-			guild.updateCommands().addCommands().queue();
 			guild.updateCommands().addCommands(
 					Commands.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User oder einer UserID.")
 							.addOption(OptionType.STRING, "tag", "Der Tag des Clash Royale Accounts", true)
@@ -191,7 +190,7 @@ public class Bot extends ListenerAdapter {
 	@Override
 	public void onReady(ReadyEvent event) {
 		setJda(event.getJDA());
-		// registerCommands(event.getJDA(), guild_id);
+		registerCommands(event.getJDA(), guild_id);
 	}
 
 	@Override
