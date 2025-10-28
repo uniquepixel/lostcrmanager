@@ -121,6 +121,7 @@ public class kpclan extends ListenerAdapter {
 
 		if (focused.equals("clan")) {
 			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
+			choices.add(new Command.Choice("Alle Clans", "all"));
 
 			event.replyChoices(choices).queue();
 		}
@@ -142,7 +143,7 @@ public class kpclan extends ListenerAdapter {
 				.queue();
 		String descr;
 		ArrayList<Player> playerlist = new ArrayList<>();
-		
+
 		if (clantag.equals("all")) {
 			for (String clantags : DBManager.getAllClans()) {
 				if (!clantags.equals("warteliste"))
@@ -162,7 +163,6 @@ public class kpclan extends ListenerAdapter {
 			descr = "### Kickpunkte aller Spieler des Clans " + c.getInfoString() + ":\n";
 		}
 
-		
 		HashMap<String, Integer> kpamounts = new HashMap<>();
 
 		new Thread(new Runnable() {
