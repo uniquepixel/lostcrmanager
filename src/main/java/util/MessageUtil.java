@@ -1,6 +1,7 @@
 package util;
 
 import java.awt.Color;
+import java.util.regex.Matcher;
 
 import lostcrmanager.Bot;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -16,14 +17,19 @@ public class MessageUtil {
 
 	public static String footer = "CR Manager | Made by Pixel | v" + Bot.VERSION;
 
-	public static MessageEmbed buildEmbed(String title, String description, EmbedType type, Field... fields) {
+	public static MessageEmbed buildEmbed(String title, String description, EmbedType type, String additionalfooter,
+			Field... fields) {
 		EmbedBuilder embedreply = new EmbedBuilder();
 		embedreply.setTitle(title);
 		embedreply.setDescription(description);
 		for (int i = 0; i < fields.length; i++) {
 			embedreply.addField(fields[i]);
 		}
-		embedreply.setFooter(footer);
+		if (footer.equals("")) {
+			embedreply.setFooter(footer);
+		} else {
+			embedreply.setFooter(additionalfooter + "\n\r" + footer);
+		}
 		switch (type) {
 		case INFO:
 			embedreply.setColor(Color.CYAN);
@@ -41,11 +47,18 @@ public class MessageUtil {
 		return embedreply.build();
 	}
 
-	public static String unformat(String s) {
-		return s.replaceAll("_", "\\_").replaceAll("\\*", "\\\\*").replaceAll("~", "\\~").replaceAll("`", "\\`")
-				.replaceAll("\\|", "\\\\|").replaceAll(">", "\\>").replaceAll("-", "\\-").replaceAll("#", "\\#");
+	public static MessageEmbed buildEmbed(String title, String description, EmbedType type, Field... fields) {
+		return buildEmbed(title, description, type, "", fields);
 	}
-	
+
+	public static String unformat(String s) {
+		String a = s.replaceAll("_", Matcher.quoteReplacement("\\_")).replaceAll("\\*", Matcher.quoteReplacement("\\*"))
+				.replaceAll("~", Matcher.quoteReplacement("\\~")).replaceAll("`", Matcher.quoteReplacement("\\`"))
+				.replaceAll("\\|", Matcher.quoteReplacement("\\|")).replaceAll(">", Matcher.quoteReplacement("\\>"))
+				.replaceAll("-", Matcher.quoteReplacement("\\-")).replaceAll("#", Matcher.quoteReplacement("\\#"));
+		return a;
+	}
+
 	public static void sendUserPingHidden(MessageChannelUnion channel, String uuid) {
 		channel.sendMessage(".").queue(sentMessage -> {
 			new Thread(() -> {

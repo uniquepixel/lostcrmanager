@@ -31,12 +31,14 @@ public class Player {
 	private User user;
 	private Clan clandb;
 	private Clan clanapi;
+	private String clantagcwdone;
+	private Integer cwfame;
 	private Integer PathofLegendLeagueNumber;
 	private Integer trophies;
 	private Integer strtrophies;
 	private Integer PathofLegendTrophies;
 	private ArrayList<Kickpoint> kickpoints;
-	private Integer kickpointstotal;
+	private Long kickpointstotal;
 	private RoleType role;
 	private Boolean mark;
 
@@ -54,6 +56,8 @@ public class Player {
 		kickpoints = null;
 		kickpointstotal = null;
 		role = null;
+		clantagcwdone = null;
+		cwfame = null;
 		PathofLegendLeagueNumber = null;
 		trophies = null;
 		strtrophies = null;
@@ -92,7 +96,7 @@ public class Player {
 		return this;
 	}
 
-	public Player setKickpointsTotal(Integer kptotal) {
+	public Player setKickpointsTotal(Long kptotal) {
 		this.kickpointstotal = kptotal;
 		return this;
 	}
@@ -106,7 +110,17 @@ public class Player {
 		this.mark = mark;
 		return this;
 	}
+	
+	public Player setCWFame(Integer fame) {
+		this.cwfame = fame;
+		return this;
+	}
 
+	public Player setClantagCWDone(String tag) {
+		this.clantagcwdone = tag;
+		return this;
+	}
+	
 	public boolean IsLinked() {
 		String sql = "SELECT 1 FROM players WHERE cr_tag = ?";
 		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
@@ -228,14 +242,17 @@ public class Player {
 		return kickpoints;
 	}
 
-	public int getTotalKickpoints() {
+	public long getTotalKickpoints() {
 		if (kickpointstotal == null) {
 			ArrayList<Kickpoint> a = new ArrayList<>();
 			String sql = "SELECT id FROM kickpoints WHERE player_tag = ?";
-			for (Integer id : DBUtil.getArrayListFromSQL(sql, Integer.class, tag)) {
+			for (Long id : DBUtil.getArrayListFromSQL(sql, Long.class, tag)) {
 				a.add(new Kickpoint(id));
 			}
-			kickpointstotal = a.size();
+			kickpointstotal = 0L;
+			for (Kickpoint kp : a) {
+				kickpointstotal = kickpointstotal + kp.getAmount();
+			}
 		}
 		return kickpointstotal;
 	}
@@ -245,8 +262,9 @@ public class Player {
 			if (new Player(tag).getClanDB() == null) {
 				return null;
 			}
-			if (getUser().isAdmin()) {
-				role = RoleType.ADMIN;
+			if (getUser() != null) {
+				if (getUser().isAdmin())
+					role = RoleType.ADMIN;
 			} else {
 				String sql = "SELECT clan_role FROM clan_members WHERE player_tag = ?";
 				try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
@@ -366,6 +384,31 @@ public class Player {
 			}
 		}
 		return mark;
+	}
+	
+	public Integer getCWFame() {
+		if(cwfame == null) {
+			if(getClanAPI() != null) {
+				Clan c = getClanAPI();
+				ArrayList<Player> cwfamelist = c.getCWFamePlayerList();
+				for(Player t : cwfamelist) {
+					if(t.getTag().equals(tag)) {
+						cwfame = t.getCWFame();
+						clantagcwdone = t.getClantagCWDone();
+						break;
+					}
+				}
+			}
+		}
+		return cwfame;
+	}
+	
+	public String getClantagCWDone() {
+		if(clantagcwdone == null) {
+			//same logic here
+			getCWFame();
+		}
+		return clantagcwdone;
 	}
 
 }

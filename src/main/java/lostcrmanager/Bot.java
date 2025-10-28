@@ -25,6 +25,7 @@ import commands.memberlist.memberstatus;
 import commands.memberlist.removemember;
 import commands.memberlist.togglemark;
 import commands.memberlist.transfermember;
+import commands.util.cwfails;
 import commands.util.leaguetrophylist;
 import datautil.DBUtil;
 import datawrapper.Player;
@@ -57,7 +58,7 @@ public class Bot extends ListenerAdapter {
 	public static String seasonstringfallback;
 
 	public static void main(String[] args) throws Exception {
-		VERSION = "1.2.3";
+		VERSION = "1.2.4";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
@@ -83,20 +84,19 @@ public class Bot extends ListenerAdapter {
 						new removemember(), new listmembers(), new editmember(), new playerinfo(), new memberstatus(),
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
-						new leaguetrophylist(), new transfermember(), new togglemark())
+						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails())
 				.build();
 	}
 
 	public static void registerCommands(JDA jda, String guildId) {
 		Guild guild = jda.getGuildById(guildId);
 		if (guild != null) {
-			guild.updateCommands().addCommands(
-					Commands.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User oder einer UserID.")
-							.addOption(OptionType.STRING, "tag", "Der Tag des Clash Royale Accounts", true)
-							.addOption(OptionType.MENTIONABLE, "user",
-									"Der User, mit dem der Account verlinkt werden soll.")
-							.addOption(OptionType.STRING, "userid",
-									"Die ID des Users, mit dem der Account verlinkt werden soll."),
+			guild.updateCommands().addCommands(Commands
+					.slash("link", "Verlinke einen Clash Royale Account mit einem Discord User oder einer UserID.")
+					.addOption(OptionType.STRING, "tag", "Der Tag des Clash Royale Accounts", true)
+					.addOption(OptionType.MENTIONABLE, "user", "Der User, mit dem der Account verlinkt werden soll.")
+					.addOption(OptionType.STRING, "userid",
+							"Die ID des Users, mit dem der Account verlinkt werden soll."),
 					Commands.slash("unlink", "Lösche eine Verlinkung eines Clash Royale Accounts.")
 							.addOptions(new OptionData(OptionType.STRING, "tag",
 									"Der Spieler, wessen Verknüpfung entfernt werden soll", true)
@@ -115,7 +115,8 @@ public class Bot extends ListenerAdapter {
 									"Der Spieler, welcher entfernt werden soll", true).setAutoComplete(true)),
 					Commands.slash("togglemark", "Schaltet die Markierung eines Spielers in einem Clan an/aus.")
 							.addOptions(new OptionData(OptionType.STRING, "player",
-									"Der Spieler, welcher markiert/entmarkiert werden soll", true).setAutoComplete(true)),
+									"Der Spieler, welcher markiert/entmarkiert werden soll", true)
+									.setAutoComplete(true)),
 					Commands.slash("listmembers", "Liste aller Spieler in einem Clan.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, welcher ausgegeben werden soll.", true).setAutoComplete(true)),
@@ -182,6 +183,15 @@ public class Bot extends ListenerAdapter {
 									"Der Spieler, welcher transferiert werden soll", true).setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, zu welchem der Spieler hinzugefügt werden soll", true)
+									.setAutoComplete(true)),
+					Commands.slash("cwfails",
+							"Überprüfe einen Clan auf CW-Punkte mit einer Hürde, die zu überwinden gilt.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "threshold",
+									"Die Hürde, welche jeder Spieler überwunden haben sollte", true))
+							.addOptions(new OptionData(OptionType.STRING, "kpreason",
+									"(Optional) Der Kickpunkt-Grund für jeden Spieler, der die Hürde nicht erreicht hat.")
 									.setAutoComplete(true)))
 					.queue();
 		}

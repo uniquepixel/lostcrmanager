@@ -388,7 +388,7 @@ public class leaguetrophylist extends ListenerAdapter {
 			public int compare(Player p1, Player p2) {
 
 				hook.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Lade Spieler von der API und sortiere ihn in die Liste... (Sortiervorgang #" + i + ")",
+						"Lade Spieler von der API und sortiere sie in die Liste... (Sortiervorgang #" + i + ")",
 						MessageUtil.EmbedType.LOADING)).queue();
 				i++;
 				int league1 = p1.getPoLLeagueNumber() != null ? p1.getPoLLeagueNumber() : 0;
