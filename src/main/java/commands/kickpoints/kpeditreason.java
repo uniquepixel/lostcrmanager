@@ -83,7 +83,7 @@ public class kpeditreason extends ListenerAdapter {
 
 		String desc = "Der Kickpunkt-Grund wurde bearbeitet.\n";
 		desc += "Grund: " + reason + "\n";
-		desc += "Clan: " + clan.getInfoString() + "\n";
+		desc += "Clan: " + clan.getInfoStringDB() + "\n";
 		desc += "Anzahl: " + amount + "\n";
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();

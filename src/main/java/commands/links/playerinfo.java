@@ -78,16 +78,16 @@ public class playerinfo extends ListenerAdapter {
 			}
 			desc += "Verlinkter Discord Account: <@" + userid + ">\n";
 			if (player.getClanDB() != null) {
-				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoString();
-				if(player.isMarked()) {
-					desc+= " (✗)";
+				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoStringDB();
+				if (player.isMarked()) {
+					desc += " (✗)";
 				}
 				desc += "\n";
 			} else {
 				desc += "Eingetragen in Clan: ---\n";
 			}
 			if (player.getClanAPI() != null) {
-				desc += "Ingame in Clan: " + player.getClanAPI().getInfoString() + "\n";
+				desc += "Ingame in Clan: " + player.getClanAPI().getInfoStringAPI() + "\n";
 			} else {
 				desc += "Ingame in Clan: ---\n";
 			}

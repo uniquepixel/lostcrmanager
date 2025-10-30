@@ -78,7 +78,7 @@ public class kpremovereason extends ListenerAdapter {
 
 		String desc = "Der Kickpunkt-Grund wurde als Vorlage gelöscht.\n";
 		desc += "Grund: " + reason + "\n";
-		desc += "Clan: " + clan.getInfoString() + "\n";
+		desc += "Clan: " + clan.getInfoStringDB() + "\n";
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
 

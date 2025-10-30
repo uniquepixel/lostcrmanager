@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ public class kpmember extends ListenerAdapter {
 
 		ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
-		String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoString()) + " in " + c.getInfoString()
+		String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoString()) + " in " + c.getInfoStringDB()
 				+ ":\n";
 		if (activekps.size() > 0) {
 			int totalkps = 0;
@@ -129,9 +130,9 @@ public class kpmember extends ListenerAdapter {
 		desc += "" + kptotal;
 		Button refreshButton = Button.secondary("kpmember_" + playertag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-		LocalDateTime jetzt = LocalDateTime.now();
+		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.atZone(ZoneId.of("Europe/Berlin")).format(formatter);
+		String formatiert = jetzt.format(formatter);
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
 				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
@@ -201,7 +202,7 @@ public class kpmember extends ListenerAdapter {
 				ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
 				String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoString()) + " in "
-						+ c.getInfoString() + ":\n";
+						+ c.getInfoStringDB() + ":\n";
 				if (activekps.size() > 0) {
 					int totalkps = 0;
 					for (Kickpoint kpi : activekps) {

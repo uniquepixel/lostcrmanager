@@ -103,7 +103,7 @@ public class editmember extends ListenerAdapter {
 						: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
 		String desc = null;
 		try {
-			desc = "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " im Clan " + c.getInfoString()
+			desc = "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " im Clan " + c.getInfoStringDB()
 					+ " ist nun " + rolestring + ".";
 		} catch (Exception e) {
 			e.printStackTrace();

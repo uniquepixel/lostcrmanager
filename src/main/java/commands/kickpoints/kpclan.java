@@ -2,6 +2,7 @@ package commands.kickpoints;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +73,7 @@ public class kpclan extends ListenerAdapter {
 				return;
 			}
 			playerlist.addAll(c.getPlayersDB());
-			desc = "### Kickpunkte aller Spieler des Clans " + c.getInfoString() + ":\n";
+			desc = "### Kickpunkte aller Spieler des Clans " + c.getInfoStringDB() + ":\n";
 		}
 
 		HashMap<String, Integer> kpamounts = new HashMap<>();
@@ -99,9 +100,9 @@ public class kpclan extends ListenerAdapter {
 			desc += key + ": " + sorted.get(key) + " " + kp + "\n\n";
 		}
 
-		LocalDateTime jetzt = LocalDateTime.now();
+		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.atZone(ZoneId.of("Europe/Berlin")).format(formatter);
+		String formatiert = jetzt.format(formatter);
 
 		event.getHook()
 				.editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
@@ -160,7 +161,7 @@ public class kpclan extends ListenerAdapter {
 				return;
 			}
 			playerlist.addAll(c.getPlayersDB());
-			descr = "### Kickpunkte aller Spieler des Clans " + c.getInfoString() + ":\n";
+			descr = "### Kickpunkte aller Spieler des Clans " + c.getInfoStringDB() + ":\n";
 		}
 
 		HashMap<String, Integer> kpamounts = new HashMap<>();

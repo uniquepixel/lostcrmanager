@@ -68,7 +68,15 @@ public class Clan {
 		return null;
 	}
 
-	public String getInfoString() {
+	public String getInfoStringAPI() {
+		if (!clan_tag.equals("warteliste")) {
+			return getNameAPI() + " (" + clan_tag + ")";
+		} else {
+			return getNameAPI();
+		}
+	}
+	
+	public String getInfoStringDB() {
 		if (!clan_tag.equals("warteliste")) {
 			return getNameDB() + " (" + clan_tag + ")";
 		} else {

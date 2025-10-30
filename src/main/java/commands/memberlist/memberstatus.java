@@ -80,7 +80,7 @@ public class memberstatus  extends ListenerAdapter {
 		}
 		
 
-		String desc = "## " + c.getInfoString() + "\n";
+		String desc = "## " + c.getInfoStringDB() + "\n";
 		
 		desc += "**Mitglied, ingame nicht im Clan:**\n\n";
 		desc += membernotinclanstr == "" ? "---\n\n" : MessageUtil.unformat(membernotinclanstr) + "\n";

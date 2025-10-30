@@ -110,7 +110,7 @@ public class Player {
 		this.mark = mark;
 		return this;
 	}
-	
+
 	public Player setCWFame(Integer fame) {
 		this.cwfame = fame;
 		return this;
@@ -120,7 +120,7 @@ public class Player {
 		this.clantagcwdone = tag;
 		return this;
 	}
-	
+
 	public boolean IsLinked() {
 		String sql = "SELECT 1 FROM players WHERE cr_tag = ?";
 		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
@@ -262,10 +262,14 @@ public class Player {
 			if (new Player(tag).getClanDB() == null) {
 				return null;
 			}
+			boolean b = true;
 			if (getUser() != null) {
-				if (getUser().isAdmin())
+				if (getUser().isAdmin()) {
 					role = RoleType.ADMIN;
-			} else {
+					b = false;
+				}
+			}
+			if (b) {
 				String sql = "SELECT clan_role FROM clan_members WHERE player_tag = ?";
 				try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
 					pstmt.setString(1, tag);
@@ -385,14 +389,14 @@ public class Player {
 		}
 		return mark;
 	}
-	
+
 	public Integer getCWFame() {
-		if(cwfame == null) {
-			if(getClanAPI() != null) {
+		if (cwfame == null) {
+			if (getClanAPI() != null) {
 				Clan c = getClanAPI();
 				ArrayList<Player> cwfamelist = c.getCWFamePlayerList();
-				for(Player t : cwfamelist) {
-					if(t.getTag().equals(tag)) {
+				for (Player t : cwfamelist) {
+					if (t.getTag().equals(tag)) {
 						cwfame = t.getCWFame();
 						clantagcwdone = t.getClantagCWDone();
 						break;
@@ -402,10 +406,10 @@ public class Player {
 		}
 		return cwfame;
 	}
-	
+
 	public String getClantagCWDone() {
-		if(clantagcwdone == null) {
-			//same logic here
+		if (clantagcwdone == null) {
+			// same logic here
 			getCWFame();
 		}
 		return clantagcwdone;

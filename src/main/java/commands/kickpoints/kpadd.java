@@ -180,7 +180,7 @@ public class kpadd extends ListenerAdapter {
 			
 			String desc = "### Der Kickpunkt wurde hinzugefügt.\n";
 			desc += "Spieler: " + MessageUtil.unformat(p.getInfoString()) + "\n";
-			desc += "Clan: " + c.getInfoString() + "\n";
+			desc += "Clan: " + c.getInfoStringDB() + "\n";
 			desc += "Anzahl: " + amount + "\n";
 			desc += "Grund: " + reason + "\n";
 			desc += "ID: " + id + "\n";

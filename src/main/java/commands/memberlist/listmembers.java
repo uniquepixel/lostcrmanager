@@ -39,15 +39,30 @@ public class listmembers extends ListenerAdapter {
 		ArrayList<Player> playerlist = c.getPlayersDB();
 
 		playerlist.sort(Comparator
-	            .comparing(Player::isMarked).reversed()
-	            .thenComparing(Player::getNameDB));
+			    .comparing(Player::isMarked).reversed()
+			    .thenComparing((p1, p2) -> {
+			        String name1 = p1.getNameDB() != null ? p1.getNameDB() : p1.getNameAPI();
+			        String name2 = p2.getNameDB() != null ? p2.getNameDB() : p2.getNameAPI();
+			        if (name1 == null && name2 == null) return 0;
+			        if (name1 == null) return 1; // nulls last
+			        if (name2 == null) return -1;
+			        return name1.compareTo(name2);
+			    }));
 
+		String adminlist = "";
 		String leaderlist = "";
 		String coleaderlist = "";
 		String elderlist = "";
 		String memberlist = "";
 
 		for (Player p : playerlist) {
+			if (p.getRole() == Player.RoleType.ADMIN) {
+				adminlist += p.getInfoString();
+				if(p.isMarked()) {
+					adminlist += " (✗)";
+				}
+				adminlist += "\n";
+			}
 			if (p.getRole() == Player.RoleType.LEADER) {
 				leaderlist += p.getInfoString();
 				if(p.isMarked()) {
@@ -77,8 +92,10 @@ public class listmembers extends ListenerAdapter {
 				memberlist += "\n";
 			}
 		}
-		String desc = "## " + c.getInfoString() + "\n";
+		String desc = "## " + c.getInfoStringDB() + "\n";
 		if (!clantag.equals("warteliste")) {
+			desc += "**Admin:**\n";
+			desc += adminlist == "" ? "---\n\n" : MessageUtil.unformat(adminlist) + "\n";
 			desc += "**Anführer:**\n";
 			desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
 			desc += "**Vize-Anführer:**\n";

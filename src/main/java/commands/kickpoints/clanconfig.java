@@ -123,7 +123,7 @@ public class clanconfig extends ListenerAdapter {
 			}
 
 			String desc = "### Die Clan-Settings wurden bearbeitet.\n";
-			desc += "Clan: " + c.getInfoString() + "\n";
+			desc += "Clan: " + c.getInfoStringDB() + "\n";
 			desc += "Gültigkeitsdauer von Kickpunkten: " + c.getDaysKickpointsExpireAfter() + " Tage\n";
 			desc += "Maximale Anzahl an Kickpunkten: " + c.getMaxKickpoints() + "\n";
 

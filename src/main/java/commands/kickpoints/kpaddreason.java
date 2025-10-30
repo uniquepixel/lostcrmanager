@@ -80,7 +80,7 @@ public class kpaddreason extends ListenerAdapter {
 
 		String desc = "Der Kickpunkt-Grund wurde als Vorlage hinzugefügt.\n";
 		desc += "Grund: " + reason + "\n";
-		desc += "Clan: " + clan.getInfoString() + "\n";
+		desc += "Clan: " + clan.getInfoStringDB() + "\n";
 		desc += "Anzahl: " + amount;
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();

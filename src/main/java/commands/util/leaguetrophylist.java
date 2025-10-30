@@ -75,7 +75,7 @@ public class leaguetrophylist extends ListenerAdapter {
 						.queue();
 				return;
 			}
-			desc = "Hier eine Liste aller Mitglieder des Clans " + c.getInfoString()
+			desc = "Hier eine Liste aller Mitglieder des Clans " + c.getInfoStringDB()
 					+ " sortiert nach LeagueNumber bzw. Trophies.";
 			break;
 		}
@@ -158,9 +158,9 @@ public class leaguetrophylist extends ListenerAdapter {
 				for (String tags : clans) {
 					Clan c = new Clan(tags);
 					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Konstruire Clan " + c.getInfoString() + " in der Datei...", MessageUtil.EmbedType.LOADING))
+							"Konstruire Clan " + c.getInfoStringDB() + " in der Datei...", MessageUtil.EmbedType.LOADING))
 							.queue();
-					content += c.getInfoString() + "\n\n";
+					content += c.getInfoStringDB() + "\n\n";
 
 					boolean coleadersexist = false;
 
@@ -293,7 +293,7 @@ public class leaguetrophylist extends ListenerAdapter {
 				for (String key : clans) {
 					if (clantocontentstring.containsKey(key)) {
 						Clan c = new Clan(key);
-						content += "### " + c.getInfoString() + ":\n";
+						content += "### " + c.getInfoStringDB() + ":\n";
 						content += "\n";
 						content += clantocontentstring.get(key);
 						content += "\n";

@@ -129,7 +129,7 @@ public class addmember extends ListenerAdapter {
 		if (!clantag.equals("warteliste")) {
 			try {
 				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " wurde erfolgreich dem Clan "
-						+ new Clan(clantag).getInfoString() + " als " + rolestring + " hinzugefügt.";
+						+ new Clan(clantag).getInfoStringDB() + " als " + rolestring + " hinzugefügt.";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
