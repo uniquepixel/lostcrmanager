@@ -560,7 +560,7 @@ public class leaguetrophylist extends ListenerAdapter {
 				folder.mkdirs();
 			}
 			long millis = java.time.ZonedDateTime.now(ZoneId.of("Europe/Berlin")).toInstant().toEpochMilli();
-
+			
 			File file = new File(folder, "Liste_" + millis + ".txt");
 
 			// FileOutputStream zum Schreiben in die Datei
