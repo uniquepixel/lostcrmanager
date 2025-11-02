@@ -1,8 +1,12 @@
 package lostcrmanager;
 
+import java.io.File;
+import java.time.ZonedDateTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import commands.admin.restart;
 import commands.kickpoints.clanconfig;
@@ -58,7 +62,7 @@ public class Bot extends ListenerAdapter {
 	public static String seasonstringfallback;
 
 	public static void main(String[] args) throws Exception {
-		VERSION = "1.2.4";
+		VERSION = "1.2.5";
 		guild_id = System.getenv("CR_MANAGER_GUILD_ID");
 		api_key = System.getenv("CR_MANAGER_API_KEY");
 		url = System.getenv("CR_MANAGER_DB_URL");
@@ -76,6 +80,7 @@ public class Bot extends ListenerAdapter {
 
 		datautil.Connection.tablesExists();
 		startNameUpdates();
+		startLoadingLists();
 
 		JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MEMBERS)
 				.setMemberCachePolicy(MemberCachePolicy.ALL).setChunkingFilter(ChunkingFilter.ALL)
@@ -176,8 +181,8 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, welcher bearbeitet werden soll.", true).setAutoComplete(true)),
 					Commands.slash("leaguetrophylist", "Sortierte Rangliste.")
-							.addOptions(new OptionData(OptionType.STRING, "clan",
-									"Der/Die Clan(s), welche ausgegeben werden.", true).setAutoComplete(true)),
+							.addOptions(new OptionData(OptionType.STRING, "timestamp",
+									"Der Zeitpunkt der gespeicherten Liste", true).setAutoComplete(true)),
 					Commands.slash("transfermember", "Transferiere einen Spieler in einen anderen Clan.")
 							.addOptions(new OptionData(OptionType.STRING, "player",
 									"Der Spieler, welcher transferiert werden soll", true).setAutoComplete(true))
@@ -216,10 +221,49 @@ public class Bot extends ListenerAdapter {
 		return jda;
 	}
 
+	public static void startLoadingLists() {
+		System.out.println("Jede Stunde wird nun die Leaguetrophylist erstellt. " + System.currentTimeMillis());
+		Runnable task = () -> {
+			Thread thread = new Thread(() -> {
+				File folder = new File(leaguetrophylist.getRunningJarDirectory(), "CRManager_ListFiles");
+				Pattern pattern = Pattern.compile("Liste_(\\d+)\\.txt");
+
+				ZonedDateTime twoMonthsAgo = ZonedDateTime.now().minusMonths(2);
+				long twoMonthsAgoMillis = twoMonthsAgo.toInstant().toEpochMilli();
+
+				if (folder.exists() && folder.isDirectory()) {
+					File[] files = folder.listFiles();
+					if (files != null) {
+						for (File file : files) {
+							Matcher matcher = pattern.matcher(file.getName());
+							if (matcher.matches()) {
+								long millis = Long.parseLong(matcher.group(1));
+								if (millis < twoMonthsAgoMillis) {
+									boolean deleted = file.delete();
+									if (deleted) {
+										System.out.println("Gelöscht: " + file.getName());
+									} else {
+										System.err.println("Konnte nicht löschen: " + file.getName());
+									}
+								}
+							}
+						}
+					}
+				} else {
+					System.out.println("Der Ordner existiert nicht oder ist kein Verzeichnis");
+				}
+				leaguetrophylist.saveNewList();
+
+			});
+			thread.start();
+		};
+		scheduler.scheduleAtFixedRate(task, 0, 1, TimeUnit.HOURS);
+	}
+
 	public static void startNameUpdates() {
-		Thread thread = new Thread(() -> {
-			Runnable task = () -> {
-				System.out.println("Alle 2h werden nun die Namen aktualisiert. " + System.currentTimeMillis());
+		System.out.println("Alle 2h werden nun die Namen aktualisiert. " + System.currentTimeMillis());
+		Runnable task = () -> {
+			Thread thread = new Thread(() -> {
 
 				String sql = "SELECT cr_tag FROM players";
 				for (String tag : DBUtil.getArrayListFromSQL(sql, String.class)) {
@@ -232,10 +276,10 @@ public class Bot extends ListenerAdapter {
 					}
 				}
 
-			};
-			scheduler.scheduleAtFixedRate(task, 0, 2, TimeUnit.HOURS);
-		});
-		thread.start();
+			});
+			thread.start();
+		};
+		scheduler.scheduleAtFixedRate(task, 0, 2, TimeUnit.HOURS);
 	}
 
 	public void stopScheduler() {
