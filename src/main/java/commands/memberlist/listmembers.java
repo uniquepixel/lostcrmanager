@@ -148,7 +148,7 @@ public class listmembers extends ListenerAdapter {
 	@Override
 	public void onButtonInteraction(ButtonInteractionEvent event) {
 		String id = event.getComponentId();
-		if (!id.startsWith("kpmember_"))
+		if (!id.startsWith("listmembers_"))
 			return;
 
 		event.deferEdit().queue();

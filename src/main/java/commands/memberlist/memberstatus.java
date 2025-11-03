@@ -130,7 +130,7 @@ public class memberstatus extends ListenerAdapter {
 	@Override
 	public void onButtonInteraction(ButtonInteractionEvent event) {
 		String id = event.getComponentId();
-		if (!id.startsWith("kpmember_"))
+		if (!id.startsWith("memberstatus_"))
 			return;
 
 		event.deferEdit().queue();
