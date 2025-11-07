@@ -70,8 +70,8 @@ public class kpmember extends ListenerAdapter {
 
 		ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
-		String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoString()) + " in " + c.getInfoStringDB()
-				+ ":\n";
+		String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoStringDB()) + " in "
+				+ c.getInfoStringDB() + ":\n";
 		if (activekps.size() > 0) {
 			int totalkps = 0;
 			for (Kickpoint kpi : activekps) {
@@ -200,7 +200,7 @@ public class kpmember extends ListenerAdapter {
 
 				ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
-				String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoString()) + " in "
+				String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoStringDB()) + " in "
 						+ c.getInfoStringDB() + ":\n";
 				if (activekps.size() > 0) {
 					int totalkps = 0;

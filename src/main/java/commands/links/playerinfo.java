@@ -72,7 +72,7 @@ public class playerinfo extends ListenerAdapter {
 
 		if (conv == ConvertionType.ACCTOUSER) {
 			try {
-				desc += "## " + MessageUtil.unformat(player.getInfoString()) + "\n";
+				desc += "## " + MessageUtil.unformat(player.getInfoStringDB()) + "\n";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -109,7 +109,7 @@ public class playerinfo extends ListenerAdapter {
 			} else {
 				desc += "Verlinkte Accounts: \n";
 				for (Player p : linkedaccs) {
-					desc += "   \\- " + MessageUtil.unformat(p.getInfoString()) + "\n";
+					desc += "   \\- " + MessageUtil.unformat(p.getInfoStringDB()) + "\n";
 				}
 			}
 		}

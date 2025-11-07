@@ -107,7 +107,7 @@ public class kpadd extends ListenerAdapter {
 					.setMinLength(1).build();
 		}
 		TextInput dateti = TextInput.create("date", "Datum", TextInputStyle.SHORT).setPlaceholder("z.B. 31.01.2025")
-				.setMinLength(1).build();
+				.setValue(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).setMinLength(1).build();
 
 		TextInput playertagti = TextInput.create("tag", "Spieler-Tag", TextInputStyle.SHORT)
 				.setPlaceholder("z.B. #Y0RYLP0Q").setValue(playertag).setMinLength(1).build();
@@ -173,13 +173,13 @@ public class kpadd extends ListenerAdapter {
 			String userid = event.getUser().getId();
 
 			int id = DBManager.getAvailableKPID();
-			
+
 			DBUtil.executeUpdate(
 					"INSERT INTO kickpoints (id, player_tag, date, amount, description, created_by_discord_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 					id, playertag, timestampcreated, amount, reason, userid, timestampnow, timestampexpires);
-			
+
 			String desc = "### Der Kickpunkt wurde hinzugefügt.\n";
-			desc += "Spieler: " + MessageUtil.unformat(p.getInfoString()) + "\n";
+			desc += "Spieler: " + MessageUtil.unformat(p.getInfoStringDB()) + "\n";
 			desc += "Clan: " + c.getInfoStringDB() + "\n";
 			desc += "Anzahl: " + amount + "\n";
 			desc += "Grund: " + reason + "\n";
@@ -229,18 +229,20 @@ public class kpadd extends ListenerAdapter {
 			event.replyChoices(choices).queue();
 		}
 	}
-	
-	public static int addKPtoDB(String playertag, Timestamp timestampcreated, KickpointReason kpreason, String created_by_userid) {
+
+	public static int addKPtoDB(String playertag, Timestamp timestampcreated, KickpointReason kpreason,
+			String created_by_userid) {
 		int id = DBManager.getAvailableKPID();
 		Player p = new Player(playertag);
 		Clan c = p.getClanDB();
-		Timestamp timestampexpires = Timestamp.valueOf(timestampcreated.toLocalDateTime().plusDays(c.getDaysKickpointsExpireAfter()));
+		Timestamp timestampexpires = Timestamp
+				.valueOf(timestampcreated.toLocalDateTime().plusDays(c.getDaysKickpointsExpireAfter()));
 		Timestamp timestampnow = Timestamp.from(Instant.now());
-		
+
 		int amount = kpreason.getAmount();
-		
+
 		String reason = kpreason.getReason();
-		
+
 		DBUtil.executeUpdate(
 				"INSERT INTO kickpoints (id, player_tag, date, amount, description, created_by_discord_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 				id, playertag, timestampcreated, amount, reason, created_by_userid, timestampnow, timestampexpires);

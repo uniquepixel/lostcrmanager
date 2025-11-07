@@ -228,7 +228,7 @@ public class DBManager {
 					String tag = rs.getString("tag");
 					String clanName = rs.getString("clan_name");
 
-					String display = new Player(tag).getInfoString();
+					String display = new Player(tag).getInfoStringDB();
 
 					list.add(new Triplet<String, String, String>(display, clanName, tag));
 				}

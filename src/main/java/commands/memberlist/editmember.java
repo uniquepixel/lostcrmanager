@@ -54,22 +54,24 @@ public class editmember extends ListenerAdapter {
 			return;
 		}
 
-		if(c.getTag().equals("warteliste")) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+		if (c.getTag().equals("warteliste")) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
-		
+
 		String clantag = c.getTag();
 		User userexecuted = new User(event.getUser().getId());
 		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
 				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
 				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
 			event.getHook()
-			.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
-					MessageUtil.EmbedType.ERROR)).queue();
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
@@ -103,7 +105,7 @@ public class editmember extends ListenerAdapter {
 						: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
 		String desc = null;
 		try {
-			desc = "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " im Clan " + c.getInfoStringDB()
+			desc = "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB()) + " im Clan " + c.getInfoStringDB()
 					+ " ist nun " + rolestring + ".";
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -121,7 +123,8 @@ public class editmember extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("player")) {
-			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteNoWaitlist(input, DBManager.InClanType.INCLAN);
+			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteNoWaitlist(input,
+					DBManager.InClanType.INCLAN);
 
 			event.replyChoices(choices).queue();
 		}

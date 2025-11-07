@@ -85,7 +85,7 @@ public class kpclan extends ListenerAdapter {
 				totalkps += kpi.getAmount();
 			}
 			if (totalkps > 0) {
-				kpamounts.put(p.getInfoString(), totalkps);
+				kpamounts.put(p.getInfoStringDB(), totalkps);
 			}
 		}
 
@@ -179,7 +179,7 @@ public class kpclan extends ListenerAdapter {
 						totalkps += kpi.getAmount();
 					}
 					if (totalkps > 0) {
-						kpamounts.put(p.getInfoString(), totalkps);
+						kpamounts.put(p.getInfoStringDB(), totalkps);
 					}
 				}
 

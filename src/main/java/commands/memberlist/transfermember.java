@@ -138,14 +138,14 @@ public class transfermember extends ListenerAdapter {
 		String desc = "";
 		if (!clantag.equals("warteliste")) {
 			if (!newclantag.equals("warteliste")) {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde vom Clan "
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
 						+ playerclan.getInfoStringDB() + " zum Clan " + newclan.getInfoStringDB() + " verschoben.";
 			} else {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde vom Clan "
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
 						+ playerclan.getInfoStringDB() + " zur Warteliste verschoben.";
 			}
 		} else {
-			desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString())
+			desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
 					+ " wurde von der Warteliste zum Clan " + newclan.getInfoStringDB() + " verschoben.";
 		}
 		String userid = player.getUser().getUserID();

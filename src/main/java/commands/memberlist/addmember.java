@@ -128,14 +128,14 @@ public class addmember extends ListenerAdapter {
 		String desc = "";
 		if (!clantag.equals("warteliste")) {
 			try {
-				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoString()) + " wurde erfolgreich dem Clan "
+				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB()) + " wurde erfolgreich dem Clan "
 						+ new Clan(clantag).getInfoStringDB() + " als " + rolestring + " hinzugefügt.";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
-				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoString())
+				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB())
 						+ " wurde erfolgreich der Warteliste hinzugefügt.";
 			} catch (Exception e) {
 				e.printStackTrace();

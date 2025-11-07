@@ -85,13 +85,13 @@ public class memberstatus extends ListenerAdapter {
 		String membernotinclanstr = "";
 
 		for (Player p : membernotinclan) {
-			membernotinclanstr += p.getInfoString() + "\n";
+			membernotinclanstr += p.getInfoStringDB() + "\n";
 		}
 
 		String inclannotmemberstr = "";
 
 		for (Player p : inclannotmember) {
-			inclannotmemberstr += p.getInfoString() + "\n";
+			inclannotmemberstr += p.getInfoStringAPI() + "\n";
 		}
 
 		String desc = "## " + c.getInfoStringDB() + "\n";
@@ -184,13 +184,13 @@ public class memberstatus extends ListenerAdapter {
 		String membernotinclanstr = "";
 
 		for (Player p : membernotinclan) {
-			membernotinclanstr += p.getInfoString() + "\n";
+			membernotinclanstr += p.getInfoStringDB() + "\n";
 		}
 
 		String inclannotmemberstr = "";
 
 		for (Player p : inclannotmember) {
-			inclannotmemberstr += p.getInfoString() + "\n";
+			inclannotmemberstr += p.getInfoStringAPI() + "\n";
 		}
 
 		String desc = "## " + c.getInfoStringDB() + "\n";

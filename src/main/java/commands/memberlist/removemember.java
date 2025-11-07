@@ -112,14 +112,14 @@ public class removemember extends ListenerAdapter {
 		String desc = "";
 		if (!playerclan.getTag().equals("warteliste")) {
 			try {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString()) + " wurde aus dem Clan "
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde aus dem Clan "
 						+ clanname + " entfernt.";
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoString())
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
 						+ " wurde aus der Warteliste entfernt.";
 			} catch (Exception e) {
 				e.printStackTrace();

@@ -120,7 +120,7 @@ public class cwfails extends ListenerAdapter {
 					if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
 						if (tagtocwfame.get(playertag) < threshold) {
 							if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
-								desc += "**" + p.getInfoString() + "**:\n";
+								desc += "**" + p.getInfoStringDB() + "**:\n";
 								desc += " - Punkte: " + p.getCWFame() + ".\n";
 								if (listempty)
 									listempty = false;
@@ -129,7 +129,7 @@ public class cwfails extends ListenerAdapter {
 							}
 						}
 					} else {
-						desc += "**" + p.getInfoString() + "**:\n";
+						desc += "**" + p.getInfoStringDB() + "**:\n";
 						desc += " - Nicht im Clan gemacht.\n";
 						if (listempty)
 							listempty = false;
@@ -137,7 +137,7 @@ public class cwfails extends ListenerAdapter {
 							playerdonewrong.add(p);
 					}
 				} else {
-					desc += "**" + p.getInfoString() + "**:\n";
+					desc += "**" + p.getInfoStringDB() + "**:\n";
 					desc += " - Nicht im Clan gemacht.\n";
 					if (listempty)
 						listempty = false;
@@ -154,7 +154,7 @@ public class cwfails extends ListenerAdapter {
 					for (Player p : playerdonewrong) {
 						int id = kpadd.addKPtoDB(p.getTag(), Timestamp.from(Instant.now()), kpreasontemp,
 								Bot.getJda().getSelfUser().getId());
-						kpmessagedesc += MessageUtil.unformat(p.getInfoString()) + ":\n";
+						kpmessagedesc += MessageUtil.unformat(p.getInfoStringDB()) + ":\n";
 						kpmessagedesc += " - ID: " + id + "\n";
 					}
 					event.getChannel()

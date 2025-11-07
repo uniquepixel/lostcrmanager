@@ -14,7 +14,7 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import util.MessageUtil;
 
-public class togglemark  extends ListenerAdapter {
+public class togglemark extends ListenerAdapter {
 
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -83,19 +83,19 @@ public class togglemark  extends ListenerAdapter {
 		}
 
 		String desc = "";
-		
+
 		String sql = null;
-		
-		if(player.isMarked()) {
+
+		if (player.isMarked()) {
 			sql = "UPDATE clan_members SET marked = FALSE WHERE player_tag = ?";
-			desc = "Der Spieler " + player.getInfoString() + " ist nun nicht mehr markiert.";
+			desc = "Der Spieler " + player.getInfoStringDB() + " ist nun nicht mehr markiert.";
 		} else {
 			sql = "UPDATE clan_members SET marked = TRUE WHERE player_tag = ?";
-			desc = "Der Spieler " + player.getInfoString() + " ist nun markiert.";
+			desc = "Der Spieler " + player.getInfoStringDB() + " ist nun markiert.";
 		}
-		
+
 		DBUtil.executeUpdate(sql, playertag);
-		
+
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
 
 	}

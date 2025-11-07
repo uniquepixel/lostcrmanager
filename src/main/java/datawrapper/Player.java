@@ -168,9 +168,18 @@ public class Player {
 
 	// all public getter Methods
 
-	public String getInfoString() {
+	public String getInfoStringDB() {
 		try {
 			return getNameDB() + " (" + tag + ")";
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public String getInfoStringAPI() {
+		try {
+			return getNameAPI() + " (" + tag + ")";
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

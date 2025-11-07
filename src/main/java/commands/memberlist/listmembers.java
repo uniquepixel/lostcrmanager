@@ -64,35 +64,35 @@ public class listmembers extends ListenerAdapter {
 
 		for (Player p : playerlist) {
 			if (p.getRole() == Player.RoleType.ADMIN) {
-				adminlist += p.getInfoString();
+				adminlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					adminlist += " (✗)";
 				}
 				adminlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.LEADER) {
-				leaderlist += p.getInfoString();
+				leaderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					leaderlist += " (✗)";
 				}
 				leaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.COLEADER) {
-				coleaderlist += p.getInfoString();
+				coleaderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					coleaderlist += " (✗)";
 				}
 				coleaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.ELDER) {
-				elderlist += p.getInfoString();
+				elderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					elderlist += " (✗)";
 				}
 				elderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.MEMBER) {
-				memberlist += p.getInfoString();
+				memberlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					memberlist += " (✗)";
 				}
@@ -123,7 +123,6 @@ public class listmembers extends ListenerAdapter {
 		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 		String formatiert = jetzt.format(formatter);
-
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
 				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
@@ -179,35 +178,35 @@ public class listmembers extends ListenerAdapter {
 
 		for (Player p : playerlist) {
 			if (p.getRole() == Player.RoleType.ADMIN) {
-				adminlist += p.getInfoString();
+				adminlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					adminlist += " (✗)";
 				}
 				adminlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.LEADER) {
-				leaderlist += p.getInfoString();
+				leaderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					leaderlist += " (✗)";
 				}
 				leaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.COLEADER) {
-				coleaderlist += p.getInfoString();
+				coleaderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					coleaderlist += " (✗)";
 				}
 				coleaderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.ELDER) {
-				elderlist += p.getInfoString();
+				elderlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					elderlist += " (✗)";
 				}
 				elderlist += "\n";
 			}
 			if (p.getRole() == Player.RoleType.MEMBER) {
-				memberlist += p.getInfoString();
+				memberlist += p.getInfoStringDB();
 				if (p.isMarked()) {
 					memberlist += " (✗)";
 				}
@@ -238,7 +237,6 @@ public class listmembers extends ListenerAdapter {
 		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 		String formatiert = jetzt.format(formatter);
-
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
 				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
