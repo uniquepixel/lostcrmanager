@@ -179,7 +179,7 @@ public class kpclan extends ListenerAdapter {
 						totalkps += kpi.getAmount();
 					}
 					if (totalkps > 0) {
-						kpamounts.put(p.getInfoStringDB(), totalkps);
+						kpamounts.put(MessageUtil.unformat(p.getInfoStringDB()), totalkps);
 					}
 				}
 

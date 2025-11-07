@@ -132,15 +132,19 @@ public class removemember extends ListenerAdapter {
 			Member member = guild.getMemberById(userid);
 			String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
 			Role memberrole = guild.getRoleById(memberroleid);
-			if (member.getRoles().contains(memberrole)) {
-				desc += "\n\n";
-				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
-						+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
+			if (member != null) {
+				if (member.getRoles().contains(memberrole)) {
+					desc += "\n\n";
+					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+							+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
+				} else {
+					desc += "\n\n";
+					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+							+ "> bereits nicht mehr.**\n";
+				}
 			} else {
-				desc += "\n\n";
-				desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid + "> bereits nicht mehr.**\n";
+				desc += "\n\n**Der User <@" + userid + "> ist nicht auf dem Server.**\n";
 			}
-
 			MessageChannelUnion channel = event.getChannel();
 			MessageUtil.sendUserPingHidden(channel, userid);
 		}
