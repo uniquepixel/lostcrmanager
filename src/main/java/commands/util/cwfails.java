@@ -32,6 +32,8 @@ public class cwfails extends ListenerAdapter {
 		OptionMapping clanOption = event.getOption("clan");
 		OptionMapping thresholdOption = event.getOption("threshold");
 		OptionMapping kpreasonOption = event.getOption("kpreason");
+		OptionMapping minThresholdOption = event.getOption("min_threshold");
+		OptionMapping excludeLeadersOption = event.getOption("exclude_leaders");
 
 		if (clanOption == null || thresholdOption == null) {
 			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -60,6 +62,25 @@ public class cwfails extends ListenerAdapter {
 		}
 
 		int threshold = thresholdOption.getAsInt();
+		
+		Integer minThreshold = null;
+		if (minThresholdOption != null) {
+			try {
+				minThreshold = Integer.parseInt(minThresholdOption.getAsString());
+			} catch (NumberFormatException e) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Der min_threshold Parameter muss eine gültige Zahl sein.", MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		}
+		
+		boolean excludeLeaders = false;
+		if (excludeLeadersOption != null) {
+			String excludeLeadersValue = excludeLeadersOption.getAsString();
+			if ("true".equalsIgnoreCase(excludeLeadersValue)) {
+				excludeLeaders = true;
+			}
+		}
 
 		boolean addkp;
 
@@ -89,6 +110,8 @@ public class cwfails extends ListenerAdapter {
 			return;
 		}
 		final KickpointReason kpreasontemp = kpreason;
+		final Integer minThresholdFinal = minThreshold;
+		final boolean excludeLeadersFinal = excludeLeaders;
 
 		Thread thread = new Thread(() -> {
 
@@ -116,31 +139,50 @@ public class cwfails extends ListenerAdapter {
 
 			for (Player p : clanplayerlist) {
 				String playertag = p.getTag();
+				
+				// Skip leaders/coleaders/admins if exclude_leaders is true
+				if (excludeLeadersFinal) {
+					Player.RoleType role = p.getRole();
+					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER || role == Player.RoleType.COLEADER) {
+						continue;
+					}
+				}
+				
 				if (tagtocwfame.containsKey(playertag)) {
 					if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
 						if (tagtocwfame.get(playertag) < threshold) {
 							if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
-								desc += "**" + p.getInfoStringDB() + "**:\n";
-								desc += " - Punkte: " + p.getCWFame() + ".\n";
-								if (listempty)
-									listempty = false;
+								// Apply min_threshold check - only display if points are >= min_threshold
+								int playerPoints = tagtocwfame.get(playertag);
+								if (minThresholdFinal == null || playerPoints >= minThresholdFinal) {
+									desc += "**" + p.getInfoStringDB() + "**:\n";
+									desc += " - Punkte: " + p.getCWFame() + ".\n";
+									if (listempty)
+										listempty = false;
+								}
 								if (addkp)
 									playerdonewrong.add(p);
 							}
 						}
 					} else {
-						desc += "**" + p.getInfoStringDB() + "**:\n";
-						desc += " - Nicht im Clan gemacht.\n";
-						if (listempty)
-							listempty = false;
+						// Player didn't do CW in clan - only display if min_threshold is not set or is 0
+						if (minThresholdFinal == null || minThresholdFinal <= 0) {
+							desc += "**" + p.getInfoStringDB() + "**:\n";
+							desc += " - Nicht im Clan gemacht.\n";
+							if (listempty)
+								listempty = false;
+						}
 						if (addkp)
 							playerdonewrong.add(p);
 					}
 				} else {
-					desc += "**" + p.getInfoStringDB() + "**:\n";
-					desc += " - Nicht im Clan gemacht.\n";
-					if (listempty)
-						listempty = false;
+					// Player didn't do CW in clan - only display if min_threshold is not set or is 0
+					if (minThresholdFinal == null || minThresholdFinal <= 0) {
+						desc += "**" + p.getInfoStringDB() + "**:\n";
+						desc += " - Nicht im Clan gemacht.\n";
+						if (listempty)
+							listempty = false;
+					}
 					if (addkp)
 						playerdonewrong.add(p);
 				}
@@ -187,6 +229,13 @@ public class cwfails extends ListenerAdapter {
 			List<Command.Choice> choices = DBManager.getKPReasonsAutocomplete(input,
 					event.getOption("clan").getAsString());
 
+			event.replyChoices(choices).queue();
+		}
+		if (focused.equals("exclude_leaders")) {
+			List<Command.Choice> choices = new ArrayList<>();
+			if ("true".startsWith(input.toLowerCase())) {
+				choices.add(new Command.Choice("true", "true"));
+			}
 			event.replyChoices(choices).queue();
 		}
 	}

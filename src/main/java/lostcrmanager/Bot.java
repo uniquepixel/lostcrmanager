@@ -197,7 +197,14 @@ public class Bot extends ListenerAdapter {
 									"Die Hürde, welche jeder Spieler überwunden haben sollte", true))
 							.addOptions(new OptionData(OptionType.STRING, "kpreason",
 									"(Optional) Der Kickpunkt-Grund für jeden Spieler, der die Hürde nicht erreicht hat.")
-									.setAutoComplete(true)))
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "min_threshold",
+									"(Optional) Minimale Punktzahl - Spieler darunter werden nicht angezeigt")
+									.setRequired(false))
+							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
+									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Prüfung ausgeschlossen")
+									.setAutoComplete(true)
+									.setRequired(false)))
 					.queue();
 		}
 	}
