@@ -53,7 +53,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -222,8 +222,7 @@ public class Bot extends ListenerAdapter {
 									.setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
 									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Prüfung ausgeschlossen")
-									.setAutoComplete(true)
-									.setRequired(false)),
+									.setAutoComplete(true).setRequired(false)),
 					Commands.slash("remindersadd", "Erstelle einen Reminder für Clan War Beteiligung.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, für welchen der Reminder erstellt wird.", true).setAutoComplete(true))
@@ -236,7 +235,8 @@ public class Bot extends ListenerAdapter {
 									"Die ID des Reminders. Ist unter /remindersinfo zu sehen.", true)),
 					Commands.slash("remindersinfo", "Zeige alle Reminder für einen Clan an.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
-									"Der Clan, für welchen Reminder angezeigt werden sollen.", true).setAutoComplete(true)))
+									"Der Clan, für welchen Reminder angezeigt werden sollen.", true)
+									.setAutoComplete(true)))
 					.queue();
 		}
 	}
@@ -335,24 +335,23 @@ public class Bot extends ListenerAdapter {
 	private static void checkReminders() {
 		// Check if today is Thursday, Friday, Saturday, or Sunday
 		DayOfWeek today = ZonedDateTime.now().getDayOfWeek();
-		if (today != DayOfWeek.THURSDAY && today != DayOfWeek.FRIDAY && 
-		    today != DayOfWeek.SATURDAY && today != DayOfWeek.SUNDAY) {
+		if (today != DayOfWeek.THURSDAY && today != DayOfWeek.FRIDAY && today != DayOfWeek.SATURDAY
+				&& today != DayOfWeek.SUNDAY) {
 			return; // Not a reminder day
 		}
 
 		LocalTime currentTime = LocalTime.now();
-		
+
 		// Get all reminders
 		String sql = "SELECT id, clantag, channelid, time FROM reminders";
 		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
-					int id = rs.getInt("id");
 					String clantag = rs.getString("clantag");
 					String channelId = rs.getString("channelid");
 					Time reminderTime = rs.getTime("time");
 					LocalTime reminderLocalTime = reminderTime.toLocalTime();
-					
+
 					// Check if reminder should be sent (within 5 minute window)
 					long minutesDiff = java.time.Duration.between(reminderLocalTime, currentTime).toMinutes();
 					if (minutesDiff >= 0 && minutesDiff < 5) {
@@ -392,7 +391,10 @@ public class Bot extends ListenerAdapter {
 				if (decksUsedToday < 4) {
 					String playerName = participant.getString("name");
 					String playerTag = participant.getString("tag");
-					reminderList.add(playerName + " (" + playerTag + ") - " + decksUsedToday + "/4 Decks");
+					Player p = new Player(playerTag);
+					String userId = p.getUser().getUserID();
+					reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
+							+ "/4 Decks");
 				}
 			}
 
@@ -410,21 +412,20 @@ public class Bot extends ListenerAdapter {
 						EmbedBuilder embed = new EmbedBuilder();
 						embed.setTitle("⚠️ Clan War Reminder - " + clan.getNameDB());
 						embed.setColor(0xFF9900);
-						
+
 						StringBuilder description = new StringBuilder();
 						description.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
-						
+
 						for (String playerInfo : reminderList) {
 							description.append("• ").append(playerInfo).append("\n");
 						}
-						
+
 						description.append("\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**");
 						embed.setDescription(description.toString());
-						
+
 						channel.sendMessageEmbeds(embed.build()).queue(
-							success -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
-							error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage())
-						);
+								_ -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
+								error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage()));
 					} else {
 						System.err.println("Kanal " + channelId + " nicht gefunden.");
 					}

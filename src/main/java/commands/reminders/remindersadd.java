@@ -16,7 +16,7 @@ import datautil.DBUtil;
 import datawrapper.Clan;
 import datawrapper.Player;
 import datawrapper.User;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -38,8 +38,10 @@ public class remindersadd extends ListenerAdapter {
 		OptionMapping timeOption = event.getOption("time");
 
 		if (clanOption == null || channelOption == null || timeOption == null) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Alle Parameter (clan, channel, time) sind erforderlich!", MessageUtil.EmbedType.ERROR)).queue();
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Alle Parameter (clan, channel, time) sind erforderlich!", MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
@@ -58,8 +60,9 @@ public class remindersadd extends ListenerAdapter {
 		}
 
 		if (clantag.equals("warteliste")) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -82,18 +85,18 @@ public class remindersadd extends ListenerAdapter {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 			reminderTime = LocalTime.parse(timeStr, formatter);
 		} catch (DateTimeParseException e) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Ungültiges Zeitformat. Bitte nutze HH:mm (z.B. 14:30).", MessageUtil.EmbedType.ERROR)).queue();
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Ungültiges Zeitformat. Bitte nutze HH:mm (z.B. 14:30).", MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
 		// Verify channel exists
 		TextChannel channel = event.getGuild().getTextChannelById(channelId);
 		if (channel == null) {
-			event.getHook()
-					.editOriginalEmbeds(
-							MessageUtil.buildEmbed(title, "Der angegebene Kanal existiert nicht.",
-									MessageUtil.EmbedType.ERROR))
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Der angegebene Kanal existiert nicht.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
