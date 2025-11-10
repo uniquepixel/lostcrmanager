@@ -62,23 +62,29 @@ public class cwfails extends ListenerAdapter {
 		}
 
 		int threshold = thresholdOption.getAsInt();
-		
+
 		Integer minThreshold = null;
 		if (minThresholdOption != null) {
 			try {
 				minThreshold = Integer.parseInt(minThresholdOption.getAsString());
 			} catch (NumberFormatException e) {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Der min_threshold Parameter muss eine gültige Zahl sein.", MessageUtil.EmbedType.ERROR)).queue();
+						"Der min_threshold Parameter muss eine gültige Zahl sein.", MessageUtil.EmbedType.ERROR))
+						.queue();
 				return;
 			}
 		}
-		
+
 		boolean excludeLeaders = false;
 		if (excludeLeadersOption != null) {
 			String excludeLeadersValue = excludeLeadersOption.getAsString();
 			if ("true".equalsIgnoreCase(excludeLeadersValue)) {
 				excludeLeaders = true;
+			} else {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Der exclude_leaders Parameter muss entweder \"true\" enthalten oder nicht angegeben sein (false).",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
 			}
 		}
 
@@ -139,20 +145,22 @@ public class cwfails extends ListenerAdapter {
 
 			for (Player p : clanplayerlist) {
 				String playertag = p.getTag();
-				
+
 				// Skip leaders/coleaders/admins if exclude_leaders is true
 				if (excludeLeadersFinal) {
 					Player.RoleType role = p.getRole();
-					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER || role == Player.RoleType.COLEADER) {
+					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+							|| role == Player.RoleType.COLEADER) {
 						continue;
 					}
 				}
-				
+
 				if (tagtocwfame.containsKey(playertag)) {
 					if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
 						if (tagtocwfame.get(playertag) < threshold) {
 							if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
-								// Apply min_threshold check - only display and add KP if points are >= min_threshold
+								// Apply min_threshold check - only display and add KP if points are >=
+								// min_threshold
 								int playerPoints = tagtocwfame.get(playertag);
 								if (minThresholdFinal == null || playerPoints >= minThresholdFinal) {
 									desc += "**" + p.getInfoStringDB() + "**:\n";
@@ -165,7 +173,8 @@ public class cwfails extends ListenerAdapter {
 							}
 						}
 					} else {
-						// Player didn't do CW in clan - only display and add KP if min_threshold is not set or is 0
+						// Player didn't do CW in clan - only display and add KP if min_threshold is not
+						// set or is 0
 						if (minThresholdFinal == null || minThresholdFinal <= 0) {
 							desc += "**" + p.getInfoStringDB() + "**:\n";
 							desc += " - Nicht im Clan gemacht.\n";
@@ -176,7 +185,8 @@ public class cwfails extends ListenerAdapter {
 						}
 					}
 				} else {
-					// Player didn't do CW in clan - only display and add KP if min_threshold is not set or is 0
+					// Player didn't do CW in clan - only display and add KP if min_threshold is not
+					// set or is 0
 					if (minThresholdFinal == null || minThresholdFinal <= 0) {
 						desc += "**" + p.getInfoStringDB() + "**:\n";
 						desc += " - Nicht im Clan gemacht.\n";
