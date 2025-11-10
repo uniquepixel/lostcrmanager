@@ -70,4 +70,33 @@ public class APIUtil {
 		}
 	}
 	
+	public static String getCurrentRiverRaceJson(String clanTag) {
+		// URL-kodieren des Clan-Tags (# -> %23)
+		String encodedTag = java.net.URLEncoder.encode(clanTag, java.nio.charset.StandardCharsets.UTF_8);
+
+		String url = "https://api.clashroyale.com/v1/clans/" + encodedTag + "/currentriverrace";
+
+		HttpClient client = HttpClient.newHttpClient();
+
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+				.header("Authorization", "Bearer " + Bot.api_key).header("Accept", "application/json").GET().build();
+
+		HttpResponse<String> response = null;
+		try {
+			response = client.send(request, HttpResponse.BodyHandlers.ofString());
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+		if (response.statusCode() == 200) {
+			String responseBody = response.body();
+			return responseBody;
+		} else {
+			System.err.println("Fehler beim Abrufen: HTTP " + response.statusCode());
+			System.err.println("Antwort: " + response.body());
+			return null;
+		}
+	}
+	
 }

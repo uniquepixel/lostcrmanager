@@ -45,6 +45,7 @@ public class Connection {
 		tableNames.add("clan_settings");
 		tableNames.add("kickpoint_reasons");
 		tableNames.add("kickpoints");
+		tableNames.add("reminders");
 		try (java.sql.Connection conn = DriverManager.getConnection(url, user, password)) {
 			DatabaseMetaData dbm = conn.getMetaData();
 
@@ -88,6 +89,10 @@ public class Connection {
 									+ "description CHARACTER VARYING(100),"
 									+ "created_by_discord_id CHARACTER VARYING(19)," + "created_at TIMESTAMPTZ,"
 									+ "expires_at TIMESTAMPTZ)";
+							break;
+						case "reminders":
+							createTableSQL = "CREATE TABLE " + tableName + " (id BIGINT PRIMARY KEY,"
+									+ "clantag TEXT," + "channelid TEXT," + "time TIME)";
 							break;
 						}
 
