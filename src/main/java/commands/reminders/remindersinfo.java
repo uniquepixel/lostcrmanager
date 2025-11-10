@@ -91,14 +91,11 @@ public class remindersinfo extends ListenerAdapter {
 		if (reminders.isEmpty()) {
 			desc += "Keine Reminder konfiguriert.\n";
 		} else {
-			desc += "```\n";
-			desc += String.format("%-5s %-20s %-10s\n", "ID", "Kanal", "Zeit");
-			desc += "---------------------------------------------\n";
 			for (ReminderInfo reminder : reminders) {
-				desc += String.format("%-5d %-20s %-10s\n", reminder.id, "<#" + reminder.channelId + ">",
-						reminder.time.toLocalTime().toString());
+				desc += "**ID:** " + reminder.id + " | ";
+				desc += "**Kanal:** <#" + reminder.channelId + "> | ";
+				desc += "**Zeit:** " + reminder.time.toLocalTime().toString() + "\n";
 			}
-			desc += "```\n";
 			desc += "\nReminder werden Donnerstag, Freitag, Samstag und Sonntag zur konfigurierten Zeit gesendet.\n";
 			desc += "Sie erinnern Spieler, die heute weniger als 4 Decks verwendet haben.";
 		}

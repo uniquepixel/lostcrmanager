@@ -77,19 +77,13 @@ public class remindersremove extends ListenerAdapter {
 		}
 
 		// Delete the reminder
-		int rowsAffected = DBUtil.executeUpdate("DELETE FROM reminders WHERE id = ?", id);
+		DBUtil.executeUpdate("DELETE FROM reminders WHERE id = ?", id);
 
-		if (rowsAffected > 0) {
-			String desc = "### Der Reminder wurde entfernt.\n";
-			desc += "Clan: " + c.getInfoStringDB() + "\n";
-			desc += "ID: " + id + "\n";
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
-					.queue();
-		} else {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Fehler beim Entfernen des Reminders.", MessageUtil.EmbedType.ERROR))
-					.queue();
-		}
+		String desc = "### Der Reminder wurde entfernt.\n";
+		desc += "Clan: " + c.getInfoStringDB() + "\n";
+		desc += "ID: " + id + "\n";
+		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
+				.queue();
 	}
 
 }
