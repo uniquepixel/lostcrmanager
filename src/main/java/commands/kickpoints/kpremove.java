@@ -31,23 +31,31 @@ public class kpremove extends ListenerAdapter {
 
 		Kickpoint kp = new Kickpoint(id);
 
+		if (kp.getPlayer().getClanDB() == null) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Der Spieler ist in keinen Clan eingetragen.", MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
 		String clantag = kp.getPlayer().getClanDB().getTag();
 
-		if(clantag.equals("warteliste")) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+		if (clantag.equals("warteliste")) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
-		
+
 		User userexecuted = new User(event.getUser().getId());
 		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
 				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
 				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
 			event.getHook()
-			.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
-					MessageUtil.EmbedType.ERROR)).queue();
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
