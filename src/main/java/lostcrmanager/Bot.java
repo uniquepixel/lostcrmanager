@@ -1,12 +1,22 @@
 package lostcrmanager;
 
 import java.io.File;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import commands.admin.restart;
 import commands.kickpoints.clanconfig;
@@ -29,14 +39,21 @@ import commands.memberlist.memberstatus;
 import commands.memberlist.removemember;
 import commands.memberlist.togglemark;
 import commands.memberlist.transfermember;
+import commands.reminders.remindersadd;
+import commands.reminders.remindersinfo;
+import commands.reminders.remindersremove;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
+import datautil.APIUtil;
 import datautil.DBUtil;
+import datawrapper.Clan;
 import datawrapper.Player;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -81,6 +98,7 @@ public class Bot extends ListenerAdapter {
 		datautil.Connection.tablesExists();
 		startNameUpdates();
 		startLoadingLists();
+		startReminders();
 
 		JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MEMBERS)
 				.setMemberCachePolicy(MemberCachePolicy.ALL).setChunkingFilter(ChunkingFilter.ALL)
@@ -89,7 +107,8 @@ public class Bot extends ListenerAdapter {
 						new removemember(), new listmembers(), new editmember(), new playerinfo(), new memberstatus(),
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
-						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails())
+						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails(),
+						new remindersadd(), new remindersremove(), new remindersinfo())
 				.build();
 	}
 
@@ -204,7 +223,20 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
 									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Prüfung ausgeschlossen")
 									.setAutoComplete(true)
-									.setRequired(false)))
+									.setRequired(false)),
+					Commands.slash("remindersadd", "Erstelle einen Reminder für Clan War Beteiligung.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, für welchen der Reminder erstellt wird.", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.CHANNEL, "channel",
+									"Der Kanal, in dem der Reminder gesendet wird.", true))
+							.addOptions(new OptionData(OptionType.STRING, "time",
+									"Die Uhrzeit für den Reminder (Format: HH:mm, z.B. 14:30)", true)),
+					Commands.slash("remindersremove", "Entferne einen Reminder.")
+							.addOptions(new OptionData(OptionType.INTEGER, "id",
+									"Die ID des Reminders. Ist unter /remindersinfo zu sehen.", true)),
+					Commands.slash("remindersinfo", "Zeige alle Reminder für einen Clan an.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, für welchen Reminder angezeigt werden sollen.", true).setAutoComplete(true)))
 					.queue();
 		}
 	}
@@ -287,6 +319,121 @@ public class Bot extends ListenerAdapter {
 			thread.start();
 		};
 		scheduler.scheduleAtFixedRate(task, 0, 2, TimeUnit.HOURS);
+	}
+
+	public static void startReminders() {
+		System.out.println("Reminder-Check wird gestartet. Prüfung alle 5 Minuten. " + System.currentTimeMillis());
+		Runnable task = () -> {
+			Thread thread = new Thread(() -> {
+				checkReminders();
+			});
+			thread.start();
+		};
+		scheduler.scheduleAtFixedRate(task, 0, 5, TimeUnit.MINUTES);
+	}
+
+	private static void checkReminders() {
+		// Check if today is Thursday, Friday, Saturday, or Sunday
+		DayOfWeek today = ZonedDateTime.now().getDayOfWeek();
+		if (today != DayOfWeek.THURSDAY && today != DayOfWeek.FRIDAY && 
+		    today != DayOfWeek.SATURDAY && today != DayOfWeek.SUNDAY) {
+			return; // Not a reminder day
+		}
+
+		LocalTime currentTime = LocalTime.now();
+		
+		// Get all reminders
+		String sql = "SELECT id, clantag, channelid, time FROM reminders";
+		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					int id = rs.getInt("id");
+					String clantag = rs.getString("clantag");
+					String channelId = rs.getString("channelid");
+					Time reminderTime = rs.getTime("time");
+					LocalTime reminderLocalTime = reminderTime.toLocalTime();
+					
+					// Check if reminder should be sent (within 5 minute window)
+					long minutesDiff = java.time.Duration.between(reminderLocalTime, currentTime).toMinutes();
+					if (minutesDiff >= 0 && minutesDiff < 5) {
+						sendReminder(clantag, channelId);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void sendReminder(String clantag, String channelId) {
+		try {
+			// Get clan info
+			Clan clan = new Clan(clantag);
+			if (!clan.ExistsDB()) {
+				System.out.println("Clan " + clantag + " existiert nicht mehr.");
+				return;
+			}
+
+			// Get current river race data
+			String json = APIUtil.getCurrentRiverRaceJson(clantag);
+			if (json == null) {
+				System.out.println("Konnte River Race Daten für " + clantag + " nicht abrufen.");
+				return;
+			}
+
+			JSONObject data = new JSONObject(json);
+			JSONObject clanData = data.getJSONObject("clan");
+			JSONArray participants = clanData.getJSONArray("participants");
+
+			ArrayList<String> reminderList = new ArrayList<>();
+			for (int i = 0; i < participants.length(); i++) {
+				JSONObject participant = participants.getJSONObject(i);
+				int decksUsedToday = participant.getInt("decksUsedToday");
+				if (decksUsedToday < 4) {
+					String playerName = participant.getString("name");
+					String playerTag = participant.getString("tag");
+					reminderList.add(playerName + " (" + playerTag + ") - " + decksUsedToday + "/4 Decks");
+				}
+			}
+
+			if (reminderList.isEmpty()) {
+				System.out.println("Keine Spieler mit weniger als 4 Decks für " + clantag);
+				return;
+			}
+
+			// Send reminder message
+			if (jda != null) {
+				Guild guild = jda.getGuildById(guild_id);
+				if (guild != null) {
+					TextChannel channel = guild.getTextChannelById(channelId);
+					if (channel != null) {
+						EmbedBuilder embed = new EmbedBuilder();
+						embed.setTitle("⚠️ Clan War Reminder - " + clan.getNameDB());
+						embed.setColor(0xFF9900);
+						
+						StringBuilder description = new StringBuilder();
+						description.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
+						
+						for (String playerInfo : reminderList) {
+							description.append("• ").append(playerInfo).append("\n");
+						}
+						
+						description.append("\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**");
+						embed.setDescription(description.toString());
+						
+						channel.sendMessageEmbeds(embed.build()).queue(
+							success -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
+							error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage())
+						);
+					} else {
+						System.err.println("Kanal " + channelId + " nicht gefunden.");
+					}
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("Fehler beim Senden des Reminders für " + clantag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	public void stopScheduler() {

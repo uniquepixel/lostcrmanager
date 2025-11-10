@@ -19,6 +19,9 @@
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/memberlist/removemember.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/memberlist/togglemark.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/memberlist/transfermember.java
+/home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/reminders/remindersadd.java
+/home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/reminders/remindersinfo.java
+/home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/reminders/remindersremove.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/util/cwfails.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/util/leaguetrophylist.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/datautil/APIUtil.java
