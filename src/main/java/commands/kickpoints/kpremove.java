@@ -31,15 +31,15 @@ public class kpremove extends ListenerAdapter {
 
 		Kickpoint kp = new Kickpoint(id);
 
-		if (kp.getPlayer().getClanDB() == null) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Der Spieler ist in keinen Clan eingetragen.", MessageUtil.EmbedType.ERROR)).queue();
-			return;
-		}
-
 		if (kp.getPlayer() == null) {
 			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
 					"Ein Kickpunkt mit dieser ID existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
+		if (kp.getPlayer().getClanDB() == null) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Der Spieler ist in keinen Clan eingetragen.", MessageUtil.EmbedType.ERROR)).queue();
 			return;
 		}
 
