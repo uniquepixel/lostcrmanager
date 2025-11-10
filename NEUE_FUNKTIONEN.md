@@ -1,282 +1,437 @@
-# Zusammenfassung der letzten 2 Commits auf Main
+# Neue Funktionen: Automatische Clan-War-Erinnerungen
 
-## Commit 1: Automatische Clan-War-Erinnerungen (2964cb66)
-**Datum:** 10. November 2025, 20:30 Uhr  
-**Autor:** uniquepixel  
-**Titel:** Add automated clan war reminders for players with insufficient deck usage
+## Was ist neu?
 
-### Was wurde hinzugefügt?
-Dieser Commit fügt ein vollständiges Erinnerungs-System für Clan-Kriege hinzu. Das System ermöglicht es Clan-Anführern und Vize-Anführern, automatische Erinnerungen für Spieler zu konfigurieren, die ihre Decks im Clan-Krieg nicht ausreichend nutzen.
+Der Bot hat jetzt ein automatisches Erinnerungs-System für Clan-Kriege! Als Vize-Anführer oder Anführer kannst du jetzt automatische Nachrichten einrichten, die Spieler erinnern, ihre Decks im Clan-Krieg zu verwenden.
 
-### Änderungen im Detail:
-- **3 neue Befehle:**
-  - `/remindersadd` - Fügt eine neue Erinnerung hinzu
-  - `/remindersinfo` - Zeigt alle konfigurierten Erinnerungen an
-  - `/remindersremove` - Entfernt eine Erinnerung
-- **Datenbank-Integration:** Neue Tabelle `reminders` zur Speicherung der Konfigurationen
-- **Automatisches Scheduling:** Der Bot prüft automatisch jeden Tag um die konfigurierten Zeiten
-- **Intelligente Benachrichtigungen:** Nur Spieler mit weniger als 4 verwendeten Decks werden erinnert
-- **Zeitbasierte Ausführung:** Erinnerungen werden nur an Kriegstagen (Donnerstag, Freitag, Samstag, Sonntag) gesendet
+### Warum ist das nützlich?
 
-### Dateien geändert:
-- `src/main/java/commands/reminders/remindersadd.java` (151 Zeilen hinzugefügt)
-- `src/main/java/commands/reminders/remindersinfo.java` (132 Zeilen hinzugefügt)
-- `src/main/java/commands/reminders/remindersremove.java` (89 Zeilen hinzugefügt)
-- `src/main/java/lostcrmanager/Bot.java` (149 Zeilen hinzugefügt)
-- `src/main/java/datautil/APIUtil.java` (29 Zeilen geändert)
-- `src/main/java/datautil/Connection.java` (5 Zeilen geändert)
-
-**Gesamtstatistik:** 558 Zeilen hinzugefügt, 2 Zeilen gelöscht
+- **Automatische Erinnerungen:** Der Bot erinnert Spieler selbstständig, wenn sie ihre Decks noch nicht vollständig genutzt haben
+- **Flexible Zeitplanung:** Du entscheidest, wann die Erinnerungen gesendet werden (z.B. morgens, mittags, abends)
+- **Mehr Kriegsteilnahme:** Weniger vergessene Decks bedeuten bessere Ergebnisse im Clan-Krieg
+- **Zeitersparnis:** Du musst nicht mehr manuell nach inaktiven Spielern suchen
 
 ---
 
-## Commit 2: Fehlerbehebungen für Reminder-System (0a20a6e)
-**Datum:** 10. November 2025, 20:36 Uhr  
-**Autor:** uniquepixel  
-**Titel:** fixes
+# Benutzeranleitung: Clan-War-Erinnerungen für Vize-Anführer
 
-### Was wurde verbessert?
-Dieser Commit behebt wichtige Fehler im zuvor hinzugefügten Erinnerungs-System und verbessert die Stabilität.
+## So richtest du Erinnerungen ein
 
-### Änderungen im Detail:
-- **Fehlerbehebung in remindersadd.java:** Verbesserte Fehlerbehandlung und Validierung
-- **Optimierung in Bot.java:** Verbessertes Scheduling und Nachrichtenverarbeitung
+### Schritt 1: Erinnerung erstellen mit `/remindersadd`
 
-### Dateien geändert:
-- `src/main/java/commands/reminders/remindersadd.java` (14 Zeilen hinzugefügt, 11 Zeilen gelöscht)
-- `src/main/java/lostcrmanager/Bot.java` (18 Zeilen hinzugefügt, 17 Zeilen gelöscht)
+Dieser Befehl erstellt eine neue automatische Erinnerung für deinen Clan.
 
-**Gesamtstatistik:** 32 Zeilen hinzugefügt, 28 Zeilen gelöscht
+#### Was du eingeben musst:
+
+1. **Clan** - Wähle deinen Clan aus der Liste
+2. **Channel** - Wähle den Discord-Kanal, in dem die Erinnerung erscheinen soll
+3. **Time** - Gib die Uhrzeit ein im Format **HH:mm** (z.B. 14:30)
+
+#### Schritt-für-Schritt Anleitung:
+
+1. Gib `/remindersadd` in Discord ein
+2. Bei **clan**: Tippe die ersten Buchstaben deines Clans ein und wähle ihn aus
+3. Bei **channel**: Wähle den Kanal (z.B. #clan-war oder #erinnerungen)
+4. Bei **time**: Gib die gewünschte Uhrzeit ein (z.B. 14:30)
+5. Drücke Enter
+
+#### Beispiel:
+```
+/remindersadd clan:Lost Thunder channel:#clan-war time:14:30
+```
+
+#### Was danach passiert:
+
+Der Bot zeigt dir eine Bestätigung mit:
+- ✅ Dem Clan-Namen
+- ✅ Dem gewählten Kanal
+- ✅ Der eingestellten Zeit
+- ✅ Einer **ID-Nummer** (wichtig für später!)
+
+**Ab jetzt sendet der Bot automatisch Erinnerungen:**
+- Jeden **Donnerstag, Freitag, Samstag und Sonntag**
+- Genau um die **eingestellte Uhrzeit** (z.B. 14:30 Uhr)
+- Nur an Spieler, die **weniger als 4 Decks** verwendet haben
+- Nur an Spieler, die mit `/link` ihr Discord-Konto verknüpft haben
 
 ---
 
-# Benutzeranleitung: Clan-War-Erinnerungen
+## Deine Erinnerungen verwalten
 
-## Überblick
-Das Erinnerungs-System ermöglicht es Clan-Leitern, automatische Benachrichtigungen für Spieler zu konfigurieren, die ihre Decks im Clan-Krieg nicht ausreichend nutzen. Dies hilft dabei, die Teilnahme am Clan-Krieg zu verbessern.
+### Schritt 2: Alle Erinnerungen anzeigen mit `/remindersinfo`
 
-## Voraussetzungen
-- Du musst mindestens **Vize-Anführer** oder **Anführer** des Clans sein
-- Der Clan muss in der Bot-Datenbank registriert sein
-- Der Bot benötigt Schreibrechte im Zielkanal
+Mit diesem Befehl siehst du alle eingerichteten Erinnerungen für deinen Clan.
 
-## Befehle
+#### Was du eingeben musst:
 
-### 1. `/remindersadd` - Erinnerung hinzufügen
+- **Clan** - Wähle deinen Clan aus
 
-**Zweck:** Erstellt eine neue automatische Erinnerung für einen Clan.
+#### Schritt-für-Schritt Anleitung:
 
-**Parameter:**
-- `clan` (erforderlich) - Der Clan-Tag des Clans (z.B. "#ABC123")
-- `channel` (erforderlich) - Der Discord-Kanal, in dem die Erinnerungen gesendet werden
-- `time` (erforderlich) - Die Uhrzeit im Format HH:mm (z.B. "14:30" für 14:30 Uhr)
+1. Gib `/remindersinfo` in Discord ein
+2. Bei **clan**: Wähle deinen Clan aus
+3. Drücke Enter
 
-**Beispiel:**
+#### Beispiel:
 ```
-/remindersadd clan:#ABC123 channel:#clan-war time:14:30
+/remindersinfo clan:Lost Thunder
 ```
 
-**Was passiert:**
-1. Der Bot erstellt eine neue Erinnerung mit einer eindeutigen ID
-2. Die Konfiguration wird in der Datenbank gespeichert
-3. Du erhältst eine Bestätigung mit allen Details und der ID
+#### Was du siehst:
 
-**Hinweise:**
-- Die Erinnerungen werden nur an Kriegstagen gesendet (Donnerstag, Freitag, Samstag, Sonntag)
-- Pro Clan können mehrere Erinnerungen mit unterschiedlichen Zeiten konfiguriert werden
-- Die Warteliste kann nicht für Erinnerungen verwendet werden
+Eine Übersicht aller Erinnerungen für deinen Clan, zum Beispiel:
 
----
-
-### 2. `/remindersinfo` - Erinnerungen anzeigen
-
-**Zweck:** Zeigt alle konfigurierten Erinnerungen für einen Clan an.
-
-**Parameter:**
-- `clan` (erforderlich) - Der Clan-Tag des Clans
-
-**Beispiel:**
 ```
-/remindersinfo clan:#ABC123
-```
-
-**Was du siehst:**
-- Eine Liste aller Erinnerungen für den Clan
-- Für jede Erinnerung: ID, Kanal und Uhrzeit
-- Informationen darüber, wann die Erinnerungen gesendet werden
-- Die Bedingungen für die Benachrichtigungen
-
-**Ausgabebeispiel:**
-```
-Reminder für Clan: MeinClan (#ABC123)
+Reminder für Clan: Lost Thunder (#2GQQQQ8Q)
 
 ID: 0 | Kanal: #clan-war | Zeit: 14:30:00
 ID: 1 | Kanal: #clan-war | Zeit: 18:00:00
+ID: 2 | Kanal: #erinnerungen | Zeit: 20:30:00
 
 Reminder werden Donnerstag, Freitag, Samstag und Sonntag zur konfigurierten Zeit gesendet.
 Sie erinnern Spieler, die heute weniger als 4 Decks verwendet haben.
 ```
 
+**Wichtig:** Notiere dir die **ID-Nummern**, falls du später eine Erinnerung löschen möchtest!
+
 ---
 
-### 3. `/remindersremove` - Erinnerung entfernen
+### Schritt 3: Erinnerung löschen mit `/remindersremove`
 
-**Zweck:** Löscht eine bestehende Erinnerung.
+Wenn du eine Erinnerung nicht mehr brauchst, kannst du sie mit diesem Befehl entfernen.
 
-**Parameter:**
-- `id` (erforderlich) - Die ID der zu löschenden Erinnerung
+#### Was du eingeben musst:
 
-**Beispiel:**
+- **ID** - Die Nummer der Erinnerung, die du löschen möchtest
+
+#### Schritt-für-Schritt Anleitung:
+
+1. Finde zuerst die ID mit `/remindersinfo` (siehe Schritt 2)
+2. Gib `/remindersremove` in Discord ein
+3. Bei **id**: Gib die ID-Nummer ein
+4. Drücke Enter
+
+#### Beispiel:
 ```
 /remindersremove id:0
 ```
 
-**Was passiert:**
-1. Der Bot prüft, ob die Erinnerung existiert
-2. Der Bot verifiziert deine Berechtigung für den betroffenen Clan
-3. Die Erinnerung wird aus der Datenbank gelöscht
-4. Du erhältst eine Bestätigung
+#### Was danach passiert:
 
-**Hinweis:** Die ID findest du mit dem Befehl `/remindersinfo`
+Der Bot bestätigt die Löschung und zeigt:
+- ✅ Den betroffenen Clan
+- ✅ Die gelöschte ID
+
+Die Erinnerung wird sofort deaktiviert und nicht mehr gesendet.
 
 ---
 
-## Wie funktionieren die Erinnerungen?
+## Praktische Beispiele
 
-### Zeitplan
-- **Aktive Tage:** Donnerstag, Freitag, Samstag, Sonntag
-- **Inaktive Tage:** Montag, Dienstag, Mittwoch (keine Erinnerungen)
-- **Zeitpunkt:** Zur konfigurierten Zeit (z.B. 14:30 Uhr)
+### Beispiel 1: Eine einzelne Erinnerung einrichten
 
-### Benachrichtigungskriterium
-Spieler werden erinnert, wenn sie:
-- Mitglied des Clans sind
-- Heute **weniger als 4 Decks** im Clan-Krieg verwendet haben
-- Mit einem Discord-Konto verknüpft sind (über den `/link` Befehl)
+Du möchtest, dass der Bot jeden Kriegstag um 18:00 Uhr eine Erinnerung sendet.
 
-### Nachrichteninhalt
-Die Erinnerungsnachricht enthält:
-- Eine Liste aller betroffenen Spieler (mit Mention)
-- Die Anzahl der bereits verwendeten Decks
-- Eine Aufforderung, weitere Decks zu verwenden
-
-**Beispiel-Nachricht:**
+**Was du machst:**
 ```
-⚠️ Clan-War-Erinnerung
+/remindersadd clan:Lost Thunder channel:#clan-war time:18:00
+```
+
+**Ergebnis:**
+- Jeden Donnerstag, Freitag, Samstag und Sonntag um 18:00 Uhr
+- Bekommt jeder Spieler mit weniger als 4 Decks eine Erinnerung
+- Die Nachricht erscheint im #clan-war Kanal
+
+---
+
+### Beispiel 2: Mehrere Erinnerungen für bessere Abdeckung
+
+Du möchtest Spieler mehrmals am Tag erinnern, damit niemand seine Decks vergisst.
+
+**Was du machst:**
+```
+/remindersadd clan:Lost Thunder channel:#clan-war time:10:00
+/remindersadd clan:Lost Thunder channel:#clan-war time:16:00
+/remindersadd clan:Lost Thunder channel:#clan-war time:21:00
+```
+
+**Ergebnis:**
+- Morgens um 10:00 Uhr: Erste Erinnerung
+- Nachmittags um 16:00 Uhr: Zweite Erinnerung
+- Abends um 21:00 Uhr: Letzte Erinnerung vor Kriegsende
+
+So hast du mehrere Chancen, Spieler zu erreichen!
+
+---
+
+### Beispiel 3: Erinnerungen in verschiedenen Kanälen
+
+Du möchtest wichtige Erinnerungen in unterschiedlichen Kanälen anzeigen.
+
+**Was du machst:**
+```
+/remindersadd clan:Lost Thunder channel:#clan-war time:14:00
+/remindersadd clan:Lost Thunder channel:#allgemein time:20:00
+```
+
+**Ergebnis:**
+- Die 14:00 Uhr Erinnerung erscheint im #clan-war Kanal
+- Die 20:00 Uhr Erinnerung erscheint im #allgemein Kanal (für mehr Aufmerksamkeit)
+
+---
+
+### Beispiel 4: Erinnerung überprüfen und löschen
+
+Du hast mehrere Erinnerungen erstellt und möchtest eine davon entfernen.
+
+**Schritt 1 - Übersicht anzeigen:**
+```
+/remindersinfo clan:Lost Thunder
+```
+
+**Du siehst:**
+```
+ID: 0 | Kanal: #clan-war | Zeit: 10:00:00
+ID: 1 | Kanal: #clan-war | Zeit: 16:00:00
+ID: 2 | Kanal: #clan-war | Zeit: 21:00:00
+```
+
+**Schritt 2 - Erinnerung löschen:**
+Die 10:00 Uhr Erinnerung ist zu früh. Du löschst ID 0:
+```
+/remindersremove id:0
+```
+
+**Ergebnis:**
+Nur die 16:00 und 21:00 Uhr Erinnerungen bleiben aktiv.
+
+---
+
+## Wie sieht eine Erinnerungs-Nachricht aus?
+
+Wenn der Bot eine Erinnerung sendet, sieht die Nachricht ungefähr so aus:
+
+```
+⚠️ Clan-War-Erinnerung für Lost Thunder
 
 Folgende Spieler haben heute weniger als 4 Decks verwendet:
 
-@Spieler1 (2 Decks)
-@Spieler2 (1 Deck)
-@Spieler3 (0 Decks)
+@MaxMustermann (2/4 Decks verwendet)
+@AnnaBecker (1/4 Decks verwendet)
+@TomSchmidt (0/4 Decks verwendet)
+@LauraWeber (3/4 Decks verwendet)
 
-Bitte denkt daran, alle 4 Decks im Clan-Krieg zu verwenden!
+Bitte denkt daran, alle 4 Decks im heutigen Clan-Krieg zu verwenden! 💪
+```
+
+**Was die Nachricht enthält:**
+- Den Clan-Namen
+- Eine Liste aller Spieler, die noch Decks übrig haben
+- Wie viele Decks jeder Spieler schon verwendet hat
+- Eine freundliche Aufforderung
+
+**Wichtig:** Nur Spieler, die ihren Discord-Account mit dem Bot verknüpft haben (mit `/link`), werden in der Liste erwähnt!
+
+---
+
+## Häufige Fragen und Probleme
+
+### ❓ "Dieser Clan existiert nicht"
+**Was ist passiert?**  
+Der Clan-Tag, den du eingegeben hast, ist nicht im System registriert.
+
+**Was du tun kannst:**  
+- Überprüfe, ob du den richtigen Clan ausgewählt hast
+- Wähle den Clan aus der Vorschlagsliste, statt ihn manuell einzutippen
+- Frage einen Administrator, ob dein Clan im System registriert ist
+
+---
+
+### ❓ "Du musst mindestens Vize-Anführer des Clans sein"
+**Was ist passiert?**  
+Du hast nicht die nötigen Rechte, um Erinnerungen für diesen Clan zu verwalten.
+
+**Was du tun kannst:**  
+Nur Anführer und Vize-Anführer können Erinnerungen erstellen und löschen. Wenn du glaubst, dass du die Berechtigung haben solltest, wende dich an einen Administrator.
+
+---
+
+### ❓ "Ungültiges Zeitformat"
+**Was ist passiert?**  
+Die Uhrzeit wurde nicht richtig eingegeben.
+
+**Was du tun kannst:**  
+Verwende das Format **HH:mm** mit einem Doppelpunkt:
+- ✅ Richtig: `14:30`, `09:00`, `22:45`
+- ❌ Falsch: `14.30`, `9:00 Uhr`, `14:30:00`
+
+**Tipp:** Verwende immer zweistellige Zahlen (09:00 statt 9:00)
+
+---
+
+### ❓ "Der angegebene Kanal existiert nicht"
+**Was ist passiert?**  
+Der Discord-Kanal, den du ausgewählt hast, wurde nicht gefunden.
+
+**Was du tun kannst:**  
+- Stelle sicher, dass der Kanal noch existiert
+- Prüfe, ob der Bot Zugriff auf den Kanal hat
+- Wähle den Kanal aus der Dropdown-Liste, statt ihn manuell einzutippen
+
+---
+
+### ❓ "Es existiert kein Reminder mit dieser ID"
+**Was ist passiert?**  
+Die ID, die du zum Löschen angegeben hast, existiert nicht.
+
+**Was du tun kannst:**  
+- Verwende `/remindersinfo` um die aktuellen IDs zu sehen
+- Achte darauf, die richtige Zahl einzugeben (z.B. `0` nicht `o`)
+
+---
+
+### ❓ Die Erinnerungen werden nicht gesendet
+**Was könnte das Problem sein?**
+
+1. **Kriegstage:** Erinnerungen werden nur **Donnerstag, Freitag, Samstag und Sonntag** gesendet
+2. **Keine Spieler:** Wenn alle Spieler bereits 4 Decks verwendet haben, wird keine Nachricht gesendet
+3. **Fehlende Verlinkung:** Spieler müssen mit `/link` ihr Discord-Konto verbunden haben
+4. **Falsche Zeit:** Überprüfe mit `/remindersinfo`, ob die Zeit richtig eingestellt ist
+
+---
+
+### ❓ Kann ich Erinnerungen auch montags bis mittwochs nutzen?
+**Nein.** Das System ist speziell für Kriegstage (Donnerstag-Sonntag) konzipiert. An anderen Tagen finden keine Clan-Kriege statt, daher werden auch keine Erinnerungen gesendet.
+
+---
+
+### ❓ Wie viele Erinnerungen kann ich pro Clan erstellen?
+**Unbegrenzt!** Du kannst so viele Erinnerungen erstellen, wie du möchtest. Empfohlen sind aber **2-3 Erinnerungen pro Tag**, um die Spieler nicht zu überfordern.
+
+---
+
+### ❓ Was bedeutet "weniger als 4 Decks"?
+Im Clan-Krieg hat jeder Spieler **4 Decks** zur Verfügung. Die Erinnerung wird nur an Spieler gesendet, die noch nicht alle 4 Decks verwendet haben:
+- 0 Decks verwendet → wird erinnert ✅
+- 1 Deck verwendet → wird erinnert ✅
+- 2 Decks verwendet → wird erinnert ✅
+- 3 Decks verwendet → wird erinnert ✅
+- 4 Decks verwendet → wird NICHT erinnert ❌
+
+---
+
+### ❓ Können andere Vize-Anführer meine Erinnerungen sehen und löschen?
+**Ja.** Alle Vize-Anführer und Anführer des Clans können:
+- Alle Erinnerungen mit `/remindersinfo` sehen
+- Beliebige Erinnerungen mit `/remindersremove` löschen
+- Neue Erinnerungen mit `/remindersadd` erstellen
+
+Das ist so gedacht, damit ihr als Team zusammenarbeiten könnt.
+
+---
+
+## Tipps für Vize-Anführer
+
+### 💡 Tipp 1: Wähle die richtigen Zeiten
+- **Morgens (z.B. 09:00):** Gut für Spieler, die früh aktiv sind
+- **Nachmittags (z.B. 16:00):** Erreicht die meisten Spieler nach Schule/Arbeit
+- **Abends (z.B. 20:00 oder 21:00):** Letzte Chance vor Kriegsende
+
+**Vermeide:** Uhrzeiten mitten in der Nacht (niemand ist wach) oder zu früh am Morgen.
+
+---
+
+### 💡 Tipp 2: Nutze einen dedizierten Kanal
+Erstelle einen speziellen Kanal wie **#clan-war** oder **#erinnerungen**, in dem nur wichtige Kriegsnachrichten erscheinen. So übersehen Spieler die Erinnerungen nicht zwischen anderen Chat-Nachrichten.
+
+---
+
+### 💡 Tipp 3: Nicht zu viele Erinnerungen
+**Empfohlen:** 2-3 Erinnerungen pro Tag  
+**Nicht empfohlen:** Mehr als 4 Erinnerungen pro Tag
+
+Zu viele Erinnerungen können nervig sein und Spieler ignorieren sie dann.
+
+---
+
+### 💡 Tipp 4: Informiere deine Clan-Mitglieder
+Wenn du das System zum ersten Mal einrichtest, erkläre deinen Clan-Mitgliedern:
+- Was die automatischen Erinnerungen sind
+- Dass sie mit `/link` ihr Konto verknüpfen müssen, um erwähnt zu werden
+- Wann die Erinnerungen kommen (z.B. "um 16:00 und 20:00 Uhr")
+
+---
+
+### 💡 Tipp 5: Passe die Zeiten an
+Beobachte nach ein paar Wochen:
+- Werden die Decks jetzt besser genutzt?
+- Kommen zu viele oder zu wenige Erinnerungen?
+- Sind die Zeiten passend?
+
+Du kannst jederzeit Erinnerungen löschen und neue mit besseren Zeiten erstellen!
+
+---
+
+### 💡 Tipp 6: Koordiniere dich mit anderen Vize-Anführern
+Wenn mehrere Vize-Anführer Zugriff haben:
+- Sprecht euch ab, wer Erinnerungen erstellt
+- Vermeidet doppelte Erinnerungen zur gleichen Zeit
+- Nutzt `/remindersinfo` um zu sehen, was schon eingerichtet ist
+
+---
+
+### 💡 Tipp 7: Spieler müssen verknüpft sein
+Damit Spieler in den Erinnerungen erwähnt werden, müssen sie ihren Discord-Account mit ihrem Clash Royale Account verknüpfen. 
+
+**Der Befehl dafür ist:** `/link`
+
+Wenn ein Spieler nicht in den Erinnerungen auftaucht, obwohl er Decks übrig hat, hat er sein Konto wahrscheinlich nicht verknüpft.
+
+---
+
+## Zusammenfassung: Die 3 Befehle auf einen Blick
+
+| Befehl | Was er macht | Wann du ihn brauchst |
+|--------|--------------|---------------------|
+| `/remindersadd` | Erstellt eine neue Erinnerung | Beim Einrichten des Systems |
+| `/remindersinfo` | Zeigt alle Erinnerungen an | Zum Überprüfen oder um IDs zu finden |
+| `/remindersremove` | Löscht eine Erinnerung | Wenn eine Erinnerung nicht mehr gebraucht wird |
+
+---
+
+## Schnellstart-Anleitung
+
+**Du willst sofort loslegen? Folge diesen 3 Schritten:**
+
+1️⃣ **Erstelle eine Erinnerung am Abend:**
+```
+/remindersadd clan:[dein Clan] channel:#clan-war time:20:00
+```
+
+2️⃣ **Überprüfe, ob es funktioniert hat:**
+```
+/remindersinfo clan:[dein Clan]
+```
+
+3️⃣ **Fertig!** Ab jetzt werden jeden Kriegstag (Do-So) um 20:00 Uhr automatisch Erinnerungen gesendet.
+
+**Optional:** Füge noch eine Nachmittagserinnerung hinzu:
+```
+/remindersadd clan:[dein Clan] channel:#clan-war time:16:00
 ```
 
 ---
 
-## Häufige Anwendungsfälle
+## Bei Problemen oder Fragen
 
-### Morgendliche Erinnerung
-```
-/remindersadd clan:#MeinClan channel:#clan-war time:09:00
-```
-Sendet eine Erinnerung am Morgen, um Spieler frühzeitig zu motivieren.
-
-### Nachmittagserinnerung
-```
-/remindersadd clan:#MeinClan channel:#clan-war time:16:00
-```
-Erinnert Spieler am Nachmittag, falls sie noch nicht alle Decks verwendet haben.
-
-### Abenderinnerung
-```
-/remindersadd clan:#MeinClan channel:#clan-war time:20:00
-```
-Letzte Erinnerung vor Kriegsende für Spieler, die noch Decks übrig haben.
-
-### Mehrere Erinnerungen kombinieren
-Du kannst alle drei Zeiten für einen Clan konfigurieren:
-```
-/remindersadd clan:#MeinClan channel:#clan-war time:09:00
-/remindersadd clan:#MeinClan channel:#clan-war time:16:00
-/remindersadd clan:#MeinClan channel:#clan-war time:20:00
-```
+Wenn etwas nicht funktioniert oder du Fragen hast:
+1. ✅ Lies dir die **Häufigen Fragen und Probleme** oben durch
+2. ✅ Überprüfe deine Erinnerungen mit `/remindersinfo`
+3. ✅ Stelle sicher, dass du Vize-Anführer oder Anführer bist
+4. ✅ Kontaktiere einen Bot-Administrator, wenn das Problem weiterhin besteht
 
 ---
 
-## Fehlermeldungen und Lösungen
+**Viel Erfolg beim Einsatz des Erinnerungs-Systems! 🎮⚔️**
 
-### "Dieser Clan existiert nicht"
-**Problem:** Der eingegebene Clan-Tag ist nicht in der Datenbank registriert.  
-**Lösung:** Überprüfe den Clan-Tag und stelle sicher, dass der Clan im System registriert ist.
-
-### "Du musst mindestens Vize-Anführer des Clans sein"
-**Problem:** Du hast nicht die erforderlichen Berechtigungen.  
-**Lösung:** Nur Clan-Anführer und Vize-Anführer können Erinnerungen verwalten.
-
-### "Ungültiges Zeitformat"
-**Problem:** Die eingegebene Zeit entspricht nicht dem Format HH:mm.  
-**Lösung:** Verwende das 24-Stunden-Format, z.B. "14:30" oder "09:00".
-
-### "Der angegebene Kanal existiert nicht"
-**Problem:** Der ausgewählte Discord-Kanal wurde nicht gefunden.  
-**Lösung:** Stelle sicher, dass der Kanal existiert und der Bot darauf Zugriff hat.
-
-### "Es existiert kein Reminder mit dieser ID"
-**Problem:** Die eingegebene ID ist ungültig.  
-**Lösung:** Verwende `/remindersinfo`, um die richtigen IDs zu sehen.
-
----
-
-## Tipps und Best Practices
-
-1. **Zeitplanung:** Wähle Zeiten, die für deine Clan-Mitglieder sinnvoll sind (z.B. nicht mitten in der Nacht).
-
-2. **Kanal-Auswahl:** Verwende einen dedizierten Kanal für Clan-War-Angelegenheiten, damit die Erinnerungen gut sichtbar sind.
-
-3. **Anzahl der Erinnerungen:** 2-3 Erinnerungen pro Tag sind meist ausreichend (z.B. morgens, nachmittags, abends).
-
-4. **Kommunikation:** Informiere deine Clan-Mitglieder über die neuen automatischen Erinnerungen.
-
-5. **Anpassung:** Beobachte die Teilnahme und passe die Zeiten bei Bedarf an.
-
-6. **Aufräumen:** Entferne Erinnerungen, die nicht mehr benötigt werden, mit `/remindersremove`.
-
----
-
-## Technische Details
-
-### Datenbank-Struktur
-Die Erinnerungen werden in einer `reminders`-Tabelle gespeichert mit:
-- `id` - Eindeutige ID der Erinnerung
-- `clantag` - Zugehöriger Clan
-- `channelid` - Discord-Kanal-ID
-- `time` - Uhrzeit der Erinnerung
-
-### Automatisierung
-Der Bot verwendet einen Timer, der:
-- Jede Minute prüft, ob Erinnerungen fällig sind
-- Die Clash Royale API abfragt, um Deck-Verwendung zu prüfen
-- Discord-Mentions für verknüpfte Spieler erstellt
-- Nachrichten nur an Kriegstagen sendet
-
-### Spieler-Verlinkung
-Damit Spieler erwähnt werden können, müssen sie:
-1. Mit `/link` ihr Discord-Konto mit ihrem Spieler-Tag verknüpfen
-2. Im betreffenden Clan Mitglied sein
-
----
-
-## Support und Fragen
-
-Bei Problemen oder Fragen zum Erinnerungs-System:
-1. Überprüfe zuerst die Fehlermeldungen
-2. Verwende `/remindersinfo`, um die aktuellen Konfigurationen zu sehen
-3. Stelle sicher, dass du die erforderlichen Berechtigungen hast
-4. Kontaktiere den Bot-Administrator, wenn das Problem weiterhin besteht
-
----
-
-**Version:** November 2025  
-**Letzte Aktualisierung:** 10. November 2025
+*Letzte Aktualisierung: 10. November 2025*
