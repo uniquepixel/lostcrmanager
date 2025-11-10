@@ -37,6 +37,12 @@ public class kpremove extends ListenerAdapter {
 			return;
 		}
 
+		if (kp.getPlayer() == null) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Ein Kickpunkt mit dieser ID existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
 		String clantag = kp.getPlayer().getClanDB().getTag();
 
 		if (clantag.equals("warteliste")) {
