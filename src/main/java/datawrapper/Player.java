@@ -3,6 +3,7 @@ package datawrapper;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.PreparedStatement;
@@ -137,7 +138,7 @@ public class Player {
 	public boolean AccExists() {
 		try {
 			String encodedTag = URLEncoder.encode(tag, "UTF-8");
-			URL url = new URL("https://api.clashroyale.com/v1/players/" + encodedTag);
+			URL url = URI.create("https://api.clashroyale.com/v1/players/" + encodedTag).toURL();
 
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("GET");
