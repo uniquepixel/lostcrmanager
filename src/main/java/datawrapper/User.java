@@ -75,7 +75,6 @@ public class User {
 				}
 			} else {
 				for (Player p : linkedaccs) {
-					System.out.println(p.getRole());
 					clanroles.put(p.getClanDB().getTag(), p.getRole());
 				}
 			}
