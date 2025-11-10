@@ -152,39 +152,39 @@ public class cwfails extends ListenerAdapter {
 					if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
 						if (tagtocwfame.get(playertag) < threshold) {
 							if (tagtoclantagcwdone.get(playertag).equals(p.getClanDB().getTag())) {
-								// Apply min_threshold check - only display if points are >= min_threshold
+								// Apply min_threshold check - only display and add KP if points are >= min_threshold
 								int playerPoints = tagtocwfame.get(playertag);
 								if (minThresholdFinal == null || playerPoints >= minThresholdFinal) {
 									desc += "**" + p.getInfoStringDB() + "**:\n";
 									desc += " - Punkte: " + p.getCWFame() + ".\n";
 									if (listempty)
 										listempty = false;
+									if (addkp)
+										playerdonewrong.add(p);
 								}
-								if (addkp)
-									playerdonewrong.add(p);
 							}
 						}
 					} else {
-						// Player didn't do CW in clan - only display if min_threshold is not set or is 0
+						// Player didn't do CW in clan - only display and add KP if min_threshold is not set or is 0
 						if (minThresholdFinal == null || minThresholdFinal <= 0) {
 							desc += "**" + p.getInfoStringDB() + "**:\n";
 							desc += " - Nicht im Clan gemacht.\n";
 							if (listempty)
 								listempty = false;
+							if (addkp)
+								playerdonewrong.add(p);
 						}
-						if (addkp)
-							playerdonewrong.add(p);
 					}
 				} else {
-					// Player didn't do CW in clan - only display if min_threshold is not set or is 0
+					// Player didn't do CW in clan - only display and add KP if min_threshold is not set or is 0
 					if (minThresholdFinal == null || minThresholdFinal <= 0) {
 						desc += "**" + p.getInfoStringDB() + "**:\n";
 						desc += " - Nicht im Clan gemacht.\n";
 						if (listempty)
 							listempty = false;
+						if (addkp)
+							playerdonewrong.add(p);
 					}
-					if (addkp)
-						playerdonewrong.add(p);
 				}
 			}
 
