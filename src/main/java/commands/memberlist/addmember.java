@@ -72,7 +72,7 @@ public class addmember extends ListenerAdapter {
 			}
 		}
 
-		if (!(role.equals("leader") || role.equals("coleader") || role.equals("elder") || role.equals("member"))) {
+		if (!(role.equals("leader") || role.equals("coleader") || role.equals("hiddencoleader") || role.equals("elder") || role.equals("member"))) {
 			event.getHook()
 					.editOriginalEmbeds(
 							MessageUtil.buildEmbed(title, "Gib eine gültige Rolle an.", MessageUtil.EmbedType.ERROR))
@@ -91,6 +91,15 @@ public class addmember extends ListenerAdapter {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 							"Um jemanden als Vize-Anführer hinzuzufügen, musst du Admin oder Anführer sein.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+		if (role.equals("hiddencoleader") && !(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER)) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Um jemanden als Vize-Anführer (versteckt) hinzuzufügen, musst du Admin oder Anführer sein.",
 							MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
@@ -123,7 +132,8 @@ public class addmember extends ListenerAdapter {
 				clantag, role);
 		String rolestring = role.equals("leader") ? "Anführer"
 				: role.equals("coleader") ? "Vize-Anführer"
-						: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
+						: role.equals("hiddencoleader") ? "Vize-Anführer (versteckt)"
+							: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
 
 		String desc = "";
 		if (!clantag.equals("warteliste")) {
@@ -191,6 +201,7 @@ public class addmember extends ListenerAdapter {
 				List<Command.Choice> choices = new ArrayList<>();
 				choices.add(new Command.Choice("Anführer", "leader"));
 				choices.add(new Command.Choice("Vize-Anführer", "coleader"));
+				choices.add(new Command.Choice("Vize-Anführer (versteckt)", "hiddencoleader"));
 				choices.add(new Command.Choice("Ältester", "elder"));
 				choices.add(new Command.Choice("Mitglied", "member"));
 				event.replyChoices(choices).queue();

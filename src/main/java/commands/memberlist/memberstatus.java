@@ -87,6 +87,10 @@ public class memberstatus extends ListenerAdapter {
 		for (String s : taglistdb) {
 			if (!taglistapi.contains(s)) {
 				Player p = new Player(s);
+				// Skip hidden coleaders - they don't need to be in the clan ingame
+				if (p.isHiddenColeader()) {
+					continue;
+				}
 				// Skip leaders/coleaders/admins if exclude_leaders is true
 				if (excludeLeaders) {
 					Player.RoleType role = p.getRole();
@@ -216,6 +220,10 @@ public class memberstatus extends ListenerAdapter {
 		for (String s : taglistdb) {
 			if (!taglistapi.contains(s)) {
 				Player p = new Player(s);
+				// Skip hidden coleaders - they don't need to be in the clan ingame
+				if (p.isHiddenColeader()) {
+					continue;
+				}
 				// Skip leaders/coleaders/admins if exclude_leaders is true
 				if (excludeLeaders) {
 					Player.RoleType role = p.getRole();

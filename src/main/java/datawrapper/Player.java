@@ -287,7 +287,7 @@ public class Player {
 						if (rs.next()) {
 							String rolestring = rs.getString("clan_role");
 							role = rolestring.equals("leader") ? RoleType.LEADER
-									: rolestring.equals("coleader") ? RoleType.COLEADER
+									: rolestring.equals("coleader") || rolestring.equals("hiddencoleader") ? RoleType.COLEADER
 											: rolestring.equals("elder") ? RoleType.ELDER
 													: rolestring.equals("member") ? RoleType.MEMBER : null;
 						}
@@ -423,6 +423,15 @@ public class Player {
 			getCWFame();
 		}
 		return clantagcwdone;
+	}
+
+	public boolean isHiddenColeader() {
+		if (getClanDB() == null) {
+			return false;
+		}
+		String rolestring = DBUtil.getValueFromSQL("SELECT clan_role FROM clan_members WHERE player_tag = ?",
+				String.class, tag);
+		return "hiddencoleader".equals(rolestring);
 	}
 
 }
