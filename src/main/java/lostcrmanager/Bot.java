@@ -1,11 +1,13 @@
 package lostcrmanager;
 
 import java.io.File;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -96,6 +98,7 @@ public class Bot extends ListenerAdapter {
 		}
 
 		datautil.Connection.tablesExists();
+		datautil.Connection.migrateRemindersTable();
 		startNameUpdates();
 		startLoadingLists();
 		startReminders();
@@ -344,21 +347,33 @@ public class Bot extends ListenerAdapter {
 		}
 
 		LocalTime currentTime = LocalTime.now();
+		LocalDate currentDate = LocalDate.now();
 
 		// Get all reminders
-		String sql = "SELECT id, clantag, channelid, time FROM reminders";
+		String sql = "SELECT id, clantag, channelid, time, last_sent_date FROM reminders";
 		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
+					int reminderId = rs.getInt("id");
 					String clantag = rs.getString("clantag");
 					String channelId = rs.getString("channelid");
 					Time reminderTime = rs.getTime("time");
+					Date lastSentDate = rs.getDate("last_sent_date");
 					LocalTime reminderLocalTime = reminderTime.toLocalTime();
+
+					// Check if already sent today
+					if (lastSentDate != null) {
+						LocalDate lastSentLocalDate = lastSentDate.toLocalDate();
+						if (lastSentLocalDate.equals(currentDate)) {
+							// Already sent today, skip
+							continue;
+						}
+					}
 
 					// Check if reminder should be sent (within 5 minute window)
 					long minutesDiff = java.time.Duration.between(reminderLocalTime, currentTime).toMinutes();
 					if (minutesDiff >= 0 && minutesDiff < 5) {
-						sendReminder(clantag, channelId);
+						sendReminder(reminderId, clantag, channelId);
 					}
 				}
 			}
@@ -367,7 +382,7 @@ public class Bot extends ListenerAdapter {
 		}
 	}
 
-	private static void sendReminder(String clantag, String channelId) {
+	private static void sendReminder(int reminderId, String clantag, String channelId) {
 		try {
 			// Get clan info
 			Clan clan = new Clan(clantag);
@@ -427,7 +442,11 @@ public class Bot extends ListenerAdapter {
 						embed.setDescription(description.toString());
 
 						channel.sendMessageEmbeds(embed.build()).queue(
-								success -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
+								success -> {
+									System.out.println("Reminder erfolgreich gesendet für " + clantag);
+									// Update last_sent_date after successful send
+									updateLastSentDate(reminderId);
+								},
 								error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage()));
 					} else {
 						System.err.println("Kanal " + channelId + " nicht gefunden.");
@@ -436,6 +455,23 @@ public class Bot extends ListenerAdapter {
 			}
 		} catch (Exception e) {
 			System.err.println("Fehler beim Senden des Reminders für " + clantag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	private static void updateLastSentDate(int reminderId) {
+		try {
+			LocalDate currentDate = LocalDate.now();
+			Date sqlDate = Date.valueOf(currentDate);
+			String sql = "UPDATE reminders SET last_sent_date = ? WHERE id = ?";
+			try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
+				pstmt.setDate(1, sqlDate);
+				pstmt.setInt(2, reminderId);
+				pstmt.executeUpdate();
+				System.out.println("Updated last_sent_date for reminder ID: " + reminderId);
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Aktualisieren von last_sent_date: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
