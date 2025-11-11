@@ -158,7 +158,10 @@ public class Bot extends ListenerAdapter {
 					Commands.slash("memberstatus",
 							"Status über einen Clan, welche Spieler keine Mitglieder sind und welche Mitglieder fehlen.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
-									"Der Clan, welcher ausgegeben werden soll.", true).setAutoComplete(true)),
+									"Der Clan, welcher ausgegeben werden soll.", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
+									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Prüfung ausgeschlossen")
+									.setAutoComplete(true).setRequired(false)),
 					Commands.slash("kpaddreason", "Erstelle einen vorgefertigten Kickpunktgrund.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, für welchen dieser erstellt wird.", true).setAutoComplete(true))

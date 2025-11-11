@@ -29,6 +29,7 @@ public class memberstatus extends ListenerAdapter {
 		String title = "Memberstatus";
 
 		OptionMapping clanOption = event.getOption("clan");
+		OptionMapping excludeLeadersOption = event.getOption("exclude_leaders");
 
 		if (clanOption == null) {
 			event.getHook().editOriginalEmbeds(
@@ -38,6 +39,19 @@ public class memberstatus extends ListenerAdapter {
 		}
 
 		String clantag = clanOption.getAsString();
+		
+		boolean excludeLeaders = false;
+		if (excludeLeadersOption != null) {
+			String excludeLeadersValue = excludeLeadersOption.getAsString();
+			if ("true".equalsIgnoreCase(excludeLeadersValue)) {
+				excludeLeaders = true;
+			} else {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Der exclude_leaders Parameter muss entweder \"true\" enthalten oder nicht angegeben sein (false).",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		}
 
 		if (clantag.equals("warteliste")) {
 			event.getHook()
@@ -72,7 +86,16 @@ public class memberstatus extends ListenerAdapter {
 
 		for (String s : taglistdb) {
 			if (!taglistapi.contains(s)) {
-				membernotinclan.add(new Player(s));
+				Player p = new Player(s);
+				// Skip leaders/coleaders/admins if exclude_leaders is true
+				if (excludeLeaders) {
+					Player.RoleType role = p.getRole();
+					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+							|| role == Player.RoleType.COLEADER) {
+						continue;
+					}
+				}
+				membernotinclan.add(p);
 			}
 		}
 
@@ -101,7 +124,7 @@ public class memberstatus extends ListenerAdapter {
 		desc += "**Kein Mitglied, ingame im Clan:**\n\n";
 		desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
 
-		Button refreshButton = Button.secondary("memberstatus_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+		Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeaders, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
 		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
@@ -125,6 +148,13 @@ public class memberstatus extends ListenerAdapter {
 
 			event.replyChoices(choices).queue();
 		}
+		if (focused.equals("exclude_leaders")) {
+			List<Command.Choice> choices = new ArrayList<>();
+			if ("true".startsWith(input.toLowerCase())) {
+				choices.add(new Command.Choice("true", "true"));
+			}
+			event.replyChoices(choices).queue();
+		}
 	}
 
 	@Override
@@ -135,7 +165,21 @@ public class memberstatus extends ListenerAdapter {
 
 		event.deferEdit().queue();
 
-		String clantag = id.substring("memberstatus_".length());
+		// Parse the button ID: memberstatus_{clantag}_{excludeLeaders}
+		String remainder = id.substring("memberstatus_".length());
+		String clantag;
+		boolean excludeLeaders = false;
+		
+		int lastUnderscore = remainder.lastIndexOf("_");
+		if (lastUnderscore != -1) {
+			clantag = remainder.substring(0, lastUnderscore);
+			String excludeLeadersStr = remainder.substring(lastUnderscore + 1);
+			excludeLeaders = "true".equals(excludeLeadersStr);
+		} else {
+			// Fallback for old button IDs without exclude_leaders
+			clantag = remainder;
+		}
+		
 		String title = "Memberstatus";
 
 		if (clantag.equals("warteliste")) {
@@ -171,7 +215,16 @@ public class memberstatus extends ListenerAdapter {
 
 		for (String s : taglistdb) {
 			if (!taglistapi.contains(s)) {
-				membernotinclan.add(new Player(s));
+				Player p = new Player(s);
+				// Skip leaders/coleaders/admins if exclude_leaders is true
+				if (excludeLeaders) {
+					Player.RoleType role = p.getRole();
+					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+							|| role == Player.RoleType.COLEADER) {
+						continue;
+					}
+				}
+				membernotinclan.add(p);
 			}
 		}
 
@@ -200,7 +253,7 @@ public class memberstatus extends ListenerAdapter {
 		desc += "**Kein Mitglied, ingame im Clan:**\n\n";
 		desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
 
-		Button refreshButton = Button.secondary("memberstatus_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+		Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeaders, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
 		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
