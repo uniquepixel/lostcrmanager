@@ -427,7 +427,7 @@ public class Bot extends ListenerAdapter {
 						embed.setDescription(description.toString());
 
 						channel.sendMessageEmbeds(embed.build()).queue(
-								success -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
+								_ -> System.out.println("Reminder erfolgreich gesendet für " + clantag),
 								error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage()));
 					} else {
 						System.err.println("Kanal " + channelId + " nicht gefunden.");
