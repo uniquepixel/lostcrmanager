@@ -92,7 +92,7 @@ public class Connection {
 							break;
 						case "reminders":
 							createTableSQL = "CREATE TABLE " + tableName + " (id BIGINT PRIMARY KEY,"
-									+ "clantag TEXT," + "channelid TEXT," + "time TIME)";
+									+ "clantag TEXT," + "channelid TEXT," + "time TIME," + "last_sent_date DATE)";
 							break;
 						}
 
@@ -108,6 +108,29 @@ public class Connection {
 			e.printStackTrace();
 		}
 
+	}
+
+	public static void migrateRemindersTable() {
+		// Add last_sent_date column to reminders table if it doesn't exist
+		try (java.sql.Connection conn = DriverManager.getConnection(url, user, password)) {
+			DatabaseMetaData dbm = conn.getMetaData();
+			try (ResultSet columns = dbm.getColumns(null, null, "reminders", "last_sent_date")) {
+				if (!columns.next()) {
+					// Column doesn't exist, add it
+					System.out.println("Adding 'last_sent_date' column to reminders table...");
+					String alterTableSQL = "ALTER TABLE reminders ADD COLUMN last_sent_date DATE";
+					try (Statement stmt = conn.createStatement()) {
+						stmt.executeUpdate(alterTableSQL);
+						System.out.println("Column 'last_sent_date' added successfully.");
+					}
+				} else {
+					System.out.println("Column 'last_sent_date' already exists in reminders table.");
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error migrating reminders table: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	public static java.sql.Connection getConnection() throws SQLException {
