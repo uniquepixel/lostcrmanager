@@ -61,8 +61,14 @@ public class listmembers extends ListenerAdapter {
 		String coleaderlist = "";
 		String elderlist = "";
 		String memberlist = "";
+		int clanSizeCount = 0;
 
 		for (Player p : playerlist) {
+			boolean isHidden = p.isHiddenColeader();
+			if (!isHidden) {
+				clanSizeCount++;
+			}
+			
 			if (p.getRole() == Player.RoleType.ADMIN) {
 				adminlist += p.getInfoStringDB();
 				if (p.isMarked()) {
@@ -79,6 +85,9 @@ public class listmembers extends ListenerAdapter {
 			}
 			if (p.getRole() == Player.RoleType.COLEADER) {
 				coleaderlist += p.getInfoStringDB();
+				if (isHidden) {
+					coleaderlist += " (versteckt)";
+				}
 				if (p.isMarked()) {
 					coleaderlist += " (✗)";
 				}
@@ -111,7 +120,7 @@ public class listmembers extends ListenerAdapter {
 			desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
 			desc += "**Mitglied:**\n";
 			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Mitglieder des Clans: " + playerlist.size();
+			desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
 		} else {
 			desc += "**Wartend:**\n";
 			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
@@ -175,8 +184,14 @@ public class listmembers extends ListenerAdapter {
 		String coleaderlist = "";
 		String elderlist = "";
 		String memberlist = "";
+		int clanSizeCount = 0;
 
 		for (Player p : playerlist) {
+			boolean isHidden = p.isHiddenColeader();
+			if (!isHidden) {
+				clanSizeCount++;
+			}
+			
 			if (p.getRole() == Player.RoleType.ADMIN) {
 				adminlist += p.getInfoStringDB();
 				if (p.isMarked()) {
@@ -193,6 +208,9 @@ public class listmembers extends ListenerAdapter {
 			}
 			if (p.getRole() == Player.RoleType.COLEADER) {
 				coleaderlist += p.getInfoStringDB();
+				if (isHidden) {
+					coleaderlist += " (versteckt)";
+				}
 				if (p.isMarked()) {
 					coleaderlist += " (✗)";
 				}
@@ -225,7 +243,7 @@ public class listmembers extends ListenerAdapter {
 			desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
 			desc += "**Mitglied:**\n";
 			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Mitglieder des Clans: " + playerlist.size();
+			desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
 		} else {
 			desc += "**Wartend:**\n";
 			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";

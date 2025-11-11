@@ -16,6 +16,10 @@ import util.MessageUtil;
 
 public class playerinfo extends ListenerAdapter {
 
+	enum ConvertionType {
+		USERTOACCS, ACCTOUSER
+	}
+
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
 		if (!event.getName().equals("playerinfo"))
@@ -43,10 +47,6 @@ public class playerinfo extends ListenerAdapter {
 		ArrayList<Player> linkedaccs = new ArrayList<>();
 
 		Player player = null;
-
-		enum ConvertionType {
-			USERTOACCS, ACCTOUSER
-		}
 
 		ConvertionType conv = null;
 
