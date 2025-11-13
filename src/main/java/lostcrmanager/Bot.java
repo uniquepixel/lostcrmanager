@@ -447,7 +447,7 @@ public class Bot extends ListenerAdapter {
 						embed.setDescription(description.toString());
 
 						channel.sendMessageEmbeds(embed.build()).queue(
-								_ -> {
+								success -> {
 									System.out.println("Reminder erfolgreich gesendet für " + clantag);
 									// Update last_sent_date after successful send
 									updateLastSentDate(reminderId);
