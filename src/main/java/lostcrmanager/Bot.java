@@ -509,16 +509,6 @@ public class Bot extends ListenerAdapter {
 							currentMessage.append(line);
 						}
 
-						// Add closing message to the last message
-						String closingMessage = "\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**";
-						if (currentMessage.length() + closingMessage.length() > 1900) {
-							// If adding closing message exceeds limit, save current and start new
-							messages.add(currentMessage.toString());
-							currentMessage = new StringBuilder(closingMessage);
-						} else {
-							currentMessage.append(closingMessage);
-						}
-
 						// Add the final message
 						if (currentMessage.length() > 0) {
 							messages.add(currentMessage.toString());
@@ -551,7 +541,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(success -> {
+		channel.sendMessage(messages.get(index)).queue(_ -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {
