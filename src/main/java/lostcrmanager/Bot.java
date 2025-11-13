@@ -237,7 +237,8 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.STRING, "time",
 									"Die Uhrzeit für den Reminder (Format: HH:mm, z.B. 14:30)", true))
 							.addOptions(new OptionData(OptionType.STRING, "weekday",
-									"Der Wochentag für den Reminder (z.B. monday, tuesday, ...)", true).setAutoComplete(true)),
+									"Der Wochentag für den Reminder (z.B. monday, tuesday, ...)", true)
+									.setAutoComplete(true)),
 					Commands.slash("remindersremove", "Entferne einen Reminder.")
 							.addOptions(new OptionData(OptionType.INTEGER, "id",
 									"Die ID des Reminders. Ist unter /remindersinfo zu sehen.", true)),
@@ -342,10 +343,10 @@ public class Bot extends ListenerAdapter {
 
 	private static void checkReminders() {
 		ZoneId zoneId = ZoneId.of("Europe/Berlin");
-	    ZonedDateTime now = ZonedDateTime.now(zoneId);
-	    DayOfWeek today = now.getDayOfWeek();
-	    LocalTime currentTime = now.toLocalTime();
-	    LocalDate currentDate = now.toLocalDate();
+		ZonedDateTime now = ZonedDateTime.now(zoneId);
+		DayOfWeek today = now.getDayOfWeek();
+		LocalTime currentTime = now.toLocalTime();
+		LocalDate currentDate = now.toLocalDate();
 
 		// Get all reminders
 		String sql = "SELECT id, clantag, channelid, time, last_sent_date, weekday FROM reminders";
@@ -385,21 +386,29 @@ public class Bot extends ListenerAdapter {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static boolean isDayOfWeek(DayOfWeek dayOfWeek, String weekdayString) {
 		if (weekdayString == null) {
 			return false;
 		}
 		String normalized = weekdayString.toLowerCase();
 		switch (normalized) {
-			case "monday": return dayOfWeek == DayOfWeek.MONDAY;
-			case "tuesday": return dayOfWeek == DayOfWeek.TUESDAY;
-			case "wednesday": return dayOfWeek == DayOfWeek.WEDNESDAY;
-			case "thursday": return dayOfWeek == DayOfWeek.THURSDAY;
-			case "friday": return dayOfWeek == DayOfWeek.FRIDAY;
-			case "saturday": return dayOfWeek == DayOfWeek.SATURDAY;
-			case "sunday": return dayOfWeek == DayOfWeek.SUNDAY;
-			default: return false;
+		case "monday":
+			return dayOfWeek == DayOfWeek.MONDAY;
+		case "tuesday":
+			return dayOfWeek == DayOfWeek.TUESDAY;
+		case "wednesday":
+			return dayOfWeek == DayOfWeek.WEDNESDAY;
+		case "thursday":
+			return dayOfWeek == DayOfWeek.THURSDAY;
+		case "friday":
+			return dayOfWeek == DayOfWeek.FRIDAY;
+		case "saturday":
+			return dayOfWeek == DayOfWeek.SATURDAY;
+		case "sunday":
+			return dayOfWeek == DayOfWeek.SUNDAY;
+		default:
+			return false;
 		}
 	}
 
@@ -431,9 +440,14 @@ public class Bot extends ListenerAdapter {
 					String playerName = participant.getString("name");
 					String playerTag = participant.getString("tag");
 					Player p = new Player(playerTag);
-					String userId = p.getUser().getUserID();
-					reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
-							+ "/4 Decks");
+					if (p.getUser() != null) {
+						String userId = p.getUser().getUserID();
+						reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
+								+ "/4 Decks");
+					} else {
+						reminderList.add(playerName + " (" + playerTag + ") - " + decksUsedToday + "/4 Decks");
+					}
+
 				}
 			}
 
@@ -474,7 +488,7 @@ public class Bot extends ListenerAdapter {
 						} else {
 							currentMessage.append(closingMessage);
 						}
-						
+
 						// Add the final message
 						if (currentMessage.length() > 0) {
 							messages.add(currentMessage.toString());
@@ -492,28 +506,28 @@ public class Bot extends ListenerAdapter {
 			e.printStackTrace();
 		}
 	}
-	
-	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int reminderId, String clantag) {
+
+	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int reminderId,
+			String clantag) {
 		sendMessagesSequentially(channel, messages, 0, reminderId, clantag);
 	}
-	
-	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int index, int reminderId, String clantag) {
+
+	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int index,
+			int reminderId, String clantag) {
 		if (index >= messages.size()) {
 			// All messages sent successfully
 			System.out.println("Reminder erfolgreich gesendet für " + clantag);
 			updateLastSentDate(reminderId);
 			return;
 		}
-		
-		channel.sendMessage(messages.get(index)).queue(
-			_ -> {
-				// Send next message
-				sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
-			},
-			error -> {
-				System.err.println("Fehler beim Senden des Reminders (Nachricht " + (index + 1) + "): " + error.getMessage());
-			}
-		);
+
+		channel.sendMessage(messages.get(index)).queue(_ -> {
+			// Send next message
+			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
+		}, error -> {
+			System.err
+					.println("Fehler beim Senden des Reminders (Nachricht " + (index + 1) + "): " + error.getMessage());
+		});
 	}
 
 	private static void updateLastSentDate(int reminderId) {
