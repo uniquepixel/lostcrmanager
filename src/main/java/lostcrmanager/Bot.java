@@ -53,7 +53,6 @@ import datawrapper.Clan;
 import datawrapper.Player;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -507,7 +506,7 @@ public class Bot extends ListenerAdapter {
 		}
 		
 		channel.sendMessage(messages.get(index)).queue(
-			success -> {
+			_ -> {
 				// Send next message
 				sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 			},
