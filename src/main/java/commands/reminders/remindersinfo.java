@@ -70,7 +70,7 @@ public class remindersinfo extends ListenerAdapter {
 
 		// Get all reminders for this clan
 		ArrayList<ReminderInfo> reminders = new ArrayList<>();
-		String sql = "SELECT id, channelid, time FROM reminders WHERE clantag = ? ORDER BY time";
+		String sql = "SELECT id, channelid, time, weekday FROM reminders WHERE clantag = ? ORDER BY time";
 
 		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
 			pstmt.setString(1, clantag);
@@ -79,7 +79,8 @@ public class remindersinfo extends ListenerAdapter {
 					int id = rs.getInt("id");
 					String channelId = rs.getString("channelid");
 					Time time = rs.getTime("time");
-					reminders.add(new ReminderInfo(id, channelId, time));
+					String weekday = rs.getString("weekday");
+					reminders.add(new ReminderInfo(id, channelId, time, weekday));
 				}
 			}
 		} catch (SQLException e) {
@@ -94,9 +95,10 @@ public class remindersinfo extends ListenerAdapter {
 			for (ReminderInfo reminder : reminders) {
 				desc += "**ID:** " + reminder.id + " | ";
 				desc += "**Kanal:** <#" + reminder.channelId + "> | ";
-				desc += "**Zeit:** " + reminder.time.toLocalTime().toString() + "\n";
+				desc += "**Zeit:** " + reminder.time.toLocalTime().toString() + " | ";
+				desc += "**Wochentag:** " + capitalizeWeekday(reminder.weekday) + "\n";
 			}
-			desc += "\nReminder werden Donnerstag, Freitag, Samstag und Sonntag zur konfigurierten Zeit gesendet.\n";
+			desc += "\nReminder werden am konfigurierten Wochentag zur konfigurierten Zeit gesendet.\n";
 			desc += "Sie erinnern Spieler, die heute weniger als 4 Decks verwendet haben.";
 		}
 
@@ -121,12 +123,21 @@ public class remindersinfo extends ListenerAdapter {
 		int id;
 		String channelId;
 		Time time;
+		String weekday;
 
-		ReminderInfo(int id, String channelId, Time time) {
+		ReminderInfo(int id, String channelId, Time time, String weekday) {
 			this.id = id;
 			this.channelId = channelId;
 			this.time = time;
+			this.weekday = weekday;
 		}
+	}
+	
+	private static String capitalizeWeekday(String weekday) {
+		if (weekday == null || weekday.isEmpty()) {
+			return "N/A";
+		}
+		return weekday.substring(0, 1).toUpperCase() + weekday.substring(1);
 	}
 
 }

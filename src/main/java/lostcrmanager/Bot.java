@@ -236,7 +236,9 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.CHANNEL, "channel",
 									"Der Kanal, in dem der Reminder gesendet wird.", true))
 							.addOptions(new OptionData(OptionType.STRING, "time",
-									"Die Uhrzeit für den Reminder (Format: HH:mm, z.B. 14:30)", true)),
+									"Die Uhrzeit für den Reminder (Format: HH:mm, z.B. 14:30)", true))
+							.addOptions(new OptionData(OptionType.STRING, "weekday",
+									"Der Wochentag für den Reminder (z.B. monday, tuesday, ...)", true).setAutoComplete(true)),
 					Commands.slash("remindersremove", "Entferne einen Reminder.")
 							.addOptions(new OptionData(OptionType.INTEGER, "id",
 									"Die ID des Reminders. Ist unter /remindersinfo zu sehen.", true)),
@@ -340,22 +342,14 @@ public class Bot extends ListenerAdapter {
 	}
 
 	private static void checkReminders() {
-		// Check if today is Thursday, Friday, Saturday, or Sunday
 		ZoneId zoneId = ZoneId.of("Europe/Berlin");
 	    ZonedDateTime now = ZonedDateTime.now(zoneId);
 	    DayOfWeek today = now.getDayOfWeek();
-
-	    // Prüfe, ob heute Donnerstag, Freitag, Samstag oder Sonntag ist
-	    if (today != DayOfWeek.THURSDAY && today != DayOfWeek.FRIDAY && today != DayOfWeek.SATURDAY
-	            && today != DayOfWeek.SUNDAY) {
-	        return; // Kein Reminder-Tag
-	    }
-
 	    LocalTime currentTime = now.toLocalTime();
 	    LocalDate currentDate = now.toLocalDate();
 
 		// Get all reminders
-		String sql = "SELECT id, clantag, channelid, time, last_sent_date FROM reminders";
+		String sql = "SELECT id, clantag, channelid, time, last_sent_date, weekday FROM reminders";
 		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
@@ -364,7 +358,13 @@ public class Bot extends ListenerAdapter {
 					String channelId = rs.getString("channelid");
 					Time reminderTime = rs.getTime("time");
 					Date lastSentDate = rs.getDate("last_sent_date");
+					String weekday = rs.getString("weekday");
 					LocalTime reminderLocalTime = reminderTime.toLocalTime();
+
+					// Check if today matches the configured weekday
+					if (weekday != null && !isDayOfWeek(today, weekday)) {
+						continue; // Not the configured day
+					}
 
 					// Check if already sent today
 					if (lastSentDate != null) {
@@ -384,6 +384,23 @@ public class Bot extends ListenerAdapter {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private static boolean isDayOfWeek(DayOfWeek dayOfWeek, String weekdayString) {
+		if (weekdayString == null) {
+			return false;
+		}
+		String normalized = weekdayString.toLowerCase();
+		switch (normalized) {
+			case "monday": return dayOfWeek == DayOfWeek.MONDAY;
+			case "tuesday": return dayOfWeek == DayOfWeek.TUESDAY;
+			case "wednesday": return dayOfWeek == DayOfWeek.WEDNESDAY;
+			case "thursday": return dayOfWeek == DayOfWeek.THURSDAY;
+			case "friday": return dayOfWeek == DayOfWeek.FRIDAY;
+			case "saturday": return dayOfWeek == DayOfWeek.SATURDAY;
+			case "sunday": return dayOfWeek == DayOfWeek.SUNDAY;
+			default: return false;
 		}
 	}
 
@@ -432,27 +449,40 @@ public class Bot extends ListenerAdapter {
 				if (guild != null) {
 					TextChannel channel = guild.getTextChannelById(channelId);
 					if (channel != null) {
-						EmbedBuilder embed = new EmbedBuilder();
-						embed.setTitle("⚠️ Clan War Reminder - " + clan.getNameDB());
-						embed.setColor(0xFF9900);
-
-						StringBuilder description = new StringBuilder();
-						description.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
+						// Build messages with split logic
+						ArrayList<String> messages = new ArrayList<>();
+						StringBuilder currentMessage = new StringBuilder();
+						currentMessage.append("⚠️ **Clan War Reminder - " + clan.getNameDB() + "**\n\n");
+						currentMessage.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
 
 						for (String playerInfo : reminderList) {
-							description.append("• ").append(playerInfo).append("\n");
+							String line = "• " + playerInfo + "\n";
+							// Check if adding this line would exceed 1900 characters
+							if (currentMessage.length() + line.length() > 1900) {
+								// Save current message and start a new one
+								messages.add(currentMessage.toString());
+								currentMessage = new StringBuilder();
+							}
+							currentMessage.append(line);
 						}
 
-						description.append("\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**");
-						embed.setDescription(description.toString());
+						// Add closing message to the last message
+						String closingMessage = "\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**";
+						if (currentMessage.length() + closingMessage.length() > 1900) {
+							// If adding closing message exceeds limit, save current and start new
+							messages.add(currentMessage.toString());
+							currentMessage = new StringBuilder(closingMessage);
+						} else {
+							currentMessage.append(closingMessage);
+						}
+						
+						// Add the final message
+						if (currentMessage.length() > 0) {
+							messages.add(currentMessage.toString());
+						}
 
-						channel.sendMessageEmbeds(embed.build()).queue(
-								_ -> {
-									System.out.println("Reminder erfolgreich gesendet für " + clantag);
-									// Update last_sent_date after successful send
-									updateLastSentDate(reminderId);
-								},
-								error -> System.err.println("Fehler beim Senden des Reminders: " + error.getMessage()));
+						// Send all messages
+						sendMessagesSequentially(channel, messages, reminderId, clantag);
 					} else {
 						System.err.println("Kanal " + channelId + " nicht gefunden.");
 					}
@@ -462,6 +492,29 @@ public class Bot extends ListenerAdapter {
 			System.err.println("Fehler beim Senden des Reminders für " + clantag + ": " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int reminderId, String clantag) {
+		sendMessagesSequentially(channel, messages, 0, reminderId, clantag);
+	}
+	
+	private static void sendMessagesSequentially(TextChannel channel, ArrayList<String> messages, int index, int reminderId, String clantag) {
+		if (index >= messages.size()) {
+			// All messages sent successfully
+			System.out.println("Reminder erfolgreich gesendet für " + clantag);
+			updateLastSentDate(reminderId);
+			return;
+		}
+		
+		channel.sendMessage(messages.get(index)).queue(
+			success -> {
+				// Send next message
+				sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
+			},
+			error -> {
+				System.err.println("Fehler beim Senden des Reminders (Nachricht " + (index + 1) + "): " + error.getMessage());
+			}
+		);
 	}
 
 	private static void updateLastSentDate(int reminderId) {
