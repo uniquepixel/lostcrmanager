@@ -127,6 +127,21 @@ public class Connection {
 					System.out.println("Column 'last_sent_date' already exists in reminders table.");
 				}
 			}
+			
+			// Add weekday column to reminders table if it doesn't exist
+			try (ResultSet columns = dbm.getColumns(null, null, "reminders", "weekday")) {
+				if (!columns.next()) {
+					// Column doesn't exist, add it
+					System.out.println("Adding 'weekday' column to reminders table...");
+					String alterTableSQL = "ALTER TABLE reminders ADD COLUMN weekday TEXT";
+					try (Statement stmt = conn.createStatement()) {
+						stmt.executeUpdate(alterTableSQL);
+						System.out.println("Column 'weekday' added successfully.");
+					}
+				} else {
+					System.out.println("Column 'weekday' already exists in reminders table.");
+				}
+			}
 		} catch (SQLException e) {
 			System.err.println("Error migrating reminders table: " + e.getMessage());
 			e.printStackTrace();

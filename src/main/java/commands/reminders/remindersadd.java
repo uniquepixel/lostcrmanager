@@ -36,11 +36,12 @@ public class remindersadd extends ListenerAdapter {
 		OptionMapping clanOption = event.getOption("clan");
 		OptionMapping channelOption = event.getOption("channel");
 		OptionMapping timeOption = event.getOption("time");
+		OptionMapping weekdayOption = event.getOption("weekday");
 
-		if (clanOption == null || channelOption == null || timeOption == null) {
+		if (clanOption == null || channelOption == null || timeOption == null || weekdayOption == null) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Alle Parameter (clan, channel, time) sind erforderlich!", MessageUtil.EmbedType.ERROR))
+							"Alle Parameter (clan, channel, time, weekday) sind erforderlich!", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -48,6 +49,17 @@ public class remindersadd extends ListenerAdapter {
 		String clantag = clanOption.getAsString();
 		String channelId = channelOption.getAsChannel().getId();
 		String timeStr = timeOption.getAsString();
+		String weekday = weekdayOption.getAsString().toLowerCase();
+		
+		// Validate weekday
+		if (!isValidWeekday(weekday)) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Ungültiger Wochentag. Erlaubt sind: monday, tuesday, wednesday, thursday, friday, saturday, sunday",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
 
 		Clan c = new Clan(clantag);
 
@@ -105,13 +117,14 @@ public class remindersadd extends ListenerAdapter {
 		int id = getAvailableReminderID();
 
 		// Insert reminder
-		DBUtil.executeUpdate("INSERT INTO reminders (id, clantag, channelid, time) VALUES (?, ?, ?, ?)", id, clantag,
-				channelId, Time.valueOf(reminderTime));
+		DBUtil.executeUpdate("INSERT INTO reminders (id, clantag, channelid, time, weekday) VALUES (?, ?, ?, ?, ?)", id, clantag,
+				channelId, Time.valueOf(reminderTime), weekday);
 
 		String desc = "### Der Reminder wurde hinzugefügt.\n";
 		desc += "Clan: " + c.getInfoStringDB() + "\n";
 		desc += "Kanal: <#" + channelId + ">\n";
 		desc += "Zeit: " + timeStr + "\n";
+		desc += "Wochentag: " + capitalizeWeekday(weekday) + "\n";
 		desc += "ID: " + id + "\n";
 
 		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
@@ -128,7 +141,33 @@ public class remindersadd extends ListenerAdapter {
 		if (focused.equals("clan")) {
 			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 			event.replyChoices(choices).queue();
+		} else if (focused.equals("weekday")) {
+			List<Command.Choice> choices = new ArrayList<>();
+			String[] weekdays = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
+			for (String day : weekdays) {
+				if (day.startsWith(input.toLowerCase())) {
+					choices.add(new Command.Choice(capitalizeWeekday(day), day));
+				}
+			}
+			event.replyChoices(choices).queue();
 		}
+	}
+	
+	private static boolean isValidWeekday(String weekday) {
+		String[] validWeekdays = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
+		for (String day : validWeekdays) {
+			if (day.equals(weekday)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private static String capitalizeWeekday(String weekday) {
+		if (weekday == null || weekday.isEmpty()) {
+			return weekday;
+		}
+		return weekday.substring(0, 1).toUpperCase() + weekday.substring(1);
 	}
 
 	private static int getAvailableReminderID() {
