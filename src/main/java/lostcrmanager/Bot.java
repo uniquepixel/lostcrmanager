@@ -432,22 +432,52 @@ public class Bot extends ListenerAdapter {
 			JSONObject clanData = data.getJSONObject("clan");
 			JSONArray participants = clanData.getJSONArray("participants");
 
-			ArrayList<String> reminderList = new ArrayList<>();
+			// Build a map of player tag to decksUsedToday from API
+			java.util.HashMap<String, Integer> apiDecksUsedMap = new java.util.HashMap<>();
 			for (int i = 0; i < participants.length(); i++) {
 				JSONObject participant = participants.getJSONObject(i);
+				String playerTag = participant.getString("tag");
 				int decksUsedToday = participant.getInt("decksUsedToday");
-				if (decksUsedToday < 4) {
-					String playerName = participant.getString("name");
-					String playerTag = participant.getString("tag");
-					Player p = new Player(playerTag);
-					if (p.getUser() != null) {
-						String userId = p.getUser().getUserID();
-						reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
-								+ "/4 Decks");
-					} else {
-						reminderList.add(playerName + " (" + playerTag + ") - " + decksUsedToday + "/4 Decks");
-					}
+				apiDecksUsedMap.put(playerTag, decksUsedToday);
+			}
 
+			// Get database memberlist and set decksUsed for each player
+			ArrayList<Player> playersWithDecksUsed = new ArrayList<>();
+			ArrayList<Player> dbMembers = clan.getPlayersDB();
+			for (Player player : dbMembers) {
+				String playerTag = player.getTag();
+				if (apiDecksUsedMap.containsKey(playerTag)) {
+					// Player is in clan, set their decks used
+					player.setDecksUsed(apiDecksUsedMap.get(playerTag));
+				} else {
+					// Player is not in API list (not in clan)
+					player.setDecksUsed(null);
+				}
+				playersWithDecksUsed.add(player);
+			}
+
+			// Iterate through players to create reminder list
+			ArrayList<String> reminderList = new ArrayList<>();
+			for (Player player : playersWithDecksUsed) {
+				Integer decksUsed = player.getDecksUsed();
+				// Include players not in clan (decksUsed == null) or with <4 decks
+				if (decksUsed == null || decksUsed < 4) {
+					String playerTag = player.getTag();
+					String playerName = player.getNameDB();
+					if (player.getUser() != null) {
+						String userId = player.getUser().getUserID();
+						if (decksUsed == null) {
+							reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - nicht im Clan");
+						} else {
+							reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsed + "/4 Decks");
+						}
+					} else {
+						if (decksUsed == null) {
+							reminderList.add(playerName + " (" + playerTag + ") - nicht im Clan");
+						} else {
+							reminderList.add(playerName + " (" + playerTag + ") - " + decksUsed + "/4 Decks");
+						}
+					}
 				}
 			}
 
@@ -521,7 +551,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(_ -> {
+		channel.sendMessage(messages.get(index)).queue(success -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {

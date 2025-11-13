@@ -34,6 +34,7 @@ public class Player {
 	private Clan clanapi;
 	private String clantagcwdone;
 	private Integer cwfame;
+	private Integer decksUsed;
 	private Integer PathofLegendLeagueNumber;
 	private Integer trophies;
 	private Integer strtrophies;
@@ -59,6 +60,7 @@ public class Player {
 		role = null;
 		clantagcwdone = null;
 		cwfame = null;
+		decksUsed = null;
 		PathofLegendLeagueNumber = null;
 		trophies = null;
 		strtrophies = null;
@@ -114,6 +116,11 @@ public class Player {
 
 	public Player setCWFame(Integer fame) {
 		this.cwfame = fame;
+		return this;
+	}
+
+	public Player setDecksUsed(Integer decks) {
+		this.decksUsed = decks;
 		return this;
 	}
 
@@ -423,6 +430,10 @@ public class Player {
 			getCWFame();
 		}
 		return clantagcwdone;
+	}
+
+	public Integer getDecksUsed() {
+		return decksUsed;
 	}
 
 	public boolean isHiddenColeader() {
