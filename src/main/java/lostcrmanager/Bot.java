@@ -391,48 +391,74 @@ public class Bot extends ListenerAdapter {
 				return;
 			}
 
-			// Get CW fame data using the correct endpoint (riverracelog)
-			ArrayList<Player> cwfameplayerlist = clan.getCWFamePlayerList();
-			if (cwfameplayerlist == null) {
+			// Get river race data from riverracelog endpoint (same as Clan.getCWFamePlayerList)
+			String encodedTag = java.net.URLEncoder.encode(clantag, java.nio.charset.StandardCharsets.UTF_8);
+			String url = "https://api.clashroyale.com/v1/clans/" + encodedTag + "/riverracelog?limit=1";
+			
+			java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+			java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+					.uri(java.net.URI.create(url))
+					.header("Authorization", "Bearer " + Bot.api_key)
+					.header("Accept", "application/json")
+					.GET()
+					.build();
+			
+			java.net.http.HttpResponse<String> response = null;
+			try {
+				response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+			} catch (java.io.IOException | InterruptedException e) {
+				e.printStackTrace();
 				System.out.println("Konnte River Race Daten für " + clantag + " nicht abrufen.");
 				return;
 			}
-
-			// Build hashmap for quick lookup
-			java.util.HashMap<String, Integer> tagtocwfame = new java.util.HashMap<>();
-			java.util.HashMap<String, String> tagtoclantagcwdone = new java.util.HashMap<>();
 			
-			for (Player p : cwfameplayerlist) {
-				tagtocwfame.put(p.getTag(), p.getCWFame());
-				tagtoclantagcwdone.put(p.getTag(), p.getClantagCWDone());
+			if (response.statusCode() != 200) {
+				System.out.println("Konnte River Race Daten für " + clantag + " nicht abrufen. HTTP " + response.statusCode());
+				return;
 			}
 
-			// Get clan players from database
-			ArrayList<Player> clanplayerlist = clan.getPlayersDB();
+			JSONObject data = new JSONObject(response.body());
+			JSONArray items = data.getJSONArray("items");
+			if (items.length() == 0) {
+				System.out.println("Keine River Race Daten für " + clantag + " gefunden.");
+				return;
+			}
+			
+			JSONObject item = items.getJSONObject(0);
+			JSONArray standings = item.getJSONArray("standings");
+			
+			JSONArray participants = null;
+			for (int i = 0; i < standings.length(); i++) {
+				JSONObject standing = standings.getJSONObject(i);
+				JSONObject clanData = standing.getJSONObject("clan");
+				String tag = clanData.getString("tag");
+				if (tag.equals(clantag)) {
+					participants = clanData.getJSONArray("participants");
+					break;
+				}
+			}
+			
+			if (participants == null) {
+				System.out.println("Clan " + clantag + " nicht in River Race gefunden.");
+				return;
+			}
 
 			ArrayList<String> reminderList = new ArrayList<>();
-			for (Player p : clanplayerlist) {
-				String playerTag = p.getTag();
-				
-				if (tagtocwfame.containsKey(playerTag)) {
-					// Player participated in CW
-					if (tagtoclantagcwdone.get(playerTag).equals(clan.getTag())) {
-						int cwFame = tagtocwfame.get(playerTag);
-						// Remind if fame is 0 (no participation)
-						if (cwFame == 0) {
-							String userId = p.getUser().getUserID();
-							reminderList.add("<@" + userId + "> " + p.getNameDB() + " (" + playerTag + ") - " + cwFame + " Punkte");
-						}
-					}
-				} else {
-					// Player didn't participate in CW at all
+			for (int i = 0; i < participants.length(); i++) {
+				JSONObject participant = participants.getJSONObject(i);
+				int decksUsedToday = participant.getInt("decksUsedToday");
+				if (decksUsedToday < 4) {
+					String playerName = participant.getString("name");
+					String playerTag = participant.getString("tag");
+					Player p = new Player(playerTag);
 					String userId = p.getUser().getUserID();
-					reminderList.add("<@" + userId + "> " + p.getNameDB() + " (" + playerTag + ") - Nicht teilgenommen");
+					reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
+							+ "/4 Decks");
 				}
 			}
 
 			if (reminderList.isEmpty()) {
-				System.out.println("Keine Spieler ohne CW Beteiligung für " + clantag);
+				System.out.println("Keine Spieler mit weniger als 4 Decks für " + clantag);
 				return;
 			}
 
@@ -447,13 +473,13 @@ public class Bot extends ListenerAdapter {
 						embed.setColor(0xFF9900);
 
 						StringBuilder description = new StringBuilder();
-						description.append("Folgende Spieler haben keine CW Punkte:\n\n");
+						description.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
 
 						for (String playerInfo : reminderList) {
 							description.append("• ").append(playerInfo).append("\n");
 						}
 
-						description.append("\n**Bitte denkt daran, am Clan War teilzunehmen!**");
+						description.append("\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**");
 						embed.setDescription(description.toString());
 
 						channel.sendMessageEmbeds(embed.build()).queue(
