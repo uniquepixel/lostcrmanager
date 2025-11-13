@@ -9,6 +9,7 @@ import java.sql.Time;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -339,15 +340,19 @@ public class Bot extends ListenerAdapter {
 	}
 
 	private static void checkReminders() {
+		// Use Germany timezone (Europe/Berlin) to handle daylight saving time correctly
+		ZoneId germanyZone = ZoneId.of("Europe/Berlin");
+		ZonedDateTime nowInGermany = ZonedDateTime.now(germanyZone);
+		
 		// Check if today is Thursday, Friday, Saturday, or Sunday
-		DayOfWeek today = ZonedDateTime.now().getDayOfWeek();
+		DayOfWeek today = nowInGermany.getDayOfWeek();
 		if (today != DayOfWeek.THURSDAY && today != DayOfWeek.FRIDAY && today != DayOfWeek.SATURDAY
 				&& today != DayOfWeek.SUNDAY) {
 			return; // Not a reminder day
 		}
 
-		LocalTime currentTime = LocalTime.now();
-		LocalDate currentDate = LocalDate.now();
+		LocalTime currentTime = nowInGermany.toLocalTime();
+		LocalDate currentDate = nowInGermany.toLocalDate();
 
 		// Get all reminders
 		String sql = "SELECT id, clantag, channelid, time, last_sent_date FROM reminders";
