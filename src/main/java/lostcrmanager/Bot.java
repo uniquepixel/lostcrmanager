@@ -391,33 +391,48 @@ public class Bot extends ListenerAdapter {
 				return;
 			}
 
-			// Get current river race data
-			String json = APIUtil.getCurrentRiverRaceJson(clantag);
-			if (json == null) {
+			// Get CW fame data using the correct endpoint (riverracelog)
+			ArrayList<Player> cwfameplayerlist = clan.getCWFamePlayerList();
+			if (cwfameplayerlist == null) {
 				System.out.println("Konnte River Race Daten für " + clantag + " nicht abrufen.");
 				return;
 			}
 
-			JSONObject data = new JSONObject(json);
-			JSONObject clanData = data.getJSONObject("clan");
-			JSONArray participants = clanData.getJSONArray("participants");
+			// Build hashmap for quick lookup
+			java.util.HashMap<String, Integer> tagtocwfame = new java.util.HashMap<>();
+			java.util.HashMap<String, String> tagtoclantagcwdone = new java.util.HashMap<>();
+			
+			for (Player p : cwfameplayerlist) {
+				tagtocwfame.put(p.getTag(), p.getCWFame());
+				tagtoclantagcwdone.put(p.getTag(), p.getClantagCWDone());
+			}
+
+			// Get clan players from database
+			ArrayList<Player> clanplayerlist = clan.getPlayersDB();
 
 			ArrayList<String> reminderList = new ArrayList<>();
-			for (int i = 0; i < participants.length(); i++) {
-				JSONObject participant = participants.getJSONObject(i);
-				int decksUsedToday = participant.getInt("decksUsedToday");
-				if (decksUsedToday < 4) {
-					String playerName = participant.getString("name");
-					String playerTag = participant.getString("tag");
-					Player p = new Player(playerTag);
+			for (Player p : clanplayerlist) {
+				String playerTag = p.getTag();
+				
+				if (tagtocwfame.containsKey(playerTag)) {
+					// Player participated in CW
+					if (tagtoclantagcwdone.get(playerTag).equals(clan.getTag())) {
+						int cwFame = tagtocwfame.get(playerTag);
+						// Remind if fame is 0 (no participation)
+						if (cwFame == 0) {
+							String userId = p.getUser().getUserID();
+							reminderList.add("<@" + userId + "> " + p.getNameDB() + " (" + playerTag + ") - " + cwFame + " Punkte");
+						}
+					}
+				} else {
+					// Player didn't participate in CW at all
 					String userId = p.getUser().getUserID();
-					reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsedToday
-							+ "/4 Decks");
+					reminderList.add("<@" + userId + "> " + p.getNameDB() + " (" + playerTag + ") - Nicht teilgenommen");
 				}
 			}
 
 			if (reminderList.isEmpty()) {
-				System.out.println("Keine Spieler mit weniger als 4 Decks für " + clantag);
+				System.out.println("Keine Spieler ohne CW Beteiligung für " + clantag);
 				return;
 			}
 
@@ -432,13 +447,13 @@ public class Bot extends ListenerAdapter {
 						embed.setColor(0xFF9900);
 
 						StringBuilder description = new StringBuilder();
-						description.append("Folgende Spieler haben heute weniger als 4 Decks verwendet:\n\n");
+						description.append("Folgende Spieler haben keine CW Punkte:\n\n");
 
 						for (String playerInfo : reminderList) {
 							description.append("• ").append(playerInfo).append("\n");
 						}
 
-						description.append("\n**Bitte denkt daran, eure verbleibenden Decks heute noch zu spielen!**");
+						description.append("\n**Bitte denkt daran, am Clan War teilzunehmen!**");
 						embed.setDescription(description.toString());
 
 						channel.sendMessageEmbeds(embed.build()).queue(
