@@ -99,13 +99,31 @@ public class transfermember extends ListenerAdapter {
 			}
 		}
 
-		if (!(userexecuted.getClanRoles().get(newclantag) == Player.RoleType.ADMIN
-				|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.LEADER
-				|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.COLEADER)) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Du musst mindestens Vize-Anführer des Clans sein, in den du den Spieler transferieren möchtest, um diesen Befehl ausführen zu können.",
-					MessageUtil.EmbedType.ERROR)).queue();
-			return;
+		if (!newclantag.equals("warteliste")) {
+			if (!(userexecuted.getClanRoles().get(newclantag) == Player.RoleType.ADMIN
+					|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.LEADER
+					|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.COLEADER)) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du musst mindestens Vize-Anführer des Clans sein, in den du den Spieler transferieren möchtest, um diesen Befehl ausführen zu können.",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		} else {
+			boolean b = false;
+			for (String clantags : DBManager.getAllClans()) {
+				if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
+						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
+						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
+					b = true;
+					break;
+				}
+			}
+			if (b == false) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
 		}
 
 		if (clantag.equals(newclantag)) {
