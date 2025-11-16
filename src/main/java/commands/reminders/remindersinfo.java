@@ -4,7 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import datautil.Connection;
@@ -70,7 +73,7 @@ public class remindersinfo extends ListenerAdapter {
 
 		// Get all reminders for this clan
 		ArrayList<ReminderInfo> reminders = new ArrayList<>();
-		String sql = "SELECT id, channelid, time, weekday FROM reminders WHERE clantag = ? ORDER BY time";
+		String sql = "SELECT id, channelid, time, weekday FROM reminders WHERE clantag = ?";
 
 		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
 			pstmt.setString(1, clantag);
@@ -86,6 +89,9 @@ public class remindersinfo extends ListenerAdapter {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		
+		// Sort reminders with Thursday 10:00 as the starting point
+		reminders.sort(new ReminderComparator());
 
 		String desc = "### Reminder für Clan: " + c.getInfoStringDB() + "\n\n";
 
@@ -116,6 +122,62 @@ public class remindersinfo extends ListenerAdapter {
 		if (focused.equals("clan")) {
 			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
 			event.replyChoices(choices).queue();
+		}
+	}
+
+	private static class ReminderComparator implements Comparator<ReminderInfo> {
+		// Reference point: Thursday 10:00
+		private static final int REFERENCE_DAY = 3; // Thursday (0=Monday, 6=Sunday)
+		private static final LocalTime REFERENCE_TIME = LocalTime.of(10, 0);
+		
+		@Override
+		public int compare(ReminderInfo r1, ReminderInfo r2) {
+			int offset1 = calculateOffset(r1);
+			int offset2 = calculateOffset(r2);
+			return Integer.compare(offset1, offset2);
+		}
+		
+		/**
+		 * Calculate offset in minutes from the reference point (Thursday 10:00).
+		 * Thursday 10:00 = 0, Friday 10:00 = 1440 (24*60), etc.
+		 */
+		private int calculateOffset(ReminderInfo reminder) {
+			int dayOfWeek = getDayOfWeekIndex(reminder.weekday);
+			LocalTime localTime = reminder.time.toLocalTime();
+			
+			// Calculate day offset from Thursday
+			int dayOffset = dayOfWeek - REFERENCE_DAY;
+			if (dayOffset < 0) {
+				dayOffset += 7; // Wrap around to next week
+			}
+			
+			// Calculate time offset from 10:00 on that day
+			int timeOffsetMinutes = localTime.getHour() * 60 + localTime.getMinute();
+			int referenceTimeMinutes = REFERENCE_TIME.getHour() * 60 + REFERENCE_TIME.getMinute();
+			
+			// If we're on Thursday but before 10:00, treat it as next week's Thursday
+			if (dayOffset == 0 && timeOffsetMinutes < referenceTimeMinutes) {
+				dayOffset = 7;
+			}
+			
+			// Total offset in minutes
+			return dayOffset * 24 * 60 + timeOffsetMinutes - referenceTimeMinutes;
+		}
+		
+		/**
+		 * Convert weekday string to index (0=Monday, 6=Sunday)
+		 */
+		private int getDayOfWeekIndex(String weekday) {
+			switch (weekday.toLowerCase()) {
+				case "monday": return 0;
+				case "tuesday": return 1;
+				case "wednesday": return 2;
+				case "thursday": return 3;
+				case "friday": return 4;
+				case "saturday": return 5;
+				case "sunday": return 6;
+				default: return 0;
+			}
 		}
 	}
 
