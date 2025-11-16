@@ -462,20 +462,19 @@ public class Bot extends ListenerAdapter {
 				Integer decksUsed = player.getDecksUsed();
 				// Include players not in clan (decksUsed == null) or with <4 decks
 				if (decksUsed == null || decksUsed < 4) {
-					String playerTag = player.getTag();
 					String playerName = player.getNameDB();
 					if (player.getUser() != null) {
 						String userId = player.getUser().getUserID();
 						if (decksUsed == null) {
-							reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - nicht im Clan");
+							reminderList.add("<@" + userId + "> " + playerName + " - nicht im Clan");
 						} else {
-							reminderList.add("<@" + userId + "> " + playerName + " (" + playerTag + ") - " + decksUsed + "/4 Decks");
+							reminderList.add("<@" + userId + "> " + playerName + " - " + decksUsed + "/4");
 						}
 					} else {
 						if (decksUsed == null) {
-							reminderList.add(playerName + " (" + playerTag + ") - nicht im Clan");
+							reminderList.add(playerName + " - nicht im Clan");
 						} else {
-							reminderList.add(playerName + " (" + playerTag + ") - " + decksUsed + "/4 Decks");
+							reminderList.add(playerName + " - " + decksUsed + "/4");
 						}
 					}
 				}
