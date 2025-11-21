@@ -462,6 +462,9 @@ public class Bot extends ListenerAdapter {
 				Integer decksUsed = player.getDecksUsed();
 				// Include players not in clan (decksUsed == null) or with <4 decks
 				if (decksUsed == null || decksUsed < 4) {
+					if (player.isHiddenColeader()) {
+						continue; // Skip hidden co-leaders
+					}
 					String playerName = player.getNameDB();
 					if (player.getUser() != null) {
 						String userId = player.getUser().getUserID();
