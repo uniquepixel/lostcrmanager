@@ -458,6 +458,9 @@ public class leaguetrophylist extends ListenerAdapter {
 
 			for (int i = 0; i < allplayers.size(); i++) {
 				Player p = allplayers.get(i);
+				if(p.isHiddenColeader()) {
+					continue;
+				}
 				String clantag = p.getClanDB().getTag();
 
 				if (p.getRole() == Player.RoleType.ADMIN) {
