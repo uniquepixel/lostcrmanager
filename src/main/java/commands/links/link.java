@@ -75,11 +75,13 @@ public class link extends ListenerAdapter {
 				DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", tag, userid,
 						playername);
 				
-				// Save initial wins data for the newly linked player
+				// Save initial wins data for the newly linked player (async to not block response)
 				final String playerTag = tag;
-				new Thread(() -> {
+				Thread saveWinsThread = new Thread(() -> {
 					wins.savePlayerWins(playerTag);
-				}).start();
+				});
+				saveWinsThread.setDaemon(true);
+				saveWinsThread.start();
 				
 				Player player = new Player(tag);
 				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())

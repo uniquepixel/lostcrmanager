@@ -242,6 +242,7 @@ public class wins extends ListenerAdapter {
 				}
 			}
 		} catch (SQLException e) {
+			System.err.println("Fehler beim Abrufen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
 			e.printStackTrace();
 		}
 		return null;
@@ -309,7 +310,7 @@ public class wins extends ListenerAdapter {
 			Player player = new Player(playerTag);
 			Integer wins = player.getWinsAPI();
 			if (wins != null) {
-				OffsetDateTime now = OffsetDateTime.now();
+				OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Europe/Berlin"));
 				String sql = "INSERT INTO player_wins (player_tag, recorded_at, wins) VALUES (?, ?, ?) "
 						+ "ON CONFLICT (player_tag, recorded_at) DO UPDATE SET wins = ?";
 				DBUtil.executeUpdate(sql, playerTag, now, wins, wins);
@@ -328,8 +329,8 @@ public class wins extends ListenerAdapter {
 		for (String tag : playerTags) {
 			try {
 				savePlayerWins(tag);
-				// Small delay to avoid API rate limiting
-				Thread.sleep(100);
+				// Delay to avoid API rate limiting (500ms between requests)
+				Thread.sleep(500);
 			} catch (Exception e) {
 				System.err.println("Fehler beim Speichern der Wins für " + tag + ": " + e.getMessage());
 			}
