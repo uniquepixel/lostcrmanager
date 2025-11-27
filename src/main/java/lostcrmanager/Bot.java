@@ -47,6 +47,7 @@ import commands.reminders.remindersinfo;
 import commands.reminders.remindersremove;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
+import commands.wins.wins;
 import datautil.APIUtil;
 import datautil.DBUtil;
 import datawrapper.Clan;
@@ -102,6 +103,7 @@ public class Bot extends ListenerAdapter {
 		startNameUpdates();
 		startLoadingLists();
 		startReminders();
+		startMonthlyWinsSave();
 
 		JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MEMBERS)
 				.setMemberCachePolicy(MemberCachePolicy.ALL).setChunkingFilter(ChunkingFilter.ALL)
@@ -111,7 +113,7 @@ public class Bot extends ListenerAdapter {
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
 						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails(),
-						new remindersadd(), new remindersremove(), new remindersinfo())
+						new remindersadd(), new remindersremove(), new remindersinfo(), new wins())
 				.build();
 	}
 
@@ -245,7 +247,17 @@ public class Bot extends ListenerAdapter {
 					Commands.slash("remindersinfo", "Zeige alle Reminder für einen Clan an.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, für welchen Reminder angezeigt werden sollen.", true)
-									.setAutoComplete(true)))
+									.setAutoComplete(true)),
+					Commands.slash("wins", "Zeige die Wins-Statistik für einen Spieler oder Clan in einem bestimmten Monat.")
+							.addOptions(new OptionData(OptionType.STRING, "month",
+									"Der Monat, für den die Wins angezeigt werden sollen.", true)
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "player",
+									"Der Spieler, für den die Wins angezeigt werden sollen.")
+									.setAutoComplete(true).setRequired(false))
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, für den die Wins angezeigt werden sollen.")
+									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}
 	}
@@ -565,6 +577,75 @@ public class Bot extends ListenerAdapter {
 			}
 		} catch (SQLException e) {
 			System.err.println("Fehler beim Aktualisieren von last_sent_date: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	public static void startMonthlyWinsSave() {
+		System.out.println("Monthly Wins-Save wird gestartet. Prüfung jede Stunde. " + System.currentTimeMillis());
+		Runnable task = () -> {
+			Thread thread = new Thread(() -> {
+				checkAndSaveMonthlyWins();
+			});
+			thread.start();
+		};
+		scheduler.scheduleAtFixedRate(task, 0, 1, TimeUnit.HOURS);
+	}
+
+	private static void checkAndSaveMonthlyWins() {
+		ZoneId zoneId = ZoneId.of("Europe/Berlin");
+		ZonedDateTime now = ZonedDateTime.now(zoneId);
+		int dayOfMonth = now.getDayOfMonth();
+
+		// Delete data older than a year
+		cleanupOldWinsData(zoneId, now);
+
+		// Only save on the 1st day of the month (or 2nd day to be safe with timezones)
+		if (dayOfMonth == 1 || dayOfMonth == 2) {
+			// Check if we already saved this month
+			LocalDate today = now.toLocalDate();
+			LocalDate firstOfMonth = today.withDayOfMonth(1);
+
+			String sql = "SELECT COUNT(*) as cnt FROM player_wins WHERE recorded_at >= ? AND recorded_at < ?";
+			try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(sql)) {
+				ZonedDateTime startOfDay = firstOfMonth.atStartOfDay(zoneId);
+				ZonedDateTime endOfDay = firstOfMonth.plusDays(2).atStartOfDay(zoneId);
+				pstmt.setObject(1, startOfDay.toOffsetDateTime());
+				pstmt.setObject(2, endOfDay.toOffsetDateTime());
+
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next()) {
+						int count = rs.getInt("cnt");
+						if (count > 0) {
+							System.out.println("Wins für diesen Monat bereits gespeichert (" + count + " Einträge). Überspringe.");
+							return;
+						}
+					}
+				}
+			} catch (SQLException e) {
+				System.err.println("Fehler beim Prüfen der monatlichen Wins: " + e.getMessage());
+				e.printStackTrace();
+			}
+
+			// Save wins for all players
+			System.out.println("Speichere Wins für alle Spieler zum Monatsanfang...");
+			wins.saveAllPlayerWins();
+			System.out.println("Wins für alle Spieler gespeichert.");
+		}
+	}
+
+	private static void cleanupOldWinsData(ZoneId zoneId, ZonedDateTime now) {
+		// Delete data older than 1 year
+		ZonedDateTime oneYearAgo = now.minusYears(1);
+		String deleteSql = "DELETE FROM player_wins WHERE recorded_at < ?";
+		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(deleteSql)) {
+			pstmt.setObject(1, oneYearAgo.toOffsetDateTime());
+			int deleted = pstmt.executeUpdate();
+			if (deleted > 0) {
+				System.out.println("Alte Wins-Daten gelöscht: " + deleted + " Einträge älter als 1 Jahr.");
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Löschen alter Wins-Daten: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

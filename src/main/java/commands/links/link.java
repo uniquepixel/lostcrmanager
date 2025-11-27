@@ -1,5 +1,6 @@
 package commands.links;
 
+import commands.wins.wins;
 import datautil.DBManager;
 import datautil.DBUtil;
 import datawrapper.Player;
@@ -73,6 +74,15 @@ public class link extends ListenerAdapter {
 			if (!p.IsLinked()) {
 				DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", tag, userid,
 						playername);
+				
+				// Save initial wins data for the newly linked player (async to not block response)
+				final String playerTag = tag;
+				Thread saveWinsThread = new Thread(() -> {
+					wins.savePlayerWins(playerTag);
+				});
+				saveWinsThread.setDaemon(true);
+				saveWinsThread.start();
+				
 				Player player = new Player(tag);
 				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
 						+ " wurde erfolgreich mit dem User <@" + userid + "> verknüpft.";

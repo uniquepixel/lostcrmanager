@@ -43,6 +43,7 @@ public class Player {
 	private Long kickpointstotal;
 	private RoleType role;
 	private Boolean mark;
+	private Integer wins;
 
 	public Player(String tag) {
 		this.tag = tag;
@@ -66,6 +67,7 @@ public class Player {
 		strtrophies = null;
 		PathofLegendTrophies = null;
 		mark = null;
+		wins = null;
 		return this;
 	}
 
@@ -443,6 +445,18 @@ public class Player {
 		String rolestring = DBUtil.getValueFromSQL("SELECT clan_role FROM clan_members WHERE player_tag = ?",
 				String.class, tag);
 		return "hiddencoleader".equals(rolestring);
+	}
+
+	public Integer getWinsAPI() {
+		if (wins == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("wins")) {
+				wins = apiresult.getInt("wins");
+			}
+		}
+		return wins;
 	}
 
 }
