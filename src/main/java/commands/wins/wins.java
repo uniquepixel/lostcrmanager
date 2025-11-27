@@ -76,80 +76,97 @@ public class wins extends ListenerAdapter {
 			return;
 		}
 
-		ZoneId zone = ZoneId.of("Europe/Berlin");
-		ZonedDateTime now = ZonedDateTime.now(zone);
-		int currentYear = now.getYear();
-		int currentMonth = now.getMonthValue();
-		boolean isCurrentMonth = (year == currentYear && month == currentMonth);
+		// Run heavy processing in a separate thread to not block the main bot instance
+		final int yearFinal = year;
+		final int monthFinal = month;
+		Thread thread = new Thread(() -> {
+			try {
+				ZoneId zone = ZoneId.of("Europe/Berlin");
+				ZonedDateTime now = ZonedDateTime.now(zone);
+				int currentYear = now.getYear();
+				int currentMonth = now.getMonthValue();
+				boolean isCurrentMonth = (yearFinal == currentYear && monthFinal == currentMonth);
 
-		// Start of the selected month
-		ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, zone);
-		// Start of the next month (end boundary)
-		ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
+				// Start of the selected month
+				ZonedDateTime startOfMonth = ZonedDateTime.of(yearFinal, monthFinal, 1, 0, 0, 0, 0, zone);
+				// Start of the next month (end boundary)
+				ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
 
-		if (playerOption != null) {
-			// Single player mode
-			String playerTag = playerOption.getAsString();
-			Player player = new Player(playerTag);
+				if (playerOption != null) {
+					// Single player mode
+					String playerTag = playerOption.getAsString();
+					Player player = new Player(playerTag);
 
-			if (!player.IsLinked()) {
+					if (!player.IsLinked()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Spieler ist nicht verlinkt.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO))
+							.queue();
+				} else {
+					// Clan mode
+					String clanTag = clanOption.getAsString();
+					Clan clan = new Clan(clanTag);
+
+					if (!clan.ExistsDB()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan existiert nicht.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					ArrayList<Player> players = clan.getPlayersDB();
+					if (players.isEmpty()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan hat keine Mitglieder.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					StringBuilder sb = new StringBuilder();
+					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
+					sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
+
+					for (Player player : players) {
+						String playerResult = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+						sb.append("**" + MessageUtil.unformat(player.getInfoStringDB()) + ":**\n");
+						sb.append(playerResult);
+						sb.append("\n");
+					}
+
+					// Split message if too long
+					String fullMessage = sb.toString();
+					if (fullMessage.length() > 4000) {
+						fullMessage = fullMessage.substring(0, 3997) + "...";
+					}
+
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO))
+							.queue();
+				}
+			} catch (Exception e) {
+				System.err.println("Fehler beim Verarbeiten des Wins-Befehls: " + e.getMessage());
+				e.printStackTrace();
 				event.getHook()
 						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Spieler ist nicht verlinkt.",
+								"Ein Fehler ist aufgetreten: " + e.getMessage(),
 								MessageUtil.EmbedType.ERROR))
 						.queue();
-				return;
 			}
-
-			String result = getPlayerWinsForMonth(player, year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO))
-					.queue();
-		} else {
-			// Clan mode
-			String clanTag = clanOption.getAsString();
-			Clan clan = new Clan(clanTag);
-
-			if (!clan.ExistsDB()) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Clan existiert nicht.",
-								MessageUtil.EmbedType.ERROR))
-						.queue();
-				return;
-			}
-
-			ArrayList<Player> players = clan.getPlayersDB();
-			if (players.isEmpty()) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Clan hat keine Mitglieder.",
-								MessageUtil.EmbedType.ERROR))
-						.queue();
-				return;
-			}
-
-			StringBuilder sb = new StringBuilder();
-			String monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-			sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + year + ":**\n\n");
-
-			for (Player player : players) {
-				String playerResult = getPlayerWinsForMonth(player, year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
-				sb.append("**" + MessageUtil.unformat(player.getInfoStringDB()) + ":**\n");
-				sb.append(playerResult);
-				sb.append("\n");
-			}
-
-			// Split message if too long
-			String fullMessage = sb.toString();
-			if (fullMessage.length() > 4000) {
-				fullMessage = fullMessage.substring(0, 3997) + "...";
-			}
-
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO))
-					.queue();
-		}
+		});
+		thread.setName("wins-command-" + event.getUser().getId());
+		thread.start();
 	}
 
 	private String getPlayerWinsForMonth(Player player, int year, int month, boolean isCurrentMonth,
