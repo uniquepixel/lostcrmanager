@@ -249,15 +249,15 @@ public class Bot extends ListenerAdapter {
 									"Der Clan, für welchen Reminder angezeigt werden sollen.", true)
 									.setAutoComplete(true)),
 					Commands.slash("wins", "Zeige die Wins-Statistik für einen Spieler oder Clan in einem bestimmten Monat.")
+							.addOptions(new OptionData(OptionType.STRING, "month",
+									"Der Monat, für den die Wins angezeigt werden sollen.", true)
+									.setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "player",
 									"Der Spieler, für den die Wins angezeigt werden sollen.")
 									.setAutoComplete(true).setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, für den die Wins angezeigt werden sollen.")
-									.setAutoComplete(true).setRequired(false))
-							.addOptions(new OptionData(OptionType.STRING, "month",
-									"Der Monat, für den die Wins angezeigt werden sollen.", true)
-									.setAutoComplete(true)))
+									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}
 	}
@@ -582,20 +582,23 @@ public class Bot extends ListenerAdapter {
 	}
 
 	public static void startMonthlyWinsSave() {
-		System.out.println("Monthly Wins-Save wird gestartet. Prüfung alle 12 Stunden. " + System.currentTimeMillis());
+		System.out.println("Monthly Wins-Save wird gestartet. Prüfung jede Stunde. " + System.currentTimeMillis());
 		Runnable task = () -> {
 			Thread thread = new Thread(() -> {
 				checkAndSaveMonthlyWins();
 			});
 			thread.start();
 		};
-		scheduler.scheduleAtFixedRate(task, 0, 12, TimeUnit.HOURS);
+		scheduler.scheduleAtFixedRate(task, 0, 1, TimeUnit.HOURS);
 	}
 
 	private static void checkAndSaveMonthlyWins() {
 		ZoneId zoneId = ZoneId.of("Europe/Berlin");
 		ZonedDateTime now = ZonedDateTime.now(zoneId);
 		int dayOfMonth = now.getDayOfMonth();
+
+		// Delete data older than a year
+		cleanupOldWinsData(zoneId, now);
 
 		// Only save on the 1st day of the month (or 2nd day to be safe with timezones)
 		if (dayOfMonth == 1 || dayOfMonth == 2) {
@@ -628,6 +631,22 @@ public class Bot extends ListenerAdapter {
 			System.out.println("Speichere Wins für alle Spieler zum Monatsanfang...");
 			wins.saveAllPlayerWins();
 			System.out.println("Wins für alle Spieler gespeichert.");
+		}
+	}
+
+	private static void cleanupOldWinsData(ZoneId zoneId, ZonedDateTime now) {
+		// Delete data older than 1 year
+		ZonedDateTime oneYearAgo = now.minusYears(1);
+		String deleteSql = "DELETE FROM player_wins WHERE recorded_at < ?";
+		try (PreparedStatement pstmt = datautil.Connection.getConnection().prepareStatement(deleteSql)) {
+			pstmt.setObject(1, oneYearAgo.toOffsetDateTime());
+			int deleted = pstmt.executeUpdate();
+			if (deleted > 0) {
+				System.out.println("Alte Wins-Daten gelöscht: " + deleted + " Einträge älter als 1 Jahr.");
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Löschen alter Wins-Daten: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 

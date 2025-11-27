@@ -159,6 +159,11 @@ public class wins extends ListenerAdapter {
 		String monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN);
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
+		// Check if any data exists for this player, if not save current data first
+		if (!hasAnyWinsData(player.getTag())) {
+			savePlayerWins(player.getTag());
+		}
+
 		if (isCurrentMonth) {
 			// Current month: get start of month data and fetch current wins from API
 			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
@@ -168,10 +173,8 @@ public class wins extends ListenerAdapter {
 				return "Fehler beim Abrufen der aktuellen Wins von der API.\n";
 			}
 
-			ZonedDateTime nowTime = ZonedDateTime.now(zone);
-
 			if (startRecord == null) {
-				// No data at start of month
+				// No data at start of month - should not happen now since we save on first request
 				return "Keine Daten für den Monatsanfang verfügbar. Aktuelle Wins: " + currentWins + "\n";
 			}
 
@@ -219,6 +222,20 @@ public class wins extends ListenerAdapter {
 
 			return result.toString();
 		}
+	}
+
+	private boolean hasAnyWinsData(String playerTag) {
+		String sql = "SELECT 1 FROM player_wins WHERE player_tag = ? LIMIT 1";
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, playerTag);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Prüfen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 	private boolean isStartOfMonth(OffsetDateTime recordedAt, ZonedDateTime expectedStart) {
