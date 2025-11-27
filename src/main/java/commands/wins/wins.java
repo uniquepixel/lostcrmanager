@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -76,80 +77,108 @@ public class wins extends ListenerAdapter {
 			return;
 		}
 
-		ZoneId zone = ZoneId.of("Europe/Berlin");
-		ZonedDateTime now = ZonedDateTime.now(zone);
-		int currentYear = now.getYear();
-		int currentMonth = now.getMonthValue();
-		boolean isCurrentMonth = (year == currentYear && month == currentMonth);
+		// Run heavy processing in a separate thread to not block the main bot instance
+		final int yearFinal = year;
+		final int monthFinal = month;
+		Thread thread = new Thread(() -> {
+			try {
+				ZoneId zone = ZoneId.of("Europe/Berlin");
+				ZonedDateTime now = ZonedDateTime.now(zone);
+				int currentYear = now.getYear();
+				int currentMonth = now.getMonthValue();
+				boolean isCurrentMonth = (yearFinal == currentYear && monthFinal == currentMonth);
 
-		// Start of the selected month
-		ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, zone);
-		// Start of the next month (end boundary)
-		ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
+				// Start of the selected month
+				ZonedDateTime startOfMonth = ZonedDateTime.of(yearFinal, monthFinal, 1, 0, 0, 0, 0, zone);
+				// Start of the next month (end boundary)
+				ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
 
-		if (playerOption != null) {
-			// Single player mode
-			String playerTag = playerOption.getAsString();
-			Player player = new Player(playerTag);
+				if (playerOption != null) {
+					// Single player mode
+					String playerTag = playerOption.getAsString();
+					Player player = new Player(playerTag);
 
-			if (!player.IsLinked()) {
+					if (!player.IsLinked()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Spieler ist nicht verlinkt.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO))
+							.queue();
+				} else {
+					// Clan mode
+					String clanTag = clanOption.getAsString();
+					Clan clan = new Clan(clanTag);
+
+					if (!clan.ExistsDB()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan existiert nicht.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					ArrayList<Player> players = clan.getPlayersDB();
+					if (players.isEmpty()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan hat keine Mitglieder.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					// Collect wins data for all players with compact format
+					ArrayList<PlayerWinsResult> results = new ArrayList<>();
+					for (Player player : players) {
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+						results.add(result);
+					}
+
+					// Sort by wins descending
+					results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
+
+					StringBuilder sb = new StringBuilder();
+					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
+					sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
+
+					for (PlayerWinsResult result : results) {
+						sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
+						if (result.hasWarning) {
+							sb.append(" ⚠️");
+						}
+						sb.append("\n");
+					}
+
+					// Split message if too long
+					String fullMessage = sb.toString();
+					if (fullMessage.length() > 4000) {
+						fullMessage = fullMessage.substring(0, 3997) + "...";
+					}
+
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO))
+							.queue();
+				}
+			} catch (Exception e) {
+				System.err.println("Fehler beim Verarbeiten des Wins-Befehls: " + e.getMessage());
+				e.printStackTrace();
 				event.getHook()
 						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Spieler ist nicht verlinkt.",
+								"Ein Fehler ist aufgetreten: " + e.getMessage(),
 								MessageUtil.EmbedType.ERROR))
 						.queue();
-				return;
 			}
-
-			String result = getPlayerWinsForMonth(player, year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO))
-					.queue();
-		} else {
-			// Clan mode
-			String clanTag = clanOption.getAsString();
-			Clan clan = new Clan(clanTag);
-
-			if (!clan.ExistsDB()) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Clan existiert nicht.",
-								MessageUtil.EmbedType.ERROR))
-						.queue();
-				return;
-			}
-
-			ArrayList<Player> players = clan.getPlayersDB();
-			if (players.isEmpty()) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Dieser Clan hat keine Mitglieder.",
-								MessageUtil.EmbedType.ERROR))
-						.queue();
-				return;
-			}
-
-			StringBuilder sb = new StringBuilder();
-			String monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-			sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + year + ":**\n\n");
-
-			for (Player player : players) {
-				String playerResult = getPlayerWinsForMonth(player, year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
-				sb.append("**" + MessageUtil.unformat(player.getInfoStringDB()) + ":**\n");
-				sb.append(playerResult);
-				sb.append("\n");
-			}
-
-			// Split message if too long
-			String fullMessage = sb.toString();
-			if (fullMessage.length() > 4000) {
-				fullMessage = fullMessage.substring(0, 3997) + "...";
-			}
-
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO))
-					.queue();
-		}
+		});
+		thread.setName("wins-command-" + event.getUser().getId());
+		thread.start();
 	}
 
 	private String getPlayerWinsForMonth(Player player, int year, int month, boolean isCurrentMonth,
@@ -317,6 +346,60 @@ public class wins extends ListenerAdapter {
 		WinsRecord(int wins, OffsetDateTime recordedAt) {
 			this.wins = wins;
 			this.recordedAt = recordedAt;
+		}
+	}
+
+	// Helper class to hold compact player wins result for clan display
+	private static class PlayerWinsResult {
+		String playerInfo;
+		int wins;
+		boolean hasWarning;
+
+		PlayerWinsResult(String playerInfo, int wins, boolean hasWarning) {
+			this.playerInfo = playerInfo;
+			this.wins = wins;
+			this.hasWarning = hasWarning;
+		}
+	}
+
+	// Compact method to get player wins for clan display
+	private PlayerWinsResult getPlayerWinsCompact(Player player, int year, int month, boolean isCurrentMonth,
+			ZonedDateTime startOfMonth, ZonedDateTime startOfNextMonth, ZoneId zone) {
+
+		String playerInfo = player.getInfoStringDB();
+
+		// Check if any data exists for this player, if not save current data first
+		if (!hasAnyWinsData(player.getTag())) {
+			savePlayerWins(player.getTag());
+		}
+
+		if (isCurrentMonth) {
+			// Current month: get start of month data and fetch current wins from API
+			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
+
+			Integer currentWins = player.getWinsAPI();
+			if (currentWins == null || startRecord == null) {
+				return new PlayerWinsResult(playerInfo, 0, true);
+			}
+
+			int winsThisMonth = currentWins - startRecord.wins;
+			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
+			return new PlayerWinsResult(playerInfo, winsThisMonth, hasWarning);
+		} else {
+			// Past month: get data from start of month and start of next month
+			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
+			WinsRecord endRecord = getWinsAtOrAfter(player.getTag(), startOfNextMonth);
+
+			if (startRecord == null || endRecord == null) {
+				return new PlayerWinsResult(playerInfo, 0, true);
+			}
+
+			int winsInMonth = endRecord.wins - startRecord.wins;
+			boolean startIsMonthStart = isStartOfMonth(startRecord.recordedAt, startOfMonth);
+			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
+			boolean hasWarning = !startIsMonthStart || !endIsMonthStart;
+
+			return new PlayerWinsResult(playerInfo, winsInMonth, hasWarning);
 		}
 	}
 
