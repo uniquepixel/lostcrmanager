@@ -70,6 +70,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 public class Bot extends ListenerAdapter {
 
 	private final static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+	private static final int MIN_LEVEL_FOR_PING = 30;
 
 	private static JDA jda;
 	public static String VERSION;
@@ -478,9 +479,9 @@ public class Bot extends ListenerAdapter {
 						continue; // Skip hidden co-leaders
 					}
 					String playerName = player.getNameDB();
-					// Only ping players with level >= 30
+					// Only ping players with level >= MIN_LEVEL_FOR_PING
 					Integer expLevel = player.getExpLevelAPI();
-					boolean canPing = expLevel != null && expLevel >= 30;
+					boolean canPing = expLevel != null && expLevel >= MIN_LEVEL_FOR_PING;
 					if (player.getUser() != null && canPing) {
 						String userId = player.getUser().getUserID();
 						if (decksUsed == null) {
