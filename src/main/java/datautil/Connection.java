@@ -46,6 +46,7 @@ public class Connection {
 		tableNames.add("kickpoint_reasons");
 		tableNames.add("kickpoints");
 		tableNames.add("reminders");
+		tableNames.add("player_wins");
 		try (java.sql.Connection conn = DriverManager.getConnection(url, user, password)) {
 			DatabaseMetaData dbm = conn.getMetaData();
 
@@ -93,6 +94,11 @@ public class Connection {
 						case "reminders":
 							createTableSQL = "CREATE TABLE " + tableName + " (id BIGINT PRIMARY KEY,"
 									+ "clantag TEXT," + "channelid TEXT," + "time TIME," + "last_sent_date DATE)";
+							break;
+						case "player_wins":
+							createTableSQL = "CREATE TABLE " + tableName + " (player_tag TEXT,"
+									+ "recorded_at TIMESTAMPTZ," + "wins INTEGER,"
+									+ "PRIMARY KEY (player_tag, recorded_at))";
 							break;
 						}
 

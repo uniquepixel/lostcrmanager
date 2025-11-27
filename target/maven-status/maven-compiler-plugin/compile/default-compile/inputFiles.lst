@@ -24,6 +24,7 @@
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/reminders/remindersremove.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/util/cwfails.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/util/leaguetrophylist.java
+/home/runner/work/lostcrmanager/lostcrmanager/src/main/java/commands/wins/wins.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/datautil/APIUtil.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/datautil/Connection.java
 /home/runner/work/lostcrmanager/lostcrmanager/src/main/java/datautil/DBManager.java
