@@ -478,7 +478,10 @@ public class Bot extends ListenerAdapter {
 						continue; // Skip hidden co-leaders
 					}
 					String playerName = player.getNameDB();
-					if (player.getUser() != null) {
+					// Only ping players with level >= 30
+					Integer expLevel = player.getExpLevelAPI();
+					boolean canPing = expLevel != null && expLevel >= 30;
+					if (player.getUser() != null && canPing) {
 						String userId = player.getUser().getUserID();
 						if (decksUsed == null) {
 							reminderList.add("<@" + userId + "> " + playerName + " - nicht im Clan");

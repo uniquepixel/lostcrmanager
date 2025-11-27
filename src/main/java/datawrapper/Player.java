@@ -44,6 +44,7 @@ public class Player {
 	private RoleType role;
 	private Boolean mark;
 	private Integer wins;
+	private Integer expLevel;
 
 	public Player(String tag) {
 		this.tag = tag;
@@ -68,6 +69,7 @@ public class Player {
 		PathofLegendTrophies = null;
 		mark = null;
 		wins = null;
+		expLevel = null;
 		return this;
 	}
 
@@ -457,6 +459,18 @@ public class Player {
 			}
 		}
 		return wins;
+	}
+
+	public Integer getExpLevelAPI() {
+		if (expLevel == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("expLevel")) {
+				expLevel = apiresult.getInt("expLevel");
+			}
+		}
+		return expLevel;
 	}
 
 }
