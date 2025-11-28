@@ -19,11 +19,14 @@ import datautil.DBManager;
 import datautil.DBUtil;
 import datawrapper.Clan;
 import datawrapper.Player;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import util.MessageUtil;
 
 public class wins extends ListenerAdapter {
@@ -108,8 +111,18 @@ public class wins extends ListenerAdapter {
 					}
 
 					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+
+					// Create refresh button with player and month info
+					Button refreshButton = Button.secondary("wins_player_" + playerTag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
 					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO))
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
+									"Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton)
 							.queue();
 				} else {
 					// Clan mode
@@ -163,8 +176,17 @@ public class wins extends ListenerAdapter {
 						fullMessage = fullMessage.substring(0, 3997) + "...";
 					}
 
+					// Create refresh button with clan and month info
+					Button refreshButton = Button.secondary("wins_clan_" + clanTag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
 					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO))
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO,
+									"Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton)
 							.queue();
 				}
 			} catch (Exception e) {
@@ -336,6 +358,159 @@ public class wins extends ListenerAdapter {
 			}
 		}
 		return choices;
+	}
+
+	@Override
+	public void onButtonInteraction(ButtonInteractionEvent event) {
+		String id = event.getComponentId();
+		if (!id.startsWith("wins_"))
+			return;
+
+		event.deferEdit().queue();
+		String title = "Wins-Statistik";
+
+		// Parse the button ID: wins_player_<tag>_<year-month> or wins_clan_<tag>_<year-month>
+		String[] parts = id.split("_", 4);
+		if (parts.length < 4) {
+			return;
+		}
+
+		String type = parts[1];
+		String tag = parts[2];
+		String monthValue = parts[3];
+
+		int year;
+		int month;
+		try {
+			String[] monthParts = monthValue.split("-");
+			year = Integer.parseInt(monthParts[0]);
+			month = Integer.parseInt(monthParts[1]);
+		} catch (Exception e) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Ungültiges Monat-Format.",
+							MessageUtil.EmbedType.ERROR))
+					.queue();
+			return;
+		}
+
+		// Run heavy processing in a separate thread to not block the main bot instance
+		final int yearFinal = year;
+		final int monthFinal = month;
+		Thread thread = new Thread(() -> {
+			try {
+				ZoneId zone = ZoneId.of("Europe/Berlin");
+				ZonedDateTime now = ZonedDateTime.now(zone);
+				int currentYear = now.getYear();
+				int currentMonth = now.getMonthValue();
+				boolean isCurrentMonth = (yearFinal == currentYear && monthFinal == currentMonth);
+
+				// Start of the selected month
+				ZonedDateTime startOfMonth = ZonedDateTime.of(yearFinal, monthFinal, 1, 0, 0, 0, 0, zone);
+				// Start of the next month (end boundary)
+				ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
+
+				if (type.equals("player")) {
+					Player player = new Player(tag);
+
+					if (!player.IsLinked()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Spieler ist nicht verlinkt.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+
+					// Create refresh button with player and month info
+					Button refreshButton = Button.secondary("wins_player_" + tag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
+									"Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton)
+							.queue();
+				} else if (type.equals("clan")) {
+					Clan clan = new Clan(tag);
+
+					if (!clan.ExistsDB()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan existiert nicht.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					ArrayList<Player> players = clan.getPlayersDB();
+					if (players.isEmpty()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Dieser Clan hat keine Mitglieder.",
+										MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
+					}
+
+					// Collect wins data for all players with compact format
+					ArrayList<PlayerWinsResult> results = new ArrayList<>();
+					for (Player player : players) {
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+						results.add(result);
+					}
+
+					// Sort by wins descending
+					results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
+
+					StringBuilder sb = new StringBuilder();
+					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
+					sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
+
+					for (PlayerWinsResult result : results) {
+						sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
+						if (result.hasWarning) {
+							sb.append(" ⚠️");
+						}
+						sb.append("\n");
+					}
+
+					// Split message if too long
+					String fullMessage = sb.toString();
+					if (fullMessage.length() > 4000) {
+						fullMessage = fullMessage.substring(0, 3997) + "...";
+					}
+
+					// Create refresh button with clan and month info
+					Button refreshButton = Button.secondary("wins_clan_" + tag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
+					event.getHook()
+							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO,
+									"Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton)
+							.queue();
+				}
+			} catch (Exception e) {
+				System.err.println("Fehler beim Verarbeiten des Wins-Refresh-Befehls: " + e.getMessage());
+				e.printStackTrace();
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Ein Fehler ist aufgetreten: " + e.getMessage(),
+								MessageUtil.EmbedType.ERROR))
+						.queue();
+			}
+		});
+		thread.setName("wins-refresh-" + event.getUser().getId());
+		thread.start();
 	}
 
 	// Helper class to hold wins record data
