@@ -22,7 +22,7 @@ import lostcrmanager.Bot;
 public class Player {
 
 	public enum RoleType {
-		ADMIN, LEADER, COLEADER, ELDER, MEMBER
+		ADMIN, LEADER, COLEADER, ELDER, MEMBER, NOTINCLAN
 	};
 
 	private JSONObject apiresult;
