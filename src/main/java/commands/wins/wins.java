@@ -457,6 +457,13 @@ public class wins extends ListenerAdapter {
 								.queue();
 						return;
 					}
+					for (int i = 0; i < players.size(); i++) {
+						Player p = players.get(i);
+						if (p.isHiddenColeader()) {
+							players.remove(i);
+							i--;
+						}
+					}
 
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
