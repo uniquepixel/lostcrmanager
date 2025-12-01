@@ -66,18 +66,26 @@ public class wins extends ListenerAdapter {
 		int year;
 		int month;
 
-		try {
-			// Parse month value in format "YYYY-MM"
-			String[] parts = monthValue.split("-");
-			year = Integer.parseInt(parts[0]);
-			month = Integer.parseInt(parts[1]);
-		} catch (Exception e) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Ungültiges Monat-Format. Bitte wähle einen Monat aus der Liste.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
+		// Handle special "current" value for "Aktueller Monat"
+		if (monthValue.equals("current")) {
+			ZoneId zone = ZoneId.of("Europe/Berlin");
+			ZonedDateTime now = ZonedDateTime.now(zone);
+			year = now.getYear();
+			month = now.getMonthValue();
+		} else {
+			try {
+				// Parse month value in format "YYYY-MM"
+				String[] parts = monthValue.split("-");
+				year = Integer.parseInt(parts[0]);
+				month = Integer.parseInt(parts[1]);
+			} catch (Exception e) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Ungültiges Monat-Format. Bitte wähle einen Monat aus der Liste.",
+								MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
 		}
 
 		// Run heavy processing in a separate thread to not block the main bot instance
@@ -340,6 +348,12 @@ public class wins extends ListenerAdapter {
 		ZoneId zone = ZoneId.of("Europe/Berlin");
 		ZonedDateTime now = ZonedDateTime.now(zone);
 
+		// Add "Aktueller Monat" option first - uses special value "current" that gets resolved dynamically
+		String currentMonthDisplay = "Aktueller Monat";
+		if (currentMonthDisplay.toLowerCase().contains(input.toLowerCase()) || "current".contains(input.toLowerCase())) {
+			choices.add(new Command.Choice(currentMonthDisplay, "current"));
+		}
+
 		// Offer last 12 months
 		for (int i = 0; i < 12; i++) {
 			ZonedDateTime monthDate = now.minusMonths(i);
@@ -381,17 +395,25 @@ public class wins extends ListenerAdapter {
 
 		int year;
 		int month;
-		try {
-			String[] monthParts = monthValue.split("-");
-			year = Integer.parseInt(monthParts[0]);
-			month = Integer.parseInt(monthParts[1]);
-		} catch (Exception e) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Ungültiges Monat-Format.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
+		// Handle special "current" value for "Aktueller Monat"
+		if (monthValue.equals("current")) {
+			ZoneId zone = ZoneId.of("Europe/Berlin");
+			ZonedDateTime now = ZonedDateTime.now(zone);
+			year = now.getYear();
+			month = now.getMonthValue();
+		} else {
+			try {
+				String[] monthParts = monthValue.split("-");
+				year = Integer.parseInt(monthParts[0]);
+				month = Integer.parseInt(monthParts[1]);
+			} catch (Exception e) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Ungültiges Monat-Format.",
+								MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
 		}
 
 		// Run heavy processing in a separate thread to not block the main bot instance
