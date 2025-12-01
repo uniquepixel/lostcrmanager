@@ -51,18 +51,20 @@ public class unlink extends ListenerAdapter {
 
 		String tag = tagOption.getAsString();
 
-		Player p = new Player(tag);
+		new Thread(() -> {
+			Player p = new Player(tag);
 
-		if (p.IsLinked()) {
-			DBUtil.executeUpdate("DELETE FROM players WHERE cr_tag = ?", tag);
-			String desc = "Die Verknüpfung des Spielers mit dem Tag " + tag + " wurde erfolgreich gelöscht.";
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
-					.queue();
-		} else {
-			String desc = "Der Spieler mit dem Tag " + tag + " ist bereits nicht mehr verknüpft.";
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR))
-					.queue();
-		}
+			if (p.IsLinked()) {
+				DBUtil.executeUpdate("DELETE FROM players WHERE cr_tag = ?", tag);
+				String desc = "Die Verknüpfung des Spielers mit dem Tag " + tag + " wurde erfolgreich gelöscht.";
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
+						.queue();
+			} else {
+				String desc = "Der Spieler mit dem Tag " + tag + " ist bereits nicht mehr verknüpft.";
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR))
+						.queue();
+			}
+		}).start();
 
 	}
 

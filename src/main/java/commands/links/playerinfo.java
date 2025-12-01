@@ -42,85 +42,82 @@ public class playerinfo extends ListenerAdapter {
 					.queue();
 			return;
 		}
-		String userid = null;
-		String playertag = null;
-		ArrayList<Player> linkedaccs = new ArrayList<>();
 
-		Player player = null;
+		new Thread(() -> {
+			String userid = null;
+			String playertag = null;
+			ArrayList<Player> linkedaccs = new ArrayList<>();
 
-		ConvertionType conv = null;
+			Player player = null;
 
-		if (userOption != null) {
-			userid = userOption.getAsMentionable().getId();
-			linkedaccs = new User(userid).getAllLinkedAccounts();
-			conv = ConvertionType.USERTOACCS;
-		}
-		if (playerOption != null) {
-			playertag = playerOption.getAsString();
-			player = new Player(playertag);
-			if (player.IsLinked()) {
-				userid = player.getUser().getUserID();
-				conv = ConvertionType.ACCTOUSER;
-			} else {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Dieser Spieler ist nicht verifiziert.", MessageUtil.EmbedType.ERROR)).queue();
-				return;
+			ConvertionType conv = null;
+
+			if (userOption != null) {
+				userid = userOption.getAsMentionable().getId();
+				linkedaccs = new User(userid).getAllLinkedAccounts();
+				conv = ConvertionType.USERTOACCS;
 			}
-		}
-
-		String desc = "";
-
-		if (conv == ConvertionType.ACCTOUSER) {
-			try {
-				desc += "## " + MessageUtil.unformat(player.getInfoStringDB()) + "\n";
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			desc += "Verlinkter Discord Account: <@" + userid + ">\n";
-			if (player.getClanDB() != null) {
-				desc += "Eingetragen in Clan: " + player.getClanDB().getInfoStringDB();
-				if (player.isMarked()) {
-					desc += " (✗)";
-				}
-				desc += "\n";
-			} else {
-				desc += "Eingetragen in Clan: ---\n";
-			}
-			if (player.getClanAPI() != null) {
-				desc += "Ingame in Clan: " + player.getClanAPI().getInfoStringAPI() + "\n";
-			} else {
-				desc += "Ingame in Clan: ---\n";
-			}
-			desc += "Aktuelle Anzahl Kickpunkte: " + player.getActiveKickpoints().size() + "\n";
-			desc += "Ingesamte Anzahl Kickpunkte: " + player.getTotalKickpoints();
-
-			final String uuid = userid;
-			MessageChannelUnion channel = event.getChannel();
-			MessageUtil.sendUserPingHidden(channel, uuid);
-		}
-		if (conv == ConvertionType.USERTOACCS) {
-			try {
-				desc += "## <@" + userid + "> \n";
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			if (linkedaccs.isEmpty()) {
-				desc += "	Keine verlinkten Accounts.\n";
-			} else {
-				desc += "Verlinkte Accounts: \n";
-				for (Player p : linkedaccs) {
-					desc += "   \\- " + MessageUtil.unformat(p.getInfoStringDB()) + "\n";
+			if (playerOption != null) {
+				playertag = playerOption.getAsString();
+				player = new Player(playertag);
+				if (player.IsLinked()) {
+					userid = player.getUser().getUserID();
+					conv = ConvertionType.ACCTOUSER;
+				} else {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Dieser Spieler ist nicht verifiziert.", MessageUtil.EmbedType.ERROR)).queue();
+					return;
 				}
 			}
-		}
-		final String descr = desc;
-		new java.util.Timer().schedule(new java.util.TimerTask() {
-			@Override
-			public void run() {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, descr, MessageUtil.EmbedType.INFO))
-						.queue();
+
+			String desc = "";
+
+			if (conv == ConvertionType.ACCTOUSER) {
+				try {
+					desc += "## " + MessageUtil.unformat(player.getInfoStringDB()) + "\n";
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				desc += "Verlinkter Discord Account: <@" + userid + ">\n";
+				if (player.getClanDB() != null) {
+					desc += "Eingetragen in Clan: " + player.getClanDB().getInfoStringDB();
+					if (player.isMarked()) {
+						desc += " (✗)";
+					}
+					desc += "\n";
+				} else {
+					desc += "Eingetragen in Clan: ---\n";
+				}
+				if (player.getClanAPI() != null) {
+					desc += "Ingame in Clan: " + player.getClanAPI().getInfoStringAPI() + "\n";
+				} else {
+					desc += "Ingame in Clan: ---\n";
+				}
+				desc += "Aktuelle Anzahl Kickpunkte: " + player.getActiveKickpoints().size() + "\n";
+				desc += "Ingesamte Anzahl Kickpunkte: " + player.getTotalKickpoints();
+
+				final String uuid = userid;
+				MessageChannelUnion channel = event.getChannel();
+				MessageUtil.sendUserPingHidden(channel, uuid);
 			}
-		}, 500);
+			if (conv == ConvertionType.USERTOACCS) {
+				try {
+					desc += "## <@" + userid + "> \n";
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if (linkedaccs.isEmpty()) {
+					desc += "	Keine verlinkten Accounts.\n";
+				} else {
+					desc += "Verlinkte Accounts: \n";
+					for (Player p : linkedaccs) {
+						desc += "   \\- " + MessageUtil.unformat(p.getInfoStringDB()) + "\n";
+					}
+				}
+			}
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
+					.queue();
+		}).start();
 
 	}
 

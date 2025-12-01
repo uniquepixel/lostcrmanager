@@ -40,169 +40,172 @@ public class transfermember extends ListenerAdapter {
 
 		String playertag = playeroption.getAsString();
 		String newclantag = clanoption.getAsString();
-		Clan newclan = new Clan(newclantag);
 
-		if (!newclan.ExistsDB()) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Dieser Clan ist existiert nicht.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
+		new Thread(() -> {
+			Clan newclan = new Clan(newclantag);
 
-		Player player = new Player(playertag);
-
-		if (!player.IsLinked()) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		Player.RoleType role = player.getRole();
-
-		Clan playerclan = player.getClanDB();
-
-		if (playerclan == null) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Dieser Spieler ist in keinem Clan.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		String clantag = playerclan.getTag();
-
-		User userexecuted = new User(event.getUser().getId());
-		if (!clantag.equals("warteliste")) {
-			if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
-					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
-					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer des Clans sein, in dem der Spieler gerade ist, um diesen Befehl ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
+			if (!newclan.ExistsDB()) {
+				event.getHook().editOriginalEmbeds(
+						MessageUtil.buildEmbed(title, "Dieser Clan ist existiert nicht.", MessageUtil.EmbedType.ERROR))
+						.queue();
 				return;
 			}
-		} else {
-			boolean b = false;
-			for (String clantags : DBManager.getAllClans()) {
-				if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
-						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
-						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
-					b = true;
-					break;
-				}
-			}
-			if (b == false) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
+
+			Player player = new Player(playertag);
+
+			if (!player.IsLinked()) {
+				event.getHook().editOriginalEmbeds(
+						MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
+						.queue();
 				return;
 			}
-		}
 
-		if (!newclantag.equals("warteliste")) {
-			if (!(userexecuted.getClanRoles().get(newclantag) == Player.RoleType.ADMIN
-					|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.LEADER
-					|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.COLEADER)) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer des Clans sein, in den du den Spieler transferieren möchtest, um diesen Befehl ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
+			Player.RoleType role = player.getRole();
+
+			Clan playerclan = player.getClanDB();
+
+			if (playerclan == null) {
+				event.getHook().editOriginalEmbeds(
+						MessageUtil.buildEmbed(title, "Dieser Spieler ist in keinem Clan.", MessageUtil.EmbedType.ERROR))
+						.queue();
 				return;
 			}
-		} else {
-			boolean b = false;
-			for (String clantags : DBManager.getAllClans()) {
-				if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
-						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
-						|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
-					b = true;
-					break;
-				}
-			}
-			if (b == false) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
-				return;
-			}
-		}
 
-		if (clantag.equals(newclantag)) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Du kannst einen Spieler nicht in den gleichen Clan verschieben.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
+			String clantag = playerclan.getTag();
 
-		if (role == Player.RoleType.LEADER && userexecuted.getClanRoles().get(clantag) != Player.RoleType.ADMIN) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Um jemanden als Leader zu entfernen, musst du Admin sein.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-		if (role == Player.RoleType.COLEADER && !(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
-				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Um jemanden als Vize-Anführer zu entfernen, musst du Admin oder Anführer sein.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		DBUtil.executeUpdate("UPDATE clan_members SET clan_tag = ?, clan_role = ? WHERE player_tag = ?", newclantag,
-				"member", playertag);
-
-		String desc = "";
-		if (!clantag.equals("warteliste")) {
-			if (!newclantag.equals("warteliste")) {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
-						+ playerclan.getInfoStringDB() + " zum Clan " + newclan.getInfoStringDB() + " verschoben.";
-			} else {
-				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
-						+ playerclan.getInfoStringDB() + " zur Warteliste verschoben.";
-			}
-		} else {
-			desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
-					+ " wurde von der Warteliste zum Clan " + newclan.getInfoStringDB() + " verschoben.";
-		}
-		String userid = player.getUser().getUserID();
-		Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
-		Member member = guild.getMemberById(userid);
-		if (member != null) {
+			User userexecuted = new User(event.getUser().getId());
 			if (!clantag.equals("warteliste")) {
-				String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
-				Role memberrole = guild.getRoleById(memberroleid);
-				if (member.getRoles().contains(memberrole)) {
-					desc += "\n\n";
-					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
-							+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
-				} else {
-					desc += "\n\n";
-					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
-							+ "> bereits nicht mehr.**\n";
+				if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+						|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+						|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer des Clans sein, in dem der Spieler gerade ist, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR)).queue();
+					return;
+				}
+			} else {
+				boolean b = false;
+				for (String clantags : DBManager.getAllClans()) {
+					if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
+							|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
+							|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
+						b = true;
+						break;
+					}
+				}
+				if (b == false) {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR)).queue();
+					return;
 				}
 			}
-			if (!newclantag.equals("warteliste")) {
-				String newmemberroleid = newclan.getRoleID(Clan.Role.MEMBER);
-				Role newmemberrole = guild.getRoleById(newmemberroleid);
-				if (member.getRoles().contains(newmemberrole)) {
-					desc += "\n\n";
-					desc += "**Der User <@" + userid + "> hat die Rolle <@&" + newmemberroleid + "> bereits.**\n";
-				} else {
-					guild.addRoleToMember(member, newmemberrole).queue();
-					desc += "\n\n";
-					desc += "**Dem User <@" + userid + "> wurde die Rolle <@&" + newmemberroleid + "> gegeben.**\n";
-				}
-			}
-		} else {
-			desc += "\n\n**Der User <@" + userid
-					+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
-		}
-		MessageChannelUnion channel = event.getChannel();
-		MessageUtil.sendUserPingHidden(channel, userid);
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
+			if (!newclantag.equals("warteliste")) {
+				if (!(userexecuted.getClanRoles().get(newclantag) == Player.RoleType.ADMIN
+						|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.LEADER
+						|| userexecuted.getClanRoles().get(newclantag) == Player.RoleType.COLEADER)) {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer des Clans sein, in den du den Spieler transferieren möchtest, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR)).queue();
+					return;
+				}
+			} else {
+				boolean b = false;
+				for (String clantags : DBManager.getAllClans()) {
+					if (userexecuted.getClanRoles().get(clantags) == Player.RoleType.ADMIN
+							|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.LEADER
+							|| userexecuted.getClanRoles().get(clantags) == Player.RoleType.COLEADER) {
+						b = true;
+						break;
+					}
+				}
+				if (b == false) {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl ausführen zu können.",
+							MessageUtil.EmbedType.ERROR)).queue();
+					return;
+				}
+			}
+
+			if (clantag.equals(newclantag)) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du kannst einen Spieler nicht in den gleichen Clan verschieben.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
+
+			if (role == Player.RoleType.LEADER && userexecuted.getClanRoles().get(clantag) != Player.RoleType.ADMIN) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Um jemanden als Leader zu entfernen, musst du Admin sein.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
+			if (role == Player.RoleType.COLEADER && !(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER)) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Um jemanden als Vize-Anführer zu entfernen, musst du Admin oder Anführer sein.",
+								MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
+
+			DBUtil.executeUpdate("UPDATE clan_members SET clan_tag = ?, clan_role = ? WHERE player_tag = ?", newclantag,
+					"member", playertag);
+
+			String desc = "";
+			if (!clantag.equals("warteliste")) {
+				if (!newclantag.equals("warteliste")) {
+					desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
+							+ playerclan.getInfoStringDB() + " zum Clan " + newclan.getInfoStringDB() + " verschoben.";
+				} else {
+					desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " wurde vom Clan "
+							+ playerclan.getInfoStringDB() + " zur Warteliste verschoben.";
+				}
+			} else {
+				desc += "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
+						+ " wurde von der Warteliste zum Clan " + newclan.getInfoStringDB() + " verschoben.";
+			}
+			String userid = player.getUser().getUserID();
+			Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
+			Member member = guild.getMemberById(userid);
+			if (member != null) {
+				if (!clantag.equals("warteliste")) {
+					String memberroleid = playerclan.getRoleID(Clan.Role.MEMBER);
+					Role memberrole = guild.getRoleById(memberroleid);
+					if (member.getRoles().contains(memberrole)) {
+						desc += "\n\n";
+						desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+								+ "> noch. Nehme sie ihm manuell, falls erwünscht.**\n";
+					} else {
+						desc += "\n\n";
+						desc += "**Der User <@" + userid + "> hat die Rolle <@&" + memberroleid
+								+ "> bereits nicht mehr.**\n";
+					}
+				}
+				if (!newclantag.equals("warteliste")) {
+					String newmemberroleid = newclan.getRoleID(Clan.Role.MEMBER);
+					Role newmemberrole = guild.getRoleById(newmemberroleid);
+					if (member.getRoles().contains(newmemberrole)) {
+						desc += "\n\n";
+						desc += "**Der User <@" + userid + "> hat die Rolle <@&" + newmemberroleid + "> bereits.**\n";
+					} else {
+						guild.addRoleToMember(member, newmemberrole).queue();
+						desc += "\n\n";
+						desc += "**Dem User <@" + userid + "> wurde die Rolle <@&" + newmemberroleid + "> gegeben.**\n";
+					}
+				}
+			} else {
+				desc += "\n\n**Der User <@" + userid
+						+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
+			}
+			MessageChannelUnion channel = event.getChannel();
+			MessageUtil.sendUserPingHidden(channel, userid);
+
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
+		}).start();
 
 	}
 

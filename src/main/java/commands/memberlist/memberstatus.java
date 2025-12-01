@@ -71,71 +71,74 @@ public class memberstatus extends ListenerAdapter {
 			return;
 		}
 
-		ArrayList<Player> playerlistdb = c.getPlayersDB();
+		final boolean excludeLeadersFinal = excludeLeaders;
+		new Thread(() -> {
+			ArrayList<Player> playerlistdb = c.getPlayersDB();
 
-		ArrayList<String> taglistdb = new ArrayList<>();
-		playerlistdb.forEach(p -> taglistdb.add(p.getTag()));
+			ArrayList<String> taglistdb = new ArrayList<>();
+			playerlistdb.forEach(p -> taglistdb.add(p.getTag()));
 
-		ArrayList<Player> playerlistapi = c.getPlayersAPI();
+			ArrayList<Player> playerlistapi = c.getPlayersAPI();
 
-		ArrayList<String> taglistapi = new ArrayList<>();
-		playerlistapi.forEach(p -> taglistapi.add(p.getTag()));
+			ArrayList<String> taglistapi = new ArrayList<>();
+			playerlistapi.forEach(p -> taglistapi.add(p.getTag()));
 
-		ArrayList<Player> membernotinclan = new ArrayList<>();
-		ArrayList<Player> inclannotmember = new ArrayList<>();
+			ArrayList<Player> membernotinclan = new ArrayList<>();
+			ArrayList<Player> inclannotmember = new ArrayList<>();
 
-		for (String s : taglistdb) {
-			if (!taglistapi.contains(s)) {
-				Player p = new Player(s);
-				// Skip hidden coleaders - they don't need to be in the clan ingame
-				if (p.isHiddenColeader()) {
-					continue;
-				}
-				// Skip leaders/coleaders/admins if exclude_leaders is true
-				if (excludeLeaders) {
-					Player.RoleType role = p.getRole();
-					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-							|| role == Player.RoleType.COLEADER) {
+			for (String s : taglistdb) {
+				if (!taglistapi.contains(s)) {
+					Player p = new Player(s);
+					// Skip hidden coleaders - they don't need to be in the clan ingame
+					if (p.isHiddenColeader()) {
 						continue;
 					}
+					// Skip leaders/coleaders/admins if exclude_leaders is true
+					if (excludeLeadersFinal) {
+						Player.RoleType role = p.getRole();
+						if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+								|| role == Player.RoleType.COLEADER) {
+							continue;
+						}
+					}
+					membernotinclan.add(p);
 				}
-				membernotinclan.add(p);
 			}
-		}
 
-		for (String s : taglistapi) {
-			if (!taglistdb.contains(s)) {
-				inclannotmember.add(new Player(s));
+			for (String s : taglistapi) {
+				if (!taglistdb.contains(s)) {
+					inclannotmember.add(new Player(s));
+				}
 			}
-		}
 
-		String membernotinclanstr = "";
+			String membernotinclanstr = "";
 
-		for (Player p : membernotinclan) {
-			membernotinclanstr += p.getInfoStringDB() + "\n";
-		}
+			for (Player p : membernotinclan) {
+				membernotinclanstr += p.getInfoStringDB() + "\n";
+			}
 
-		String inclannotmemberstr = "";
+			String inclannotmemberstr = "";
 
-		for (Player p : inclannotmember) {
-			inclannotmemberstr += p.getInfoStringAPI() + "\n";
-		}
+			for (Player p : inclannotmember) {
+				inclannotmemberstr += p.getInfoStringAPI() + "\n";
+			}
 
-		String desc = "## " + c.getInfoStringDB() + "\n";
+			String desc = "## " + c.getInfoStringDB() + "\n";
 
-		desc += "**Mitglied, ingame nicht im Clan:**\n\n";
-		desc += membernotinclanstr == "" ? "---\n\n" : MessageUtil.unformat(membernotinclanstr) + "\n";
-		desc += "**Kein Mitglied, ingame im Clan:**\n\n";
-		desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
+			desc += "**Mitglied, ingame nicht im Clan:**\n\n";
+			desc += membernotinclanstr == "" ? "---\n\n" : MessageUtil.unformat(membernotinclanstr) + "\n";
+			desc += "**Kein Mitglied, ingame im Clan:**\n\n";
+			desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
 
-		Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeaders, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+		}).start();
 
 	}
 
@@ -204,71 +207,74 @@ public class memberstatus extends ListenerAdapter {
 			return;
 		}
 
-		ArrayList<Player> playerlistdb = c.getPlayersDB();
+		final boolean excludeLeadersFinal = excludeLeaders;
+		new Thread(() -> {
+			ArrayList<Player> playerlistdb = c.getPlayersDB();
 
-		ArrayList<String> taglistdb = new ArrayList<>();
-		playerlistdb.forEach(p -> taglistdb.add(p.getTag()));
+			ArrayList<String> taglistdb = new ArrayList<>();
+			playerlistdb.forEach(p -> taglistdb.add(p.getTag()));
 
-		ArrayList<Player> playerlistapi = c.getPlayersAPI();
+			ArrayList<Player> playerlistapi = c.getPlayersAPI();
 
-		ArrayList<String> taglistapi = new ArrayList<>();
-		playerlistapi.forEach(p -> taglistapi.add(p.getTag()));
+			ArrayList<String> taglistapi = new ArrayList<>();
+			playerlistapi.forEach(p -> taglistapi.add(p.getTag()));
 
-		ArrayList<Player> membernotinclan = new ArrayList<>();
-		ArrayList<Player> inclannotmember = new ArrayList<>();
+			ArrayList<Player> membernotinclan = new ArrayList<>();
+			ArrayList<Player> inclannotmember = new ArrayList<>();
 
-		for (String s : taglistdb) {
-			if (!taglistapi.contains(s)) {
-				Player p = new Player(s);
-				// Skip hidden coleaders - they don't need to be in the clan ingame
-				if (p.isHiddenColeader()) {
-					continue;
-				}
-				// Skip leaders/coleaders/admins if exclude_leaders is true
-				if (excludeLeaders) {
-					Player.RoleType role = p.getRole();
-					if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-							|| role == Player.RoleType.COLEADER) {
+			for (String s : taglistdb) {
+				if (!taglistapi.contains(s)) {
+					Player p = new Player(s);
+					// Skip hidden coleaders - they don't need to be in the clan ingame
+					if (p.isHiddenColeader()) {
 						continue;
 					}
+					// Skip leaders/coleaders/admins if exclude_leaders is true
+					if (excludeLeadersFinal) {
+						Player.RoleType role = p.getRole();
+						if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+								|| role == Player.RoleType.COLEADER) {
+							continue;
+						}
+					}
+					membernotinclan.add(p);
 				}
-				membernotinclan.add(p);
 			}
-		}
 
-		for (String s : taglistapi) {
-			if (!taglistdb.contains(s)) {
-				inclannotmember.add(new Player(s));
+			for (String s : taglistapi) {
+				if (!taglistdb.contains(s)) {
+					inclannotmember.add(new Player(s));
+				}
 			}
-		}
 
-		String membernotinclanstr = "";
+			String membernotinclanstr = "";
 
-		for (Player p : membernotinclan) {
-			membernotinclanstr += p.getInfoStringDB() + "\n";
-		}
+			for (Player p : membernotinclan) {
+				membernotinclanstr += p.getInfoStringDB() + "\n";
+			}
 
-		String inclannotmemberstr = "";
+			String inclannotmemberstr = "";
 
-		for (Player p : inclannotmember) {
-			inclannotmemberstr += p.getInfoStringAPI() + "\n";
-		}
+			for (Player p : inclannotmember) {
+				inclannotmemberstr += p.getInfoStringAPI() + "\n";
+			}
 
-		String desc = "## " + c.getInfoStringDB() + "\n";
+			String desc = "## " + c.getInfoStringDB() + "\n";
 
-		desc += "**Mitglied, ingame nicht im Clan:**\n\n";
-		desc += membernotinclanstr == "" ? "---\n\n" : MessageUtil.unformat(membernotinclanstr) + "\n";
-		desc += "**Kein Mitglied, ingame im Clan:**\n\n";
-		desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
+			desc += "**Mitglied, ingame nicht im Clan:**\n\n";
+			desc += membernotinclanstr == "" ? "---\n\n" : MessageUtil.unformat(membernotinclanstr) + "\n";
+			desc += "**Kein Mitglied, ingame im Clan:**\n\n";
+			desc += inclannotmemberstr == "" ? "---\n\n" : MessageUtil.unformat(inclannotmemberstr) + "\n";
 
-		Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeaders, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("memberstatus_" + clantag + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+		}).start();
 	}
 
 }

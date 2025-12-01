@@ -61,48 +61,51 @@ public class link extends ListenerAdapter {
 			userid = useridoption.getAsString();
 		}
 
-		Player p = new Player(tag);
+		final String finalTag = tag;
+		final String finalUserid = userid;
+		new Thread(() -> {
+			Player p = new Player(finalTag);
 
-		if (p.AccExists()) {
-			String playername = null;
-			try {
-				playername = p.getNameAPI();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if (!p.IsLinked()) {
-				DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", tag, userid,
-						playername);
-				
-				// Save initial wins data for the newly linked player (async to not block response)
-				final String playerTag = tag;
-				Thread saveWinsThread = new Thread(() -> {
-					wins.savePlayerWins(playerTag);
-				});
-				saveWinsThread.setDaemon(true);
-				saveWinsThread.start();
-				
-				Player player = new Player(tag);
-				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
-						+ " wurde erfolgreich mit dem User <@" + userid + "> verknüpft.";
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
-						.queue();
-				MessageUtil.sendUserPingHidden(event.getChannel(), userid);
+			if (p.AccExists()) {
+				String playername = null;
+				try {
+					playername = p.getNameAPI();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (!p.IsLinked()) {
+					DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", finalTag, finalUserid,
+							playername);
+					
+					// Save initial wins data for the newly linked player (async to not block response)
+					Thread saveWinsThread = new Thread(() -> {
+						wins.savePlayerWins(finalTag);
+					});
+					saveWinsThread.setDaemon(true);
+					saveWinsThread.start();
+					
+					Player player = new Player(finalTag);
+					String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB())
+							+ " wurde erfolgreich mit dem User <@" + finalUserid + "> verknüpft.";
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS))
+							.queue();
+					MessageUtil.sendUserPingHidden(event.getChannel(), finalUserid);
+				} else {
+					Player player = new Player(finalTag);
+					String linkeduserid = player.getUser().getUserID();
+					String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " ist bereits mit <@"
+							+ linkeduserid + "> verknüpft. Bitte verwende zuerst ``/unlink``.";
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR))
+							.queue();
+					MessageUtil.sendUserPingHidden(event.getChannel(), linkeduserid);
+				}
 			} else {
-				Player player = new Player(tag);
-				String linkeduserid = player.getUser().getUserID();
-				String desc = "Der Spieler " + MessageUtil.unformat(player.getInfoStringDB()) + " ist bereits mit <@"
-						+ linkeduserid + "> verknüpft. Bitte verwende zuerst ``/unlink``.";
+				String desc = "Der Spieler mit dem Tag " + finalTag + " existiert nicht oder es ist ein API-Fehler aufgetreten.";
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR))
 						.queue();
-				MessageUtil.sendUserPingHidden(event.getChannel(), linkeduserid);
 			}
-		} else {
-			String desc = "Der Spieler mit dem Tag " + tag + " existiert nicht oder es ist ein API-Fehler aufgetreten.";
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.ERROR))
-					.queue();
-		}
+		}).start();
 
 	}
 

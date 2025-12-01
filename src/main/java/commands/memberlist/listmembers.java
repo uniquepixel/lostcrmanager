@@ -42,99 +42,101 @@ public class listmembers extends ListenerAdapter {
 
 		Clan c = new Clan(clantag);
 
-		ArrayList<Player> playerlist = c.getPlayersDB();
+		new Thread(() -> {
+			ArrayList<Player> playerlist = c.getPlayersDB();
 
-		playerlist.sort(Comparator.comparing(Player::isMarked).reversed().thenComparing((p1, p2) -> {
-			String name1 = p1.getNameDB() != null ? p1.getNameDB() : p1.getNameAPI();
-			String name2 = p2.getNameDB() != null ? p2.getNameDB() : p2.getNameAPI();
-			if (name1 == null && name2 == null)
-				return 0;
-			if (name1 == null)
-				return 1; // nulls last
-			if (name2 == null)
-				return -1;
-			return name1.compareTo(name2);
-		}));
+			playerlist.sort(Comparator.comparing(Player::isMarked).reversed().thenComparing((p1, p2) -> {
+				String name1 = p1.getNameDB() != null ? p1.getNameDB() : p1.getNameAPI();
+				String name2 = p2.getNameDB() != null ? p2.getNameDB() : p2.getNameAPI();
+				if (name1 == null && name2 == null)
+					return 0;
+				if (name1 == null)
+					return 1; // nulls last
+				if (name2 == null)
+					return -1;
+				return name1.compareTo(name2);
+			}));
 
-		String adminlist = "";
-		String leaderlist = "";
-		String coleaderlist = "";
-		String elderlist = "";
-		String memberlist = "";
-		int clanSizeCount = 0;
+			String adminlist = "";
+			String leaderlist = "";
+			String coleaderlist = "";
+			String elderlist = "";
+			String memberlist = "";
+			int clanSizeCount = 0;
 
-		for (Player p : playerlist) {
-			boolean isHidden = p.isHiddenColeader();
-			if (!isHidden) {
-				clanSizeCount++;
-			}
-			
-			if (p.getRole() == Player.RoleType.ADMIN) {
-				adminlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					adminlist += " (✗)";
+			for (Player p : playerlist) {
+				boolean isHidden = p.isHiddenColeader();
+				if (!isHidden) {
+					clanSizeCount++;
 				}
-				adminlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.LEADER) {
-				leaderlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					leaderlist += " (✗)";
+				
+				if (p.getRole() == Player.RoleType.ADMIN) {
+					adminlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						adminlist += " (✗)";
+					}
+					adminlist += "\n";
 				}
-				leaderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.COLEADER) {
-				coleaderlist += p.getInfoStringDB();
-				if (isHidden) {
-					coleaderlist += " (versteckt)";
+				if (p.getRole() == Player.RoleType.LEADER) {
+					leaderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						leaderlist += " (✗)";
+					}
+					leaderlist += "\n";
 				}
-				if (p.isMarked()) {
-					coleaderlist += " (✗)";
+				if (p.getRole() == Player.RoleType.COLEADER) {
+					coleaderlist += p.getInfoStringDB();
+					if (isHidden) {
+						coleaderlist += " (versteckt)";
+					}
+					if (p.isMarked()) {
+						coleaderlist += " (✗)";
+					}
+					coleaderlist += "\n";
 				}
-				coleaderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.ELDER) {
-				elderlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					elderlist += " (✗)";
+				if (p.getRole() == Player.RoleType.ELDER) {
+					elderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						elderlist += " (✗)";
+					}
+					elderlist += "\n";
 				}
-				elderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.MEMBER) {
-				memberlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					memberlist += " (✗)";
+				if (p.getRole() == Player.RoleType.MEMBER) {
+					memberlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						memberlist += " (✗)";
+					}
+					memberlist += "\n";
 				}
-				memberlist += "\n";
 			}
-		}
-		String desc = "## " + c.getInfoStringDB() + "\n";
-		if (!clantag.equals("warteliste")) {
-			desc += "**Admin:**\n";
-			desc += adminlist == "" ? "---\n\n" : MessageUtil.unformat(adminlist) + "\n";
-			desc += "**Anführer:**\n";
-			desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
-			desc += "**Vize-Anführer:**\n";
-			desc += coleaderlist == "" ? "---\n\n" : MessageUtil.unformat(coleaderlist) + "\n";
-			desc += "**Ältester:**\n";
-			desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
-			desc += "**Mitglied:**\n";
-			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
-		} else {
-			desc += "**Wartend:**\n";
-			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
-		}
+			String desc = "## " + c.getInfoStringDB() + "\n";
+			if (!clantag.equals("warteliste")) {
+				desc += "**Admin:**\n";
+				desc += adminlist == "" ? "---\n\n" : MessageUtil.unformat(adminlist) + "\n";
+				desc += "**Anführer:**\n";
+				desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
+				desc += "**Vize-Anführer:**\n";
+				desc += coleaderlist == "" ? "---\n\n" : MessageUtil.unformat(coleaderlist) + "\n";
+				desc += "**Ältester:**\n";
+				desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
+				desc += "**Mitglied:**\n";
+				desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
+				desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
+			} else {
+				desc += "**Wartend:**\n";
+				desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
+				desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
+			}
 
-		Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+		}).start();
 
 	}
 
@@ -165,99 +167,101 @@ public class listmembers extends ListenerAdapter {
 		String clantag = id.substring("listmembers_".length());
 		Clan c = new Clan(clantag);
 
-		ArrayList<Player> playerlist = c.getPlayersDB();
+		new Thread(() -> {
+			ArrayList<Player> playerlist = c.getPlayersDB();
 
-		playerlist.sort(Comparator.comparing(Player::isMarked).reversed().thenComparing((p1, p2) -> {
-			String name1 = p1.getNameDB() != null ? p1.getNameDB() : p1.getNameAPI();
-			String name2 = p2.getNameDB() != null ? p2.getNameDB() : p2.getNameAPI();
-			if (name1 == null && name2 == null)
-				return 0;
-			if (name1 == null)
-				return 1; // nulls last
-			if (name2 == null)
-				return -1;
-			return name1.compareTo(name2);
-		}));
+			playerlist.sort(Comparator.comparing(Player::isMarked).reversed().thenComparing((p1, p2) -> {
+				String name1 = p1.getNameDB() != null ? p1.getNameDB() : p1.getNameAPI();
+				String name2 = p2.getNameDB() != null ? p2.getNameDB() : p2.getNameAPI();
+				if (name1 == null && name2 == null)
+					return 0;
+				if (name1 == null)
+					return 1; // nulls last
+				if (name2 == null)
+					return -1;
+				return name1.compareTo(name2);
+			}));
 
-		String adminlist = "";
-		String leaderlist = "";
-		String coleaderlist = "";
-		String elderlist = "";
-		String memberlist = "";
-		int clanSizeCount = 0;
+			String adminlist = "";
+			String leaderlist = "";
+			String coleaderlist = "";
+			String elderlist = "";
+			String memberlist = "";
+			int clanSizeCount = 0;
 
-		for (Player p : playerlist) {
-			boolean isHidden = p.isHiddenColeader();
-			if (!isHidden) {
-				clanSizeCount++;
-			}
-			
-			if (p.getRole() == Player.RoleType.ADMIN) {
-				adminlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					adminlist += " (✗)";
+			for (Player p : playerlist) {
+				boolean isHidden = p.isHiddenColeader();
+				if (!isHidden) {
+					clanSizeCount++;
 				}
-				adminlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.LEADER) {
-				leaderlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					leaderlist += " (✗)";
+				
+				if (p.getRole() == Player.RoleType.ADMIN) {
+					adminlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						adminlist += " (✗)";
+					}
+					adminlist += "\n";
 				}
-				leaderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.COLEADER) {
-				coleaderlist += p.getInfoStringDB();
-				if (isHidden) {
-					coleaderlist += " (versteckt)";
+				if (p.getRole() == Player.RoleType.LEADER) {
+					leaderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						leaderlist += " (✗)";
+					}
+					leaderlist += "\n";
 				}
-				if (p.isMarked()) {
-					coleaderlist += " (✗)";
+				if (p.getRole() == Player.RoleType.COLEADER) {
+					coleaderlist += p.getInfoStringDB();
+					if (isHidden) {
+						coleaderlist += " (versteckt)";
+					}
+					if (p.isMarked()) {
+						coleaderlist += " (✗)";
+					}
+					coleaderlist += "\n";
 				}
-				coleaderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.ELDER) {
-				elderlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					elderlist += " (✗)";
+				if (p.getRole() == Player.RoleType.ELDER) {
+					elderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						elderlist += " (✗)";
+					}
+					elderlist += "\n";
 				}
-				elderlist += "\n";
-			}
-			if (p.getRole() == Player.RoleType.MEMBER) {
-				memberlist += p.getInfoStringDB();
-				if (p.isMarked()) {
-					memberlist += " (✗)";
+				if (p.getRole() == Player.RoleType.MEMBER) {
+					memberlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						memberlist += " (✗)";
+					}
+					memberlist += "\n";
 				}
-				memberlist += "\n";
 			}
-		}
-		String desc = "## " + c.getInfoStringDB() + "\n";
-		if (!clantag.equals("warteliste")) {
-			desc += "**Admin:**\n";
-			desc += adminlist == "" ? "---\n\n" : MessageUtil.unformat(adminlist) + "\n";
-			desc += "**Anführer:**\n";
-			desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
-			desc += "**Vize-Anführer:**\n";
-			desc += coleaderlist == "" ? "---\n\n" : MessageUtil.unformat(coleaderlist) + "\n";
-			desc += "**Ältester:**\n";
-			desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
-			desc += "**Mitglied:**\n";
-			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
-		} else {
-			desc += "**Wartend:**\n";
-			desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
-			desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
-		}
+			String desc = "## " + c.getInfoStringDB() + "\n";
+			if (!clantag.equals("warteliste")) {
+				desc += "**Admin:**\n";
+				desc += adminlist == "" ? "---\n\n" : MessageUtil.unformat(adminlist) + "\n";
+				desc += "**Anführer:**\n";
+				desc += leaderlist == "" ? "---\n\n" : MessageUtil.unformat(leaderlist) + "\n";
+				desc += "**Vize-Anführer:**\n";
+				desc += coleaderlist == "" ? "---\n\n" : MessageUtil.unformat(coleaderlist) + "\n";
+				desc += "**Ältester:**\n";
+				desc += elderlist == "" ? "---\n\n" : MessageUtil.unformat(elderlist) + "\n";
+				desc += "**Mitglied:**\n";
+				desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
+				desc += "\nInsgesamte Mitglieder des Clans: " + clanSizeCount;
+			} else {
+				desc += "**Wartend:**\n";
+				desc += memberlist == "" ? "---\n\n" : MessageUtil.unformat(memberlist) + "\n";
+				desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
+			}
 
-		Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+		}).start();
 	}
 
 }
