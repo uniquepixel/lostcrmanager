@@ -258,6 +258,9 @@ public class Bot extends ListenerAdapter {
 									.setAutoComplete(true).setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "clan",
 									"Der Clan, für den die Wins angezeigt werden sollen.")
+									.setAutoComplete(true).setRequired(false))
+							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
+									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Liste ausgeschlossen")
 									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}

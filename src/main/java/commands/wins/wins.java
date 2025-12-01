@@ -41,6 +41,7 @@ public class wins extends ListenerAdapter {
 		OptionMapping playerOption = event.getOption("player");
 		OptionMapping clanOption = event.getOption("clan");
 		OptionMapping monthOption = event.getOption("month");
+		OptionMapping excludeLeadersOption = event.getOption("exclude_leaders");
 
 		// Check that at least one of player or clan is provided
 		if (playerOption == null && clanOption == null) {
@@ -88,9 +89,24 @@ public class wins extends ListenerAdapter {
 			}
 		}
 
+		// Parse exclude_leaders option
+		boolean excludeLeaders = false;
+		if (excludeLeadersOption != null) {
+			String excludeLeadersValue = excludeLeadersOption.getAsString();
+			if ("true".equalsIgnoreCase(excludeLeadersValue)) {
+				excludeLeaders = true;
+			} else {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Der exclude_leaders Parameter muss entweder \"true\" enthalten oder nicht angegeben sein (false).",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		}
+
 		// Run heavy processing in a separate thread to not block the main bot instance
 		final int yearFinal = year;
 		final int monthFinal = month;
+		final boolean excludeLeadersFinal = excludeLeaders;
 		Thread thread = new Thread(() -> {
 			try {
 				ZoneId zone = ZoneId.of("Europe/Berlin");
@@ -156,6 +172,9 @@ public class wins extends ListenerAdapter {
 						return;
 					}
 
+					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
+					filterPlayersForClanWins(players, excludeLeadersFinal);
+
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
 					for (Player player : players) {
@@ -184,8 +203,8 @@ public class wins extends ListenerAdapter {
 						fullMessage = fullMessage.substring(0, 3997) + "...";
 					}
 
-					// Create refresh button with clan and month info
-					Button refreshButton = Button.secondary("wins_clan_" + clanTag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					// Create refresh button with clan, month and exclude_leaders info
+					Button refreshButton = Button.secondary("wins_clan_" + clanTag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
@@ -340,6 +359,12 @@ public class wins extends ListenerAdapter {
 		} else if (focused.equals("month")) {
 			List<Command.Choice> choices = getMonthAutocomplete(input);
 			event.replyChoices(choices).queue();
+		} else if (focused.equals("exclude_leaders")) {
+			List<Command.Choice> choices = new ArrayList<>();
+			if ("true".startsWith(input.toLowerCase())) {
+				choices.add(new Command.Choice("true", "true"));
+			}
+			event.replyChoices(choices).queue();
 		}
 	}
 
@@ -383,8 +408,8 @@ public class wins extends ListenerAdapter {
 		event.deferEdit().queue();
 		String title = "Wins-Statistik";
 
-		// Parse the button ID: wins_player_<tag>_<year-month> or wins_clan_<tag>_<year-month>
-		String[] parts = id.split("_", 4);
+		// Parse the button ID: wins_player_<tag>_<year-month> or wins_clan_<tag>_<year-month>_<excludeLeaders>
+		String[] parts = id.split("_", 5);
 		if (parts.length < 4) {
 			return;
 		}
@@ -392,6 +417,12 @@ public class wins extends ListenerAdapter {
 		String type = parts[1];
 		String tag = parts[2];
 		String monthValue = parts[3];
+		
+		// Parse exclude_leaders for clan buttons (5th part if present)
+		boolean excludeLeaders = false;
+		if (type.equals("clan") && parts.length >= 5) {
+			excludeLeaders = "true".equals(parts[4]);
+		}
 
 		int year;
 		int month;
@@ -419,6 +450,7 @@ public class wins extends ListenerAdapter {
 		// Run heavy processing in a separate thread to not block the main bot instance
 		final int yearFinal = year;
 		final int monthFinal = month;
+		final boolean excludeLeadersFinal = excludeLeaders;
 		Thread thread = new Thread(() -> {
 			try {
 				ZoneId zone = ZoneId.of("Europe/Berlin");
@@ -479,13 +511,8 @@ public class wins extends ListenerAdapter {
 								.queue();
 						return;
 					}
-					for (int i = 0; i < players.size(); i++) {
-						Player p = players.get(i);
-						if (p.isHiddenColeader()) {
-							players.remove(i);
-							i--;
-						}
-					}
+					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
+					filterPlayersForClanWins(players, excludeLeadersFinal);
 
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
@@ -515,8 +542,8 @@ public class wins extends ListenerAdapter {
 						fullMessage = fullMessage.substring(0, 3997) + "...";
 					}
 
-					// Create refresh button with clan and month info
-					Button refreshButton = Button.secondary("wins_clan_" + tag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					// Create refresh button with clan, month and exclude_leaders info
+					Button refreshButton = Button.secondary("wins_clan_" + tag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
@@ -540,6 +567,26 @@ public class wins extends ListenerAdapter {
 		});
 		thread.setName("wins-refresh-" + event.getUser().getId());
 		thread.start();
+	}
+
+	// Helper method to filter players for clan wins display
+	private void filterPlayersForClanWins(ArrayList<Player> players, boolean excludeLeaders) {
+		for (int i = 0; i < players.size(); i++) {
+			Player p = players.get(i);
+			if (p.isHiddenColeader()) {
+				players.remove(i);
+				i--;
+				continue;
+			}
+			if (excludeLeaders) {
+				Player.RoleType role = p.getRole();
+				if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+						|| role == Player.RoleType.COLEADER) {
+					players.remove(i);
+					i--;
+				}
+			}
+		}
 	}
 
 	// Helper class to hold wins record data
