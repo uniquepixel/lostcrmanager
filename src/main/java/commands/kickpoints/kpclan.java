@@ -42,8 +42,6 @@ public class kpclan extends ListenerAdapter {
 			return;
 		}
 
-		String desc = "";
-
 		String clantag = clanOption.getAsString();
 
 		if (clantag.equals("warteliste")) {
@@ -54,60 +52,63 @@ public class kpclan extends ListenerAdapter {
 			return;
 		}
 
-		ArrayList<Player> playerlist = new ArrayList<>();
+		new Thread(() -> {
+			String desc = "";
+			ArrayList<Player> playerlist = new ArrayList<>();
 
-		if (clantag.equals("all")) {
-			for (String clantags : DBManager.getAllClans()) {
-				if (!clantags.equals("warteliste"))
-					playerlist.addAll(new Clan(clantags).getPlayersDB());
+			if (clantag.equals("all")) {
+				for (String clantags : DBManager.getAllClans()) {
+					if (!clantags.equals("warteliste"))
+						playerlist.addAll(new Clan(clantags).getPlayersDB());
+				}
+				desc = "### Kickpunkte aller Spieler aller Clans:\n";
+			} else {
+				Clan c = new Clan(clantag);
+
+				if (!c.ExistsDB()) {
+					event.getHook().editOriginalEmbeds(
+							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
+							.queue();
+					return;
+				}
+				playerlist.addAll(c.getPlayersDB());
+				desc = "### Kickpunkte aller Spieler des Clans " + c.getInfoStringDB() + ":\n";
 			}
-			desc = "### Kickpunkte aller Spieler aller Clans:\n";
-		} else {
-			Clan c = new Clan(clantag);
 
-			if (!c.ExistsDB()) {
-				event.getHook().editOriginalEmbeds(
-						MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
-						.queue();
-				return;
+			HashMap<String, Integer> kpamounts = new HashMap<>();
+
+			for (Player p : playerlist) {
+				ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
+
+				int totalkps = 0;
+				for (Kickpoint kpi : activekps) {
+					totalkps += kpi.getAmount();
+				}
+				if (totalkps > 0) {
+					kpamounts.put(p.getInfoStringDB(), totalkps);
+				}
 			}
-			playerlist.addAll(c.getPlayersDB());
-			desc = "### Kickpunkte aller Spieler des Clans " + c.getInfoStringDB() + ":\n";
-		}
 
-		HashMap<String, Integer> kpamounts = new HashMap<>();
+			LinkedHashMap<String, Integer> sorted = kpamounts.entrySet().stream()
+					.sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-		for (Player p : playerlist) {
-			ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
-
-			int totalkps = 0;
-			for (Kickpoint kpi : activekps) {
-				totalkps += kpi.getAmount();
+			// Ausgabe sortiert
+			for (String key : sorted.keySet()) {
+				String kp = sorted.get(key) == 1 ? "Kickpunkt" : "Kickpunkte";
+				desc += key + ": " + sorted.get(key) + " " + kp + "\n\n";
 			}
-			if (totalkps > 0) {
-				kpamounts.put(p.getInfoStringDB(), totalkps);
-			}
-		}
 
-		LinkedHashMap<String, Integer> sorted = kpamounts.entrySet().stream()
-				.sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, _) -> e1, LinkedHashMap::new));
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-		// Ausgabe sortiert
-		for (String key : sorted.keySet()) {
-			String kp = sorted.get(key) == 1 ? "Kickpunkt" : "Kickpunkte";
-			desc += key + ": " + sorted.get(key) + " " + kp + "\n\n";
-		}
-
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
-
-		event.getHook()
-				.editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-						"Zuletzt aktualisiert am " + formatiert))
-				.setActionRow(Button.secondary("kpclan_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁")))
-				.queue();
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+							"Zuletzt aktualisiert am " + formatiert))
+					.setActionRow(Button.secondary("kpclan_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁")))
+					.queue();
+		}).start();
 
 	}
 
@@ -185,7 +186,7 @@ public class kpclan extends ListenerAdapter {
 
 				LinkedHashMap<String, Integer> sorted = kpamounts.entrySet().stream()
 						.sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).collect(Collectors
-								.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, _) -> e1, LinkedHashMap::new));
+								.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
 				// Ausgabe sortiert
 				for (String key : sorted.keySet()) {

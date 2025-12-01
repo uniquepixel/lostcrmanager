@@ -68,73 +68,75 @@ public class kpmember extends ListenerAdapter {
 			return;
 		}
 
-		ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
+		new Thread(() -> {
+			ArrayList<Kickpoint> activekps = p.getActiveKickpoints();
 
-		String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoStringDB()) + " in "
-				+ c.getInfoStringDB() + ":\n";
-		if (activekps.size() > 0) {
-			int totalkps = 0;
-			for (Kickpoint kpi : activekps) {
-				totalkps += kpi.getAmount();
+			String desc = "Aktive Kickpunkte von " + MessageUtil.unformat(p.getInfoStringDB()) + " in "
+					+ c.getInfoStringDB() + ":\n";
+			if (activekps.size() > 0) {
+				int totalkps = 0;
+				for (Kickpoint kpi : activekps) {
+					totalkps += kpi.getAmount();
+				}
+				desc += "**Gesamt: " + totalkps + "/" + c.getMaxKickpoints() + " Kickpunkte**";
+
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+				DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
+
+				for (Kickpoint kp : activekps) {
+					desc += "\n";
+					desc += "### Kickpunkt #" + kp.getID() + ":\n";
+					desc += "Grund: " + kp.getDescription() + "\n";
+					desc += "Anzahl Kickpunkte: " + kp.getAmount() + "\n";
+					desc += "Erhalten am: " + kp.getDate().atZoneSameInstant(ZoneId.of("Europe/Berlin")).format(formatter)
+							+ "\n";
+
+					Duration duration1 = Duration.between(OffsetDateTime.now(), kp.getExpirationDate());
+
+					long totalSeconds1 = duration1.getSeconds();
+
+					long days1 = totalSeconds1 / (24 * 3600);
+					long hours1 = (totalSeconds1 % (24 * 3600)) / 3600;
+					long minutes1 = (totalSeconds1 % 3600) / 60;
+					long seconds1 = totalSeconds1 % 60;
+
+					desc += "Läuft ab in: " + String.format("%dd %dh %dm %ds", days1, hours1, minutes1, seconds1) + "\n";
+
+					Duration duration2 = Duration.between(kp.getDate(), OffsetDateTime.now());
+
+					long totalSeconds2 = duration2.getSeconds();
+
+					long days2 = totalSeconds2 / (24 * 3600);
+					long hours2 = (totalSeconds2 % (24 * 3600)) / 3600;
+					long minutes2 = (totalSeconds2 % 3600) / 60;
+					long seconds2 = totalSeconds2 % 60;
+
+					desc += "Aktiv seit: " + String.format("%dd %dh %dm %ds", days2, hours2, minutes2, seconds2) + "\n";
+
+					Member createdby = Bot.getJda().getGuildById(Bot.guild_id)
+							.getMemberById(kp.getUserGivenBy().getUserID());
+					String createdbyname = createdby.getEffectiveName();
+
+					desc += "Erstellt: von " + createdbyname + " am "
+							+ kp.getGivenDate().atZoneSameInstant(ZoneId.of("Europe/Berlin")).format(formatter2) + "\n";
+
+				}
+			} else {
+				desc += "Dieser Spieler hat keine aktiven Kickpunkte.\n";
 			}
-			desc += "**Gesamt: " + totalkps + "/" + c.getMaxKickpoints() + " Kickpunkte**";
+			desc += "\n";
+			desc += "**Gesamtanzahl (Vergangene und aktuelle Kickpunkte):**" + "\n";
+			long kptotal = p.getTotalKickpoints();
+			desc += "" + kptotal;
+			Button refreshButton = Button.secondary("kpmember_" + playertag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-			DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
+			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+			String formatiert = jetzt.format(formatter);
 
-			for (Kickpoint kp : activekps) {
-				desc += "\n";
-				desc += "### Kickpunkt #" + kp.getID() + ":\n";
-				desc += "Grund: " + kp.getDescription() + "\n";
-				desc += "Anzahl Kickpunkte: " + kp.getAmount() + "\n";
-				desc += "Erhalten am: " + kp.getDate().atZoneSameInstant(ZoneId.of("Europe/Berlin")).format(formatter)
-						+ "\n";
-
-				Duration duration1 = Duration.between(OffsetDateTime.now(), kp.getExpirationDate());
-
-				long totalSeconds1 = duration1.getSeconds();
-
-				long days1 = totalSeconds1 / (24 * 3600);
-				long hours1 = (totalSeconds1 % (24 * 3600)) / 3600;
-				long minutes1 = (totalSeconds1 % 3600) / 60;
-				long seconds1 = totalSeconds1 % 60;
-
-				desc += "Läuft ab in: " + String.format("%dd %dh %dm %ds", days1, hours1, minutes1, seconds1) + "\n";
-
-				Duration duration2 = Duration.between(kp.getDate(), OffsetDateTime.now());
-
-				long totalSeconds2 = duration2.getSeconds();
-
-				long days2 = totalSeconds2 / (24 * 3600);
-				long hours2 = (totalSeconds2 % (24 * 3600)) / 3600;
-				long minutes2 = (totalSeconds2 % 3600) / 60;
-				long seconds2 = totalSeconds2 % 60;
-
-				desc += "Aktiv seit: " + String.format("%dd %dh %dm %ds", days2, hours2, minutes2, seconds2) + "\n";
-
-				Member createdby = Bot.getJda().getGuildById(Bot.guild_id)
-						.getMemberById(kp.getUserGivenBy().getUserID());
-				String createdbyname = createdby.getEffectiveName();
-
-				desc += "Erstellt: von " + createdbyname + " am "
-						+ kp.getGivenDate().atZoneSameInstant(ZoneId.of("Europe/Berlin")).format(formatter2) + "\n";
-
-			}
-		} else {
-			desc += "Dieser Spieler hat keine aktiven Kickpunkte.\n";
-		}
-		desc += "\n";
-		desc += "**Gesamtanzahl (Vergangene und aktuelle Kickpunkte):**" + "\n";
-		long kptotal = p.getTotalKickpoints();
-		desc += "" + kptotal;
-		Button refreshButton = Button.secondary("kpmember_" + playertag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
-
-		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-		String formatiert = jetzt.format(formatter);
-
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
-				"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
+					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
+		}).start();
 
 	}
 

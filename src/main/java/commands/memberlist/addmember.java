@@ -105,76 +105,78 @@ public class addmember extends ListenerAdapter {
 			return;
 		}
 
-		Player p = new Player(playertag);
-		Clan c = new Clan(clantag);
+		new Thread(() -> {
+			Player p = new Player(playertag);
+			Clan c = new Clan(clantag);
 
-		if (!p.IsLinked()) {
-			event.getHook().editOriginalEmbeds(
-					MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		if (!c.ExistsDB()) {
-			event.getHook()
-					.editOriginalEmbeds(
-							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
-		}
-
-		if (new Player(playertag).getClanDB() != null) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Dieser Spieler ist bereits in einem Clan.", MessageUtil.EmbedType.ERROR)).queue();
-			return;
-		}
-		DBUtil.executeUpdate("INSERT INTO clan_members (player_tag, clan_tag, clan_role) VALUES (?, ?, ?)", playertag,
-				clantag, role);
-		String rolestring = role.equals("leader") ? "Anführer"
-				: role.equals("coleader") ? "Vize-Anführer"
-						: role.equals("hiddencoleader") ? "Vize-Anführer (versteckt)"
-							: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
-
-		String desc = "";
-		if (!clantag.equals("warteliste")) {
-			try {
-				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB()) + " wurde erfolgreich dem Clan "
-						+ new Clan(clantag).getInfoStringDB() + " als " + rolestring + " hinzugefügt.";
-			} catch (Exception e) {
-				e.printStackTrace();
+			if (!p.IsLinked()) {
+				event.getHook().editOriginalEmbeds(
+						MessageUtil.buildEmbed(title, "Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
 			}
-		} else {
-			try {
-				desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB())
-						+ " wurde erfolgreich der Warteliste hinzugefügt.";
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
 
-		if (!clantag.equals("warteliste")) {
-			String userid = p.getUser().getUserID();
-			Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
-			Member member = guild.getMemberById(userid);
-			String memberroleid = c.getRoleID(Clan.Role.MEMBER);
-			Role memberrole = guild.getRoleById(memberroleid);
-			if (member != null) {
-				if (member.getRoles().contains(memberrole)) {
-					desc += "\n\n**Der User <@" + userid + "> hat bereits die Rolle <@&" + memberroleid + ">.**";
-				} else {
-					guild.addRoleToMember(member, memberrole).queue();
-					desc += "\n\n**Dem User <@" + userid + "> wurde die Rolle <@&" + memberroleid + "> hinzugefügt.**";
+			if (!c.ExistsDB()) {
+				event.getHook()
+						.editOriginalEmbeds(
+								MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
+
+			if (new Player(playertag).getClanDB() != null) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Dieser Spieler ist bereits in einem Clan.", MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+			DBUtil.executeUpdate("INSERT INTO clan_members (player_tag, clan_tag, clan_role) VALUES (?, ?, ?)", playertag,
+					clantag, role);
+			String rolestring = role.equals("leader") ? "Anführer"
+					: role.equals("coleader") ? "Vize-Anführer"
+							: role.equals("hiddencoleader") ? "Vize-Anführer (versteckt)"
+								: role.equals("elder") ? "Ältester" : role.equals("member") ? "Mitglied" : null;
+
+			String desc = "";
+			if (!clantag.equals("warteliste")) {
+				try {
+					desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB()) + " wurde erfolgreich dem Clan "
+							+ new Clan(clantag).getInfoStringDB() + " als " + rolestring + " hinzugefügt.";
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			} else {
-				desc += "\n\n**Der User <@" + userid
-						+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
+				try {
+					desc += "Der Spieler " + MessageUtil.unformat(p.getInfoStringDB())
+							+ " wurde erfolgreich der Warteliste hinzugefügt.";
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 
-			MessageChannelUnion channel = event.getChannel();
-			MessageUtil.sendUserPingHidden(channel, userid);
-		}
+			if (!clantag.equals("warteliste")) {
+				String userid = p.getUser().getUserID();
+				Guild guild = Bot.getJda().getGuildById(Bot.guild_id);
+				Member member = guild.getMemberById(userid);
+				String memberroleid = c.getRoleID(Clan.Role.MEMBER);
+				Role memberrole = guild.getRoleById(memberroleid);
+				if (member != null) {
+					if (member.getRoles().contains(memberrole)) {
+						desc += "\n\n**Der User <@" + userid + "> hat bereits die Rolle <@&" + memberroleid + ">.**";
+					} else {
+						guild.addRoleToMember(member, memberrole).queue();
+						desc += "\n\n**Dem User <@" + userid + "> wurde die Rolle <@&" + memberroleid + "> hinzugefügt.**";
+					}
+				} else {
+					desc += "\n\n**Der User <@" + userid
+							+ "> existiert nicht auf dem Server. Ihm wurde somit keine Rolle hinzugefügt.**";
+				}
 
-		event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
+				MessageChannelUnion channel = event.getChannel();
+				MessageUtil.sendUserPingHidden(channel, userid);
+			}
+
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.SUCCESS)).queue();
+		}).start();
 
 	}
 
