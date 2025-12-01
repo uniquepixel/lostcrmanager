@@ -173,22 +173,7 @@ public class wins extends ListenerAdapter {
 					}
 
 					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-					for (int i = 0; i < players.size(); i++) {
-						Player p = players.get(i);
-						if (p.isHiddenColeader()) {
-							players.remove(i);
-							i--;
-							continue;
-						}
-						if (excludeLeadersFinal) {
-							Player.RoleType role = p.getRole();
-							if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-									|| role == Player.RoleType.COLEADER) {
-								players.remove(i);
-								i--;
-							}
-						}
-					}
+					filterPlayersForClanWins(players, excludeLeadersFinal);
 
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
@@ -527,22 +512,7 @@ public class wins extends ListenerAdapter {
 						return;
 					}
 					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-					for (int i = 0; i < players.size(); i++) {
-						Player p = players.get(i);
-						if (p.isHiddenColeader()) {
-							players.remove(i);
-							i--;
-							continue;
-						}
-						if (excludeLeadersFinal) {
-							Player.RoleType role = p.getRole();
-							if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-									|| role == Player.RoleType.COLEADER) {
-								players.remove(i);
-								i--;
-							}
-						}
-					}
+					filterPlayersForClanWins(players, excludeLeadersFinal);
 
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
@@ -597,6 +567,26 @@ public class wins extends ListenerAdapter {
 		});
 		thread.setName("wins-refresh-" + event.getUser().getId());
 		thread.start();
+	}
+
+	// Helper method to filter players for clan wins display
+	private void filterPlayersForClanWins(ArrayList<Player> players, boolean excludeLeaders) {
+		for (int i = 0; i < players.size(); i++) {
+			Player p = players.get(i);
+			if (p.isHiddenColeader()) {
+				players.remove(i);
+				i--;
+				continue;
+			}
+			if (excludeLeaders) {
+				Player.RoleType role = p.getRole();
+				if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+						|| role == Player.RoleType.COLEADER) {
+					players.remove(i);
+					i--;
+				}
+			}
+		}
 	}
 
 	// Helper class to hold wins record data
