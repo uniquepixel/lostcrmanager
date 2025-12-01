@@ -350,7 +350,7 @@ public class wins extends ListenerAdapter {
 
 		// Add "Aktueller Monat" option first - uses special value "current" that gets resolved dynamically
 		String currentMonthDisplay = "Aktueller Monat";
-		if (currentMonthDisplay.toLowerCase().contains(input.toLowerCase()) || "current".contains(input.toLowerCase())) {
+		if (currentMonthDisplay.toLowerCase().contains(input.toLowerCase())) {
 			choices.add(new Command.Choice(currentMonthDisplay, "current"));
 		}
 
