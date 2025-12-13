@@ -154,6 +154,29 @@ public class Connection {
 		}
 	}
 
+	public static void migrateClanMembersTable() {
+		// Add note column to clan_members table if it doesn't exist
+		try (java.sql.Connection conn = DriverManager.getConnection(url, user, password)) {
+			DatabaseMetaData dbm = conn.getMetaData();
+			try (ResultSet columns = dbm.getColumns(null, null, "clan_members", "note")) {
+				if (!columns.next()) {
+					// Column doesn't exist, add it
+					System.out.println("Adding 'note' column to clan_members table...");
+					String alterTableSQL = "ALTER TABLE clan_members ADD COLUMN note TEXT";
+					try (Statement stmt = conn.createStatement()) {
+						stmt.executeUpdate(alterTableSQL);
+						System.out.println("Column 'note' added successfully.");
+					}
+				} else {
+					System.out.println("Column 'note' already exists in clan_members table.");
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error migrating clan_members table: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
 	public static java.sql.Connection getConnection() throws SQLException {
 		if (connection == null || connection.isClosed()) {
 			connection = DriverManager.getConnection(url, user, password);

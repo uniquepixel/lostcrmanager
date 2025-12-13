@@ -374,8 +374,13 @@ public class leaguetrophylist extends ListenerAdapter {
 			}
 			status = "[" + role + " " + p.getClanDB().getNameDB() + "]";
 		}
+		String noteInfo = "";
 		if (isMarked) {
-			status += " will nicht aufsteigen";
+			status += " [MARKIERT]";
+			String note = p.getNote();
+			if (note != null && !note.trim().isEmpty()) {
+				noteInfo = " Notiz: " + note + "\n";
+			}
 		}
 
 		// Trophäen- und Liga-Infos
@@ -389,8 +394,8 @@ public class leaguetrophylist extends ListenerAdapter {
 
 		// Ausgabeformat wie im Beispiel
 		return String.format(
-				"%s (%s) %s\n LeagueNumber: %d\n Aktuelle PathOfLegendSeason-Trophäen: %d\n Aktuelle Seasonal-Trophy-Road-Trophäen: %d\n\n",
-				p.getNameDB(), p.getTag(), status, leagueNumber, poLTrophies, displayTrophies);
+				"%s (%s) %s\n%s LeagueNumber: %d\n Aktuelle PathOfLegendSeason-Trophäen: %d\n Aktuelle Seasonal-Trophy-Road-Trophäen: %d\n\n",
+				p.getNameDB(), p.getTag(), status, noteInfo, leagueNumber, poLTrophies, displayTrophies);
 	}
 
 	public static ArrayList<Player> sortPlayers(ArrayList<Player> players) {
