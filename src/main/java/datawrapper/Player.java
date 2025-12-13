@@ -43,6 +43,7 @@ public class Player {
 	private Long kickpointstotal;
 	private RoleType role;
 	private Boolean mark;
+	private String note;
 	private Integer wins;
 	private Integer expLevel;
 
@@ -68,6 +69,7 @@ public class Player {
 		strtrophies = null;
 		PathofLegendTrophies = null;
 		mark = null;
+		note = null;
 		wins = null;
 		expLevel = null;
 		return this;
@@ -115,6 +117,11 @@ public class Player {
 
 	public Player setMark(boolean mark) {
 		this.mark = mark;
+		return this;
+	}
+
+	public Player setNote(String note) {
+		this.note = note;
 		return this;
 	}
 
@@ -409,6 +416,16 @@ public class Player {
 			}
 		}
 		return mark;
+	}
+
+	public String getNote() {
+		if (note == null) {
+			if (getClanDB() != null) {
+				note = DBUtil.getValueFromSQL("SELECT note FROM clan_members WHERE player_tag = ?",
+						String.class, tag);
+			}
+		}
+		return note;
 	}
 
 	public Integer getCWFame() {

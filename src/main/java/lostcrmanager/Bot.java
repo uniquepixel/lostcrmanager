@@ -101,6 +101,7 @@ public class Bot extends ListenerAdapter {
 
 		datautil.Connection.tablesExists();
 		datautil.Connection.migrateRemindersTable();
+		datautil.Connection.migrateClanMembersTable();
 		startNameUpdates();
 		startLoadingLists();
 		startReminders();
