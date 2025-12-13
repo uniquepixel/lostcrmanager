@@ -74,10 +74,6 @@ public class listmembers extends ListenerAdapter {
 					adminlist += p.getInfoStringDB();
 					if (p.isMarked()) {
 						adminlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						adminlist += " - " + note;
-					}
 					}
 					adminlist += "\n";
 				}
@@ -85,10 +81,6 @@ public class listmembers extends ListenerAdapter {
 					leaderlist += p.getInfoStringDB();
 					if (p.isMarked()) {
 						leaderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						leaderlist += " - " + note;
-					}
 					}
 					leaderlist += "\n";
 				}
@@ -99,10 +91,6 @@ public class listmembers extends ListenerAdapter {
 					}
 					if (p.isMarked()) {
 						coleaderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						coleaderlist += " - " + note;
-					}
 					}
 					coleaderlist += "\n";
 				}
@@ -110,10 +98,6 @@ public class listmembers extends ListenerAdapter {
 					elderlist += p.getInfoStringDB();
 					if (p.isMarked()) {
 						elderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						elderlist += " - " + note;
-					}
 					}
 					elderlist += "\n";
 				}
@@ -121,10 +105,6 @@ public class listmembers extends ListenerAdapter {
 					memberlist += p.getInfoStringDB();
 					if (p.isMarked()) {
 						memberlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						memberlist += " - " + note;
-					}
 					}
 					memberlist += "\n";
 				}

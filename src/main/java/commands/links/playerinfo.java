@@ -83,6 +83,10 @@ public class playerinfo extends ListenerAdapter {
 					desc += "Eingetragen in Clan: " + player.getClanDB().getInfoStringDB();
 					if (player.isMarked()) {
 						desc += " (✗)";
+						String note = player.getNote();
+						if (note != null && !note.trim().isEmpty()) {
+							desc += " - " + note;
+						}
 					}
 					desc += "\n";
 				} else {
