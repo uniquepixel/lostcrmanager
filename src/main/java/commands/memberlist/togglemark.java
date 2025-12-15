@@ -96,12 +96,17 @@ public class togglemark extends ListenerAdapter {
 		} else {
 			// If player is not marked, show modal to add note
 			String currentNote = player.getNote();
-			TextInput noteInput = TextInput.create("note", "Notiz (optional)", TextInputStyle.PARAGRAPH)
+			TextInput.Builder noteInputBuilder = TextInput.create("note", "Notiz (optional)", TextInputStyle.PARAGRAPH)
 					.setPlaceholder("Gib hier eine Notiz ein...")
-					.setValue(currentNote != null ? currentNote : "")
 					.setRequired(false)
-					.setMaxLength(1000)
-					.build();
+					.setMaxLength(1000);
+			
+			// Only set value if note is not null and not blank to avoid IllegalArgumentException
+			if (currentNote != null && !currentNote.trim().isEmpty()) {
+				noteInputBuilder.setValue(currentNote);
+			}
+			
+			TextInput noteInput = noteInputBuilder.build();
 
 			Modal modal = Modal.create("togglemark_" + playertag, "Spieler markieren")
 					.addActionRows(ActionRow.of(noteInput))
