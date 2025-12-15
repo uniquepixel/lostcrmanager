@@ -466,7 +466,7 @@ public class leaguetrophylist extends ListenerAdapter {
 				if(p.isHiddenColeader()) {
 					continue;
 				}
-				// Skip players without a clan to avoid NullPointerException
+				// Skip players without a clan to avoid NPE when calling getClanDB().getTag()
 				if (p.getClanDB() == null) {
 					continue;
 				}
