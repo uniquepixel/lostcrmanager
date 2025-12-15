@@ -483,7 +483,7 @@ public class leaguetrophylist extends ListenerAdapter {
 					clantagtoleaderstrings.put(clantag, leaderstrings);
 					clantagtomembercount.put(clantag, clantagtomembercount.getOrDefault(clantag, 0) + 1);
 				} else if (p.getRole() == Player.RoleType.COLEADER) {
-					ArrayList<String> coleaderstrings = clantagtocoleaderstrings.getOrDefault(p.getClanDB().getTag(),
+					ArrayList<String> coleaderstrings = clantagtocoleaderstrings.getOrDefault(clantag,
 							new ArrayList<>());
 					coleaderstrings.add(formatPlayerLine(p));
 					clantagtocoleaderstrings.put(clantag, coleaderstrings);
