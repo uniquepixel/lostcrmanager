@@ -466,6 +466,10 @@ public class leaguetrophylist extends ListenerAdapter {
 				if(p.isHiddenColeader()) {
 					continue;
 				}
+				// Skip players without a clan to avoid NullPointerException
+				if (p.getClanDB() == null) {
+					continue;
+				}
 				String clantag = p.getClanDB().getTag();
 
 				if (p.getRole() == Player.RoleType.ADMIN) {
