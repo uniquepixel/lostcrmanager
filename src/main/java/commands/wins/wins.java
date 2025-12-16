@@ -47,8 +47,7 @@ public class wins extends ListenerAdapter {
 		if (playerOption == null && clanOption == null) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst entweder einen Spieler oder einen Clan angeben.",
-							MessageUtil.EmbedType.ERROR))
+							"Du musst entweder einen Spieler oder einen Clan angeben.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -56,9 +55,8 @@ public class wins extends ListenerAdapter {
 		// Check that month is provided
 		if (monthOption == null) {
 			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst einen Monat angeben.",
-							MessageUtil.EmbedType.ERROR))
+					.editOriginalEmbeds(
+							MessageUtil.buildEmbed(title, "Du musst einen Monat angeben.", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
@@ -80,10 +78,8 @@ public class wins extends ListenerAdapter {
 				year = Integer.parseInt(parts[0]);
 				month = Integer.parseInt(parts[1]);
 			} catch (Exception e) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Ungültiges Monat-Format. Bitte wähle einen Monat aus der Liste.",
-								MessageUtil.EmbedType.ERROR))
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Ungültiges Monat-Format. Bitte wähle einen Monat aus der Liste.", MessageUtil.EmbedType.ERROR))
 						.queue();
 				return;
 			}
@@ -126,49 +122,39 @@ public class wins extends ListenerAdapter {
 					Player player = new Player(playerTag);
 
 					if (!player.IsLinked()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Spieler ist nicht verlinkt.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 
-					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth,
+							startOfNextMonth, zone);
 
 					// Create refresh button with player and month info
-					Button refreshButton = Button.secondary("wins_player_" + playerTag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					Button refreshButton = Button.secondary("wins_player_" + playerTag + "_" + monthValue, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 					String formatiert = jetzt.format(buttonFormatter);
 
-					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
-									"Zuletzt aktualisiert am " + formatiert))
-							.setActionRow(refreshButton)
-							.queue();
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
+							"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 				} else {
 					// Clan mode
 					String clanTag = clanOption.getAsString();
 					Clan clan = new Clan(clanTag);
 
 					if (!clan.ExistsDB()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Clan existiert nicht.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.",
+								MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 
 					ArrayList<Player> players = clan.getPlayersDB();
 					if (players.isEmpty()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Clan hat keine Mitglieder.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Dieser Clan hat keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 
@@ -176,10 +162,18 @@ public class wins extends ListenerAdapter {
 					filterPlayersForClanWins(players, excludeLeadersFinal);
 
 					// Collect wins data for all players with compact format
+					int i = 0;
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
 					for (Player player : players) {
-						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+						i++;
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
+								startOfMonth, startOfNextMonth, zone);
 						results.add(result);
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Wins werden geladen: Spieler " + i + "/" + players.size(),
+										MessageUtil.EmbedType.LOADING))
+								.queue();
 					}
 
 					// Sort by wins descending
@@ -187,7 +181,8 @@ public class wins extends ListenerAdapter {
 
 					StringBuilder sb = new StringBuilder();
 					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-					sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
+					sb.append(
+							"**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
 
 					for (PlayerWinsResult result : results) {
 						sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
@@ -204,26 +199,23 @@ public class wins extends ListenerAdapter {
 					}
 
 					// Create refresh button with clan, month and exclude_leaders info
-					Button refreshButton = Button.secondary("wins_clan_" + clanTag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					Button refreshButton = Button
+							.secondary("wins_clan_" + clanTag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 					String formatiert = jetzt.format(buttonFormatter);
 
-					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO,
-									"Zuletzt aktualisiert am " + formatiert))
-							.setActionRow(refreshButton)
-							.queue();
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
+							MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton).queue();
 				}
 			} catch (Exception e) {
 				System.err.println("Fehler beim Verarbeiten des Wins-Befehls: " + e.getMessage());
 				e.printStackTrace();
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Ein Fehler ist aufgetreten: " + e.getMessage(),
-								MessageUtil.EmbedType.ERROR))
-						.queue();
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Ein Fehler ist aufgetreten: " + e.getMessage(), MessageUtil.EmbedType.ERROR)).queue();
 			}
 		});
 		thread.setName("wins-command-" + event.getUser().getId());
@@ -251,7 +243,8 @@ public class wins extends ListenerAdapter {
 			}
 
 			if (startRecord == null) {
-				// No data at start of month - should not happen now since we save on first request
+				// No data at start of month - should not happen now since we save on first
+				// request
 				return "Keine Daten für den Monatsanfang verfügbar. Aktuelle Wins: " + currentWins + "\n";
 			}
 
@@ -259,11 +252,11 @@ public class wins extends ListenerAdapter {
 			String startTimeFormatted = startRecord.recordedAt.atZoneSameInstant(zone).format(formatter);
 
 			if (isStartOfMonth(startRecord.recordedAt, startOfMonth)) {
-				return "Wins im " + monthName + " " + year + ": **" + winsThisMonth + "**\n"
-						+ "(Von " + startRecord.wins + " am Monatsanfang auf " + currentWins + " aktuell)\n";
+				return "Wins im " + monthName + " " + year + ": **" + winsThisMonth + "**\n" + "(Von "
+						+ startRecord.wins + " am Monatsanfang auf " + currentWins + " aktuell)\n";
 			} else {
-				return "Wins seit " + startTimeFormatted + ": **" + winsThisMonth + "**\n"
-						+ "(Von " + startRecord.wins + " auf " + currentWins + " aktuell)\n"
+				return "Wins seit " + startTimeFormatted + ": **" + winsThisMonth + "**\n" + "(Von " + startRecord.wins
+						+ " auf " + currentWins + " aktuell)\n"
 						+ "⚠️ Daten sind nicht vom Monatsanfang, sondern vom Zeitpunkt der Verlinkung.\n";
 			}
 		} else {
@@ -373,7 +366,8 @@ public class wins extends ListenerAdapter {
 		ZoneId zone = ZoneId.of("Europe/Berlin");
 		ZonedDateTime now = ZonedDateTime.now(zone);
 
-		// Add "Aktueller Monat" option first - uses special value "current" that gets resolved dynamically
+		// Add "Aktueller Monat" option first - uses special value "current" that gets
+		// resolved dynamically
 		String currentMonthDisplay = "Aktueller Monat";
 		if (currentMonthDisplay.toLowerCase().contains(input.toLowerCase())) {
 			choices.add(new Command.Choice(currentMonthDisplay, "current"));
@@ -408,7 +402,8 @@ public class wins extends ListenerAdapter {
 		event.deferEdit().queue();
 		String title = "Wins-Statistik";
 
-		// Parse the button ID: wins_player_<tag>_<year-month> or wins_clan_<tag>_<year-month>_<excludeLeaders>
+		// Parse the button ID: wins_player_<tag>_<year-month> or
+		// wins_clan_<tag>_<year-month>_<excludeLeaders>
 		String[] parts = id.split("_", 5);
 		if (parts.length < 4) {
 			return;
@@ -417,7 +412,7 @@ public class wins extends ListenerAdapter {
 		String type = parts[1];
 		String tag = parts[2];
 		String monthValue = parts[3];
-		
+
 		// Parse exclude_leaders for clan buttons (5th part if present)
 		boolean excludeLeaders = false;
 		if (type.equals("clan") && parts.length >= 5) {
@@ -439,9 +434,8 @@ public class wins extends ListenerAdapter {
 				month = Integer.parseInt(monthParts[1]);
 			} catch (Exception e) {
 				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Ungültiges Monat-Format.",
-								MessageUtil.EmbedType.ERROR))
+						.editOriginalEmbeds(
+								MessageUtil.buildEmbed(title, "Ungültiges Monat-Format.", MessageUtil.EmbedType.ERROR))
 						.queue();
 				return;
 			}
@@ -468,47 +462,37 @@ public class wins extends ListenerAdapter {
 					Player player = new Player(tag);
 
 					if (!player.IsLinked()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Spieler ist nicht verlinkt.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Dieser Spieler ist nicht verlinkt.", MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 
-					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+					String result = getPlayerWinsForMonth(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth,
+							startOfNextMonth, zone);
 
 					// Create refresh button with player and month info
-					Button refreshButton = Button.secondary("wins_player_" + tag + "_" + monthValue, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					Button refreshButton = Button.secondary("wins_player_" + tag + "_" + monthValue, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 					String formatiert = jetzt.format(buttonFormatter);
 
-					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
-									"Zuletzt aktualisiert am " + formatiert))
-							.setActionRow(refreshButton)
-							.queue();
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
+							"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 				} else if (type.equals("clan")) {
 					Clan clan = new Clan(tag);
 
 					if (!clan.ExistsDB()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Clan existiert nicht.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.",
+								MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 
 					ArrayList<Player> players = clan.getPlayersDB();
 					if (players.isEmpty()) {
-						event.getHook()
-								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-										"Dieser Clan hat keine Mitglieder.",
-										MessageUtil.EmbedType.ERROR))
-								.queue();
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Dieser Clan hat keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
 						return;
 					}
 					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
@@ -516,9 +500,18 @@ public class wins extends ListenerAdapter {
 
 					// Collect wins data for all players with compact format
 					ArrayList<PlayerWinsResult> results = new ArrayList<>();
+					int i = 0;
 					for (Player player : players) {
-						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
+						i++;
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
+								startOfMonth, startOfNextMonth, zone);
 						results.add(result);
+
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Wins werden geladen: Spieler " + i + "/" + players.size(),
+										MessageUtil.EmbedType.LOADING))
+								.queue();
 					}
 
 					// Sort by wins descending
@@ -526,7 +519,8 @@ public class wins extends ListenerAdapter {
 
 					StringBuilder sb = new StringBuilder();
 					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-					sb.append("**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
+					sb.append(
+							"**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
 
 					for (PlayerWinsResult result : results) {
 						sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
@@ -543,26 +537,23 @@ public class wins extends ListenerAdapter {
 					}
 
 					// Create refresh button with clan, month and exclude_leaders info
-					Button refreshButton = Button.secondary("wins_clan_" + tag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+					Button refreshButton = Button
+							.secondary("wins_clan_" + tag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
 
 					ZonedDateTime jetzt = ZonedDateTime.now(zone);
 					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
 					String formatiert = jetzt.format(buttonFormatter);
 
-					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage, MessageUtil.EmbedType.INFO,
-									"Zuletzt aktualisiert am " + formatiert))
-							.setActionRow(refreshButton)
-							.queue();
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
+							MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton).queue();
 				}
 			} catch (Exception e) {
 				System.err.println("Fehler beim Verarbeiten des Wins-Refresh-Befehls: " + e.getMessage());
 				e.printStackTrace();
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Ein Fehler ist aufgetreten: " + e.getMessage(),
-								MessageUtil.EmbedType.ERROR))
-						.queue();
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Ein Fehler ist aufgetreten: " + e.getMessage(), MessageUtil.EmbedType.ERROR)).queue();
 			}
 		});
 		thread.setName("wins-refresh-" + event.getUser().getId());
@@ -654,7 +645,8 @@ public class wins extends ListenerAdapter {
 		}
 	}
 
-	// Static method to save wins for a player (called from scheduler and link command)
+	// Static method to save wins for a player (called from scheduler and link
+	// command)
 	public static void savePlayerWins(String playerTag) {
 		try {
 			Player player = new Player(playerTag);
