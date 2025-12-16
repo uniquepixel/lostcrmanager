@@ -173,7 +173,7 @@ public class wins extends ListenerAdapter {
 								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 										"Wins werden geladen: Spieler " + i + "/" + players.size(),
 										MessageUtil.EmbedType.LOADING))
-								.queue();
+								.setActionRows().queue();
 					}
 
 					// Sort by wins descending
@@ -511,7 +511,7 @@ public class wins extends ListenerAdapter {
 								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
 										"Wins werden geladen: Spieler " + i + "/" + players.size(),
 										MessageUtil.EmbedType.LOADING))
-								.queue();
+								.setActionRows().queue();
 					}
 
 					// Sort by wins descending
