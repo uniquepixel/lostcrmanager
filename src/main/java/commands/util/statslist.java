@@ -706,11 +706,15 @@ public class statslist extends ListenerAdapter {
 	private void updateProgress(SlashCommandInteractionEvent event, String title, int current, int total) {
 		// Update progress every 5 players or on last player to avoid rate limiting
 		if (current % 5 == 0 || current == total) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Lade Spielerdaten von API: " + current + " / " + total + " Spieler verarbeitet...",
-							MessageUtil.EmbedType.LOADING))
-					.queue();
+			try {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Generiere Stats-Liste: " + current + " / " + total + " Spieler verarbeitet...",
+								MessageUtil.EmbedType.LOADING))
+						.queue();
+			} catch (Exception e) {
+				// Silently continue if progress update fails - don't interrupt stats generation
+			}
 		}
 	}
 }
