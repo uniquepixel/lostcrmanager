@@ -272,13 +272,13 @@ public class Bot extends ListenerAdapter {
 									"Der Clan oder 'Alle Clans'", true)
 									.setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "display_fields",
-									"Anzuzeigende Felder (kommagetrennt, z.B. Wins,Trophies,PoLLeagueNumber)")
-									.setAutoComplete(true).setRequired(false))
+									"Anzuzeigende Felder (kommagetrennt, z.B. Wins,Trophies,PoLLeagueNumber)", true)
+									.setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "sort_fields",
-									"Sortierfelder (kommagetrennt, z.B. PoLLeagueNumber,Trophies)")
+									"Sortierfelder (kommagetrennt, z.B. PoLLeagueNumber,Trophies). Standard: alphabetisch")
 									.setAutoComplete(true).setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "roles_sorting",
-									"(Optional) Wenn 'true', werden Spieler nach Rollen sortiert")
+									"(Optional) 'true' für Rollen-Sortierung, 'clans' für Clans+Rollen-Sortierung")
 									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}

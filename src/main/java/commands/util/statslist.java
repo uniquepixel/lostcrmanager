@@ -44,9 +44,11 @@ public class statslist extends ListenerAdapter {
 		}
 
 		String clanInput = clanOption.getAsString();
-		boolean rolesSorting = rolesSortingOption != null && "true".equalsIgnoreCase(rolesSortingOption.getAsString());
+		String rolesSortingValue = rolesSortingOption != null ? rolesSortingOption.getAsString() : "false";
+		boolean rolesSorting = "true".equalsIgnoreCase(rolesSortingValue) || "clans".equalsIgnoreCase(rolesSortingValue);
+		boolean clanSorting = "clans".equalsIgnoreCase(rolesSortingValue);
 
-		// Parse display fields
+		// Parse display fields - now required
 		List<String> displayFields = new ArrayList<>();
 		if (displayFieldsOption != null) {
 			String fieldsInput = displayFieldsOption.getAsString();
@@ -57,11 +59,12 @@ public class statslist extends ListenerAdapter {
 				return;
 			}
 		} else {
-			// Default display fields
-			displayFields = Arrays.asList("PoLLeagueNumber", "PoLTrophies", "STRTrophies");
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Der Parameter display_fields ist erforderlich!", MessageUtil.EmbedType.ERROR)).queue();
+			return;
 		}
 
-		// Parse sort fields
+		// Parse sort fields - default to alphabetically by name
 		List<String> sortFields = new ArrayList<>();
 		if (sortFieldsOption != null) {
 			String sortInput = sortFieldsOption.getAsString();
@@ -71,10 +74,8 @@ public class statslist extends ListenerAdapter {
 						"Keine gültigen Sortierfelder angegeben!", MessageUtil.EmbedType.ERROR)).queue();
 				return;
 			}
-		} else {
-			// Default sort fields
-			sortFields = Arrays.asList("PoLLeagueNumber", "PoLTrophies", "STRTrophies");
 		}
+		// If no sort fields specified, default is alphabetical (empty list means sort by name)
 
 		// Get clans to process
 		ArrayList<String> clanTags = new ArrayList<>();
@@ -111,11 +112,12 @@ public class statslist extends ListenerAdapter {
 		final List<String> finalDisplayFields = displayFields;
 		final List<String> finalSortFields = sortFields;
 		final boolean finalRolesSorting = rolesSorting;
+		final boolean finalClanSorting = clanSorting;
 
 		Thread thread = new Thread(() -> {
 			try {
 				String content = generateStatsList(clans, finalDisplayFields, finalSortFields, finalRolesSorting,
-						event, title);
+						finalClanSorting, event, title);
 
 				ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
 				String description = "Hier die Stats-Liste";
@@ -138,7 +140,7 @@ public class statslist extends ListenerAdapter {
 	}
 
 	private String generateStatsList(ArrayList<String> clanTags, List<String> displayFields, List<String> sortFields,
-			boolean rolesSorting, SlashCommandInteractionEvent event, String title) {
+			boolean rolesSorting, boolean clanSorting, SlashCommandInteractionEvent event, String title) {
 
 		ArrayList<Player> allPlayers = new ArrayList<>();
 		String content = "";
@@ -161,18 +163,23 @@ public class statslist extends ListenerAdapter {
 		}
 
 		// Sort players
-		if (rolesSorting && clanTags.size() > 1) {
-			// When roles_sorting is enabled and "Alle Clans", organize by clan and role
+		if (rolesSorting && clanSorting && clanTags.size() > 1) {
+			// When roles_sorting with "clans" is enabled and "Alle Clans", organize by clan and role
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 
 			// Group by clan with role-based sections
 			content = generateRoleSortedContent(allPlayers, clanTags, displayFields, event, title);
 		} else if (rolesSorting) {
-			// Single clan with role sorting
+			// Single clan with role sorting OR "Alle Clans" with role sorting but no clan grouping
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
-			content = generateSingleClanContent(allPlayers, clanTags.get(0), displayFields, true, event, title);
+			if (clanTags.size() > 1) {
+				// All clans with role sorting - show all players in one sorted list by role
+				content = generateAllClansContent(allPlayers, displayFields, event, title);
+			} else {
+				content = generateSingleClanContent(allPlayers, clanTags.get(0), displayFields, true, event, title);
+			}
 		} else {
-			// No role sorting - just sort by specified fields
+			// No role sorting - just sort by specified fields (or alphabetically if no fields)
 			allPlayers = sortPlayersByFields(allPlayers, sortFields);
 			if (clanTags.size() > 1) {
 				// All clans without role sorting - show all players in one sorted list
@@ -195,8 +202,10 @@ public class statslist extends ListenerAdapter {
 			content.append(clan.getInfoStringDB()).append("\n\n");
 
 			// Filter players for this clan
-			ArrayList<Player> clanPlayers = allPlayers.stream().filter(p -> p.getClanDB() != null && p.getClanDB().getTag().equals(clanTag))
-					.collect(Collectors.toCollection(ArrayList::new));
+			ArrayList<Player> clanPlayers = allPlayers.stream().filter(p -> {
+				Clan playerClan = p.getClanDB();
+				return playerClan != null && playerClan.getTag().equals(clanTag);
+			}).collect(Collectors.toCollection(ArrayList::new));
 
 			// Group by role
 			ArrayList<Player> admins = new ArrayList<>();
@@ -468,9 +477,14 @@ public class statslist extends ListenerAdapter {
 				// Then by marked status (marked first within same role)
 				.thenComparing(Comparator.comparing(Player::isMarked).reversed());
 
-		// Add sort fields
-		for (String field : sortFields) {
-			comparator = comparator.thenComparing(getFieldComparator(field).reversed());
+		// Add sort fields or default to alphabetical
+		if (sortFields.isEmpty()) {
+			// Default: sort alphabetically by name
+			comparator = comparator.thenComparing(Player::getNameDB, String.CASE_INSENSITIVE_ORDER);
+		} else {
+			for (String field : sortFields) {
+				comparator = comparator.thenComparing(getFieldComparator(field).reversed());
+			}
 		}
 
 		return players.stream().sorted(comparator).collect(Collectors.toCollection(ArrayList::new));
@@ -479,18 +493,19 @@ public class statslist extends ListenerAdapter {
 	private ArrayList<Player> sortPlayersByFields(ArrayList<Player> players, List<String> sortFields) {
 		Comparator<Player> comparator = null;
 
-		for (int i = 0; i < sortFields.size(); i++) {
-			String field = sortFields.get(i);
-			Comparator<Player> fieldComparator = getFieldComparator(field).reversed();
-			if (i == 0) {
-				comparator = fieldComparator;
-			} else {
-				comparator = comparator.thenComparing(fieldComparator);
+		if (sortFields.isEmpty()) {
+			// Default: sort alphabetically by name
+			comparator = Comparator.comparing(Player::getNameDB, String.CASE_INSENSITIVE_ORDER);
+		} else {
+			for (int i = 0; i < sortFields.size(); i++) {
+				String field = sortFields.get(i);
+				Comparator<Player> fieldComparator = getFieldComparator(field).reversed();
+				if (i == 0) {
+					comparator = fieldComparator;
+				} else {
+					comparator = comparator.thenComparing(fieldComparator);
+				}
 			}
-		}
-
-		if (comparator == null) {
-			return players;
 		}
 
 		return players.stream().sorted(comparator).collect(Collectors.toCollection(ArrayList::new));
@@ -598,8 +613,11 @@ public class statslist extends ListenerAdapter {
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("roles_sorting")) {
 			List<Command.Choice> choices = new ArrayList<>();
-			if ("true".startsWith(input.toLowerCase())) {
+			if ("true".toLowerCase().contains(input.toLowerCase())) {
 				choices.add(new Command.Choice("true", "true"));
+			}
+			if ("clans".toLowerCase().contains(input.toLowerCase())) {
+				choices.add(new Command.Choice("clans", "clans"));
 			}
 			event.replyChoices(choices).queue();
 		}
