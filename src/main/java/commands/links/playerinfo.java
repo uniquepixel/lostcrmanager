@@ -83,7 +83,7 @@ public class playerinfo extends ListenerAdapter {
 						break;
 					case '}':
 					case ']':
-						indentLevel--;
+						indentLevel = Math.max(0, indentLevel - 1); // Guard against negative indent
 						formatted.append('\n');
 						appendIndent(formatted, indentLevel);
 						formatted.append(c);
@@ -113,7 +113,7 @@ public class playerinfo extends ListenerAdapter {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "Error formatting player information: " + e.getMessage();
+			return "Error formatting JSON from API: " + e.getMessage();
 		}
 	}
 	
@@ -123,8 +123,10 @@ public class playerinfo extends ListenerAdapter {
 	 * @param level The indentation level (each level = 2 spaces)
 	 */
 	private static void appendIndent(StringBuilder sb, int level) {
-		for (int i = 0; i < level * 2; i++) {
-			sb.append(' ');
+		int spaces = level * 2;
+		if (spaces > 0) {
+			// Use String.repeat() for efficiency (Java 11+)
+			sb.append(" ".repeat(spaces));
 		}
 	}
 
