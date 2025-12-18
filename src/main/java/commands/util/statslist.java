@@ -30,7 +30,7 @@ public class statslist extends ListenerAdapter {
 
 	// Available stat fields
 	private static final String[] AVAILABLE_FIELDS = { "Wins", "Trophies", "UC-Trophies",
-			"Ranked-Liga", "LastLeagueNumber", "LastLeagueTrophies" };
+			"Ranked-Liga", "Letzte Ranked-Liga", "Letzte UC-Trophies" };
 
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -454,10 +454,10 @@ public class statslist extends ListenerAdapter {
 		case "Ranked-Liga":
 			Integer leagueNumber = p.getPoLLeagueNumber();
 			return leagueNumber != null ? leagueNumber : 0;
-		case "LastLeagueNumber":
+		case "Letzte Ranked-Liga":
 			Integer lastLeagueNumber = p.getLastPathOfLegendLeagueNumber();
 			return lastLeagueNumber != null ? lastLeagueNumber : 0;
-		case "LastLeagueTrophies":
+		case "Letzte UC-Trophies":
 			Integer lastLeagueTrophies = p.getLastPathOfLegendTrophies();
 			return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 		default:
@@ -475,10 +475,10 @@ public class statslist extends ListenerAdapter {
 			return "UC-Trophäen";
 		case "Ranked-Liga":
 			return "Ranked-Liga";
-		case "LastLeagueNumber":
-			return "Letzte-Liga-Nummer";
-		case "LastLeagueTrophies":
-			return "Letzte-Liga-Trophäen";
+		case "Letzte Ranked-Liga":
+			return "Letzte Ranked-Liga";
+		case "Letzte UC-Trophies":
+			return "Letzte UC-Trophies";
 		default:
 			return field;
 		}
@@ -552,12 +552,12 @@ public class statslist extends ListenerAdapter {
 				Integer leagueNumber = p.getPoLLeagueNumber();
 				return leagueNumber != null ? leagueNumber : 0;
 			});
-		case "LastLeagueNumber":
+		case "Letzte Ranked-Liga":
 			return Comparator.comparingInt((Player p) -> {
 				Integer lastLeagueNumber = p.getLastPathOfLegendLeagueNumber();
 				return lastLeagueNumber != null ? lastLeagueNumber : 0;
 			});
-		case "LastLeagueTrophies":
+		case "Letzte UC-Trophies":
 			return Comparator.comparingInt((Player p) -> {
 				Integer lastLeagueTrophies = p.getLastPathOfLegendTrophies();
 				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
