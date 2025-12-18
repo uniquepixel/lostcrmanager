@@ -177,6 +177,9 @@ public class playerinfo extends ListenerAdapter {
 			sb.append(SEPARATOR_MAJOR).append("\n");
 			
 			return sb.toString();
+		} catch (org.json.JSONException e) {
+			e.printStackTrace();
+			return "Error parsing player data: Invalid JSON format received from API.\n" + e.getMessage();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return "Error formatting player information: " + e.getMessage();
