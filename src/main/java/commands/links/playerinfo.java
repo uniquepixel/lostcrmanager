@@ -27,6 +27,7 @@ public class playerinfo extends ListenerAdapter {
 
 	/**
 	 * Formats player API JSON data into a pretty-printed JSON format
+	 * Preserves the exact field order from the API response
 	 * @param jsonString The raw JSON string from the API
 	 * @return Pretty-printed JSON string with proper indentation, or error message if parsing fails
 	 */
@@ -36,16 +37,96 @@ public class playerinfo extends ListenerAdapter {
 				return "Error: No API data available to format.";
 			}
 			
-			// Parse the JSON and format it with an indent of 2 spaces
-			JSONObject json = new JSONObject(jsonString);
-			return json.toString(2);
+			// Manually format JSON while preserving field order
+			StringBuilder formatted = new StringBuilder();
+			int indentLevel = 0;
+			boolean inString = false;
+			boolean escapeNext = false;
 			
-		} catch (org.json.JSONException e) {
-			e.printStackTrace();
-			return "Error parsing player data: Invalid JSON format received from API.\n" + e.getMessage();
+			for (int i = 0; i < jsonString.length(); i++) {
+				char c = jsonString.charAt(i);
+				
+				// Handle escape sequences
+				if (escapeNext) {
+					formatted.append(c);
+					escapeNext = false;
+					continue;
+				}
+				
+				if (c == '\\') {
+					formatted.append(c);
+					escapeNext = true;
+					continue;
+				}
+				
+				// Track if we're inside a string
+				if (c == '"') {
+					formatted.append(c);
+					inString = !inString;
+					continue;
+				}
+				
+				// Don't format inside strings
+				if (inString) {
+					formatted.append(c);
+					continue;
+				}
+				
+				// Format structural characters
+				switch (c) {
+					case '{':
+					case '[':
+						formatted.append(c);
+						indentLevel++;
+						formatted.append('\n');
+						appendIndent(formatted, indentLevel);
+						break;
+					case '}':
+					case ']':
+						indentLevel = Math.max(0, indentLevel - 1); // Guard against negative indent
+						formatted.append('\n');
+						appendIndent(formatted, indentLevel);
+						formatted.append(c);
+						break;
+					case ',':
+						formatted.append(c);
+						formatted.append('\n');
+						appendIndent(formatted, indentLevel);
+						break;
+					case ':':
+						formatted.append(c);
+						formatted.append(' ');
+						break;
+					case ' ':
+					case '\t':
+					case '\n':
+					case '\r':
+						// Skip existing whitespace
+						break;
+					default:
+						formatted.append(c);
+						break;
+				}
+			}
+			
+			return formatted.toString();
+			
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "Error formatting player information: " + e.getMessage();
+			return "Error formatting JSON from API: " + e.getMessage();
+		}
+	}
+	
+	/**
+	 * Appends indentation spaces to the StringBuilder
+	 * @param sb The StringBuilder to append to
+	 * @param level The indentation level (each level = 2 spaces)
+	 */
+	private static void appendIndent(StringBuilder sb, int level) {
+		int spaces = level * 2;
+		if (spaces > 0) {
+			// Use String.repeat() for efficiency (Java 11+)
+			sb.append(" ".repeat(spaces));
 		}
 	}
 
