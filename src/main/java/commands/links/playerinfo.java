@@ -148,7 +148,8 @@ public class playerinfo extends ListenerAdapter {
 					ByteArrayInputStream inputStream = new ByteArrayInputStream(apiJson.getBytes(StandardCharsets.UTF_8));
 					// Sanitize filename by removing all non-alphanumeric characters except underscore and hyphen
 					String sanitizedTag = playertag.replaceAll("[^a-zA-Z0-9_-]", "");
-					String filename = sanitizedTag + "_api.json";
+					// Fallback to default name if sanitization results in empty string
+					String filename = (sanitizedTag.isEmpty() ? "player" : sanitizedTag) + "_api.json";
 					event.getHook().editOriginal(inputStream, filename)
 							.setEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
 							.queue();
@@ -174,8 +175,7 @@ public class playerinfo extends ListenerAdapter {
 			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.ALL);
 
 			event.replyChoices(choices).queue();
-		}
-		if (focused.equals("getapifile")) {
+		} else if (focused.equals("getapifile")) {
 			List<Command.Choice> choices = new ArrayList<>();
 			if ("true".startsWith(input.toLowerCase())) {
 				choices.add(new Command.Choice("true", "true"));
