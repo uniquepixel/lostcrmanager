@@ -140,6 +140,7 @@ public class playerinfo extends ListenerAdapter {
 			}
 			
 			// Send response with or without API file
+			// playertag is only set when playerOption is provided, so API file is only available for player lookups
 			if (getApiFileFinal && playertag != null) {
 				// Fetch the API JSON for the player
 				String apiJson = APIUtil.getPlayerJson(playertag);
@@ -151,14 +152,12 @@ public class playerinfo extends ListenerAdapter {
 					event.getHook().editOriginal(inputStream, filename)
 							.setEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
 							.queue();
-				} else {
-					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
-							.queue();
+					return;
 				}
-			} else {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
-						.queue();
 			}
+			// Send response without API file (either not requested or API fetch failed)
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
+					.queue();
 		}).start();
 
 	}
