@@ -178,7 +178,7 @@ public class playerinfo extends ListenerAdapter {
 					// Sanitize filename by removing all non-alphanumeric characters except underscore and hyphen
 					String sanitizedTag = playertag.replaceAll("[^a-zA-Z0-9_-]", "");
 					// Fallback to default name if sanitization results in empty string
-					String filename = (sanitizedTag.isEmpty() ? "player" : sanitizedTag) + "_info.json";
+					String filename = (sanitizedTag.isEmpty() ? "player" : sanitizedTag) + "_info.txt";
 					event.getHook().editOriginal(inputStream, filename)
 							.setEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
 							.queue();
