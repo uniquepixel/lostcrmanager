@@ -39,6 +39,8 @@ public class Player {
 	private Integer trophies;
 	private Integer strtrophies;
 	private Integer PathofLegendTrophies;
+	private Integer lastPathOfLegendLeagueNumber;
+	private Integer lastPathOfLegendTrophies;
 	private ArrayList<Kickpoint> kickpoints;
 	private Long kickpointstotal;
 	private RoleType role;
@@ -68,6 +70,8 @@ public class Player {
 		trophies = null;
 		strtrophies = null;
 		PathofLegendTrophies = null;
+		lastPathOfLegendLeagueNumber = null;
+		lastPathOfLegendTrophies = null;
 		mark = null;
 		note = null;
 		wins = null;
@@ -400,6 +404,34 @@ public class Player {
 			}
 		}
 		return PathofLegendTrophies;
+	}
+
+	public Integer getLastPathOfLegendLeagueNumber() {
+		if (lastPathOfLegendLeagueNumber == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("lastPathOfLegendSeasonResult")
+					&& !apiresult.isNull("lastPathOfLegendSeasonResult")) {
+				JSONObject lastPathOfLegendSeasonResult = apiresult.getJSONObject("lastPathOfLegendSeasonResult");
+				lastPathOfLegendLeagueNumber = lastPathOfLegendSeasonResult.getInt("leagueNumber");
+			}
+		}
+		return lastPathOfLegendLeagueNumber;
+	}
+
+	public Integer getLastPathOfLegendTrophies() {
+		if (lastPathOfLegendTrophies == null) {
+			if (apiresult == null) {
+				apiresult = new JSONObject(APIUtil.getPlayerJson(tag));
+			}
+			if (apiresult.has("lastPathOfLegendSeasonResult")
+					&& !apiresult.isNull("lastPathOfLegendSeasonResult")) {
+				JSONObject lastPathOfLegendSeasonResult = apiresult.getJSONObject("lastPathOfLegendSeasonResult");
+				lastPathOfLegendTrophies = lastPathOfLegendSeasonResult.getInt("trophies");
+			}
+		}
+		return lastPathOfLegendTrophies;
 	}
 
 	public Boolean isMarked() {

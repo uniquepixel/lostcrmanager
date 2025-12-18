@@ -2,11 +2,19 @@ package commands.util;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import commands.wins.wins;
+import datautil.Connection;
 import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.Player;
@@ -21,8 +29,8 @@ import util.MessageUtil;
 public class statslist extends ListenerAdapter {
 
 	// Available stat fields
-	private static final String[] AVAILABLE_FIELDS = { "Wins", "Trophies", "STRTrophies", "PoLTrophies",
-			"PoLLeagueNumber", "Kickpoints", "CWFame" };
+	private static final String[] AVAILABLE_FIELDS = { "Wins", "Trophies", "UC-Trophies",
+			"Ranked-Liga", "LastLeagueNumber", "LastLeagueTrophies" };
 
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -436,25 +444,22 @@ public class statslist extends ListenerAdapter {
 	private Object getFieldValue(Player p, String field) {
 		switch (field) {
 		case "Wins":
-			Integer wins = p.getWinsAPI();
-			return wins != null ? wins : 0;
+			return getMonthlyWins(p);
 		case "Trophies":
 			Integer trophies = p.getTrophies();
 			return trophies != null ? trophies : 0;
-		case "STRTrophies":
-			Integer strTrophies = p.getSTRTrophies();
-			return strTrophies != null ? strTrophies : 0;
-		case "PoLTrophies":
+		case "UC-Trophies":
 			Integer polTrophies = p.getPoLTrophies();
 			return polTrophies != null ? polTrophies : 0;
-		case "PoLLeagueNumber":
+		case "Ranked-Liga":
 			Integer leagueNumber = p.getPoLLeagueNumber();
 			return leagueNumber != null ? leagueNumber : 0;
-		case "Kickpoints":
-			return p.getTotalKickpoints();
-		case "CWFame":
-			Integer cwFame = p.getCWFame();
-			return cwFame != null ? cwFame : 0;
+		case "LastLeagueNumber":
+			Integer lastLeagueNumber = p.getLastPathOfLegendLeagueNumber();
+			return lastLeagueNumber != null ? lastLeagueNumber : 0;
+		case "LastLeagueTrophies":
+			Integer lastLeagueTrophies = p.getLastPathOfLegendTrophies();
+			return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 		default:
 			return "N/A";
 		}
@@ -463,19 +468,17 @@ public class statslist extends ListenerAdapter {
 	private String getFieldDisplayName(String field) {
 		switch (field) {
 		case "Wins":
-			return "Wins";
+			return "Wins (Monat)";
 		case "Trophies":
 			return "Trophäen";
-		case "STRTrophies":
-			return "Seasonal-Trophy-Road-Trophäen";
-		case "PoLTrophies":
-			return "PathOfLegend-Trophäen";
-		case "PoLLeagueNumber":
-			return "LeagueNumber";
-		case "Kickpoints":
-			return "Kickpunkte";
-		case "CWFame":
-			return "CW-Fame";
+		case "UC-Trophies":
+			return "UC-Trophäen";
+		case "Ranked-Liga":
+			return "Ranked-Liga";
+		case "LastLeagueNumber":
+			return "Letzte-Liga-Nummer";
+		case "LastLeagueTrophies":
+			return "Letzte-Liga-Trophäen";
 		default:
 			return field;
 		}
@@ -533,39 +536,34 @@ public class statslist extends ListenerAdapter {
 	private Comparator<Player> getFieldComparator(String field) {
 		switch (field) {
 		case "Wins":
-			return Comparator.comparingInt((Player p) -> {
-				Integer wins = p.getWinsAPI();
-				return wins != null ? wins : 0;
-			});
+			return Comparator.comparingInt(this::getMonthlyWins);
 		case "Trophies":
 			return Comparator.comparingInt((Player p) -> {
 				Integer trophies = p.getTrophies();
 				return trophies != null ? trophies : 0;
 			});
-		case "STRTrophies":
-			return Comparator.comparingInt((Player p) -> {
-				Integer strTrophies = p.getSTRTrophies();
-				return strTrophies != null ? strTrophies : 0;
-			});
-		case "PoLTrophies":
+		case "UC-Trophies":
 			return Comparator.comparingInt((Player p) -> {
 				Integer polTrophies = p.getPoLTrophies();
 				return polTrophies != null ? polTrophies : 0;
 			});
-		case "PoLLeagueNumber":
+		case "Ranked-Liga":
 			return Comparator.comparingInt((Player p) -> {
 				Integer leagueNumber = p.getPoLLeagueNumber();
 				return leagueNumber != null ? leagueNumber : 0;
 			});
-		case "Kickpoints":
-			return Comparator.comparingLong(Player::getTotalKickpoints);
-		case "CWFame":
+		case "LastLeagueNumber":
 			return Comparator.comparingInt((Player p) -> {
-				Integer cwFame = p.getCWFame();
-				return cwFame != null ? cwFame : 0;
+				Integer lastLeagueNumber = p.getLastPathOfLegendLeagueNumber();
+				return lastLeagueNumber != null ? lastLeagueNumber : 0;
+			});
+		case "LastLeagueTrophies":
+			return Comparator.comparingInt((Player p) -> {
+				Integer lastLeagueTrophies = p.getLastPathOfLegendTrophies();
+				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 			});
 		default:
-			return Comparator.comparingInt(_ -> 0);
+			return Comparator.comparingInt(p -> 0);
 		}
 	}
 
@@ -715,6 +713,79 @@ public class statslist extends ListenerAdapter {
 			} catch (Exception e) {
 				// Silently continue if progress update fails - don't interrupt stats generation
 			}
+		}
+	}
+
+	// Helper method to get wins for the current month
+	private int getMonthlyWins(Player player) {
+		ZoneId zone = ZoneId.of("Europe/Berlin");
+		ZonedDateTime now = ZonedDateTime.now(zone);
+		int year = now.getYear();
+		int month = now.getMonthValue();
+
+		// Start of the current month
+		ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, zone);
+
+		// Check if any data exists for this player, if not save current data first
+		if (!hasAnyWinsData(player.getTag())) {
+			wins.savePlayerWins(player.getTag());
+		}
+
+		// Get start of month data and fetch current wins from API
+		WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
+
+		Integer currentWins = player.getWinsAPI();
+		if (currentWins == null || startRecord == null) {
+			return 0;
+		}
+
+		int winsThisMonth = currentWins - startRecord.wins;
+		return winsThisMonth > 0 ? winsThisMonth : 0;
+	}
+
+	private boolean hasAnyWinsData(String playerTag) {
+		String sql = "SELECT 1 FROM player_wins WHERE player_tag = ? LIMIT 1";
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, playerTag);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Prüfen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	private WinsRecord getWinsAtOrAfter(String playerTag, ZonedDateTime dateTime) {
+		String sql = "SELECT wins, recorded_at FROM player_wins WHERE player_tag = ? AND recorded_at >= ? ORDER BY recorded_at ASC LIMIT 1";
+
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, playerTag);
+			pstmt.setObject(2, dateTime.toOffsetDateTime());
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					int wins = rs.getInt("wins");
+					OffsetDateTime recordedAt = rs.getObject("recorded_at", OffsetDateTime.class);
+					return new WinsRecord(wins, recordedAt);
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Abrufen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	// Helper class to hold wins record data
+	private static class WinsRecord {
+		int wins;
+		OffsetDateTime recordedAt;
+
+		WinsRecord(int wins, OffsetDateTime recordedAt) {
+			this.wins = wins;
+			this.recordedAt = recordedAt;
 		}
 	}
 }
