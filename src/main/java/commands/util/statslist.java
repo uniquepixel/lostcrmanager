@@ -563,7 +563,7 @@ public class statslist extends ListenerAdapter {
 				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 			});
 		default:
-			return Comparator.comparingInt(p -> 0);
+			return Comparator.comparingInt(_ -> 0);
 		}
 	}
 
@@ -781,11 +781,9 @@ public class statslist extends ListenerAdapter {
 	// Helper class to hold wins record data
 	private static class WinsRecord {
 		int wins;
-		OffsetDateTime recordedAt;
 
 		WinsRecord(int wins, OffsetDateTime recordedAt) {
 			this.wins = wins;
-			this.recordedAt = recordedAt;
 		}
 	}
 }
