@@ -1,8 +1,11 @@
 package commands.links;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import datautil.APIUtil;
 import datautil.DBManager;
 import datawrapper.Player;
 import datawrapper.User;
@@ -29,6 +32,7 @@ public class playerinfo extends ListenerAdapter {
 
 		OptionMapping userOption = event.getOption("user");
 		OptionMapping playerOption = event.getOption("player");
+		OptionMapping getApiFileOption = event.getOption("getapifile");
 
 		if (userOption == null && playerOption == null) {
 			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -42,7 +46,22 @@ public class playerinfo extends ListenerAdapter {
 					.queue();
 			return;
 		}
+		
+		boolean getApiFile = false;
+		if (getApiFileOption != null) {
+			String getApiFileValue = getApiFileOption.getAsString();
+			if ("true".equalsIgnoreCase(getApiFileValue)) {
+				getApiFile = true;
+			} else {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Der getapifile Parameter muss entweder \"true\" enthalten oder nicht angegeben sein (false).",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		}
 
+		final boolean getApiFileFinal = getApiFile;
+		
 		new Thread(() -> {
 			String userid = null;
 			String playertag = null;
@@ -119,6 +138,25 @@ public class playerinfo extends ListenerAdapter {
 					}
 				}
 			}
+			
+			// Send response with or without API file
+			// playertag is only set when playerOption is provided, so API file is only available for player lookups
+			if (getApiFileFinal && playertag != null) {
+				// Fetch the API JSON for the player
+				String apiJson = APIUtil.getPlayerJson(playertag);
+				if (apiJson != null) {
+					ByteArrayInputStream inputStream = new ByteArrayInputStream(apiJson.getBytes(StandardCharsets.UTF_8));
+					// Sanitize filename by removing all non-alphanumeric characters except underscore and hyphen
+					String sanitizedTag = playertag.replaceAll("[^a-zA-Z0-9_-]", "");
+					// Fallback to default name if sanitization results in empty string
+					String filename = (sanitizedTag.isEmpty() ? "player" : sanitizedTag) + "_api.json";
+					event.getHook().editOriginal(inputStream, filename)
+							.setEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
+							.queue();
+					return;
+				}
+			}
+			// Send response without API file (either not requested or API fetch failed)
 			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
 					.queue();
 		}).start();
@@ -136,6 +174,12 @@ public class playerinfo extends ListenerAdapter {
 		if (focused.equals("player")) {
 			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.ALL);
 
+			event.replyChoices(choices).queue();
+		} else if (focused.equals("getapifile")) {
+			List<Command.Choice> choices = new ArrayList<>();
+			if ("true".startsWith(input.toLowerCase())) {
+				choices.add(new Command.Choice("true", "true"));
+			}
 			event.replyChoices(choices).queue();
 		}
 	}

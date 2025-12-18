@@ -161,7 +161,10 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.MENTIONABLE, "user",
 									"Der User, über welchem Informationen über verlinkte Accounts gesucht sind."))
 							.addOptions(new OptionData(OptionType.STRING, "player",
-									"Der Spieler, über welchem Informationen gesucht sind.").setAutoComplete(true)),
+									"Der Spieler, über welchem Informationen gesucht sind.").setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "getapifile",
+									"(Optional) Wenn 'true', wird die API-Datei des Spielers mitgesendet")
+									.setAutoComplete(true).setRequired(false)),
 					Commands.slash("memberstatus",
 							"Status über einen Clan, welche Spieler keine Mitglieder sind und welche Mitglieder fehlen.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
