@@ -565,7 +565,7 @@ public class statslist extends ListenerAdapter {
 				return cwFame != null ? cwFame : 0;
 			});
 		default:
-			return Comparator.comparingInt(p -> 0);
+			return Comparator.comparingInt(_ -> 0);
 		}
 	}
 
