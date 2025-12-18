@@ -195,6 +195,9 @@ public class statslist extends ListenerAdapter {
 			List<String> displayFields, SlashCommandInteractionEvent event, String title) {
 		StringBuilder content = new StringBuilder();
 
+		int totalPlayers = allPlayers.size();
+		int processedPlayers = 0;
+
 		// Group players by clan
 		for (String clanTag : clanTags) {
 			Clan clan = new Clan(clanTag);
@@ -236,14 +239,17 @@ public class statslist extends ListenerAdapter {
 			boolean leadersExist = !admins.isEmpty() || !leaders.isEmpty() || !coleaders.isEmpty();
 			if (leadersExist) {
 				for (Player p : admins) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
 				for (Player p : leaders) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
 				for (Player p : coleaders) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
@@ -253,6 +259,7 @@ public class statslist extends ListenerAdapter {
 			// Add marked section
 			if (!marked.isEmpty()) {
 				for (Player p : marked) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
@@ -261,6 +268,7 @@ public class statslist extends ListenerAdapter {
 
 			// Add regular members
 			for (Player p : regular) {
+				updateProgress(event, title, ++processedPlayers, totalPlayers);
 				content.append("#").append(counter++).append(" ");
 				content.append(formatPlayerLine(p, displayFields));
 			}
@@ -280,6 +288,9 @@ public class statslist extends ListenerAdapter {
 		// Filter out hidden coleaders
 		players = players.stream().filter(p -> !p.isHiddenColeader())
 				.collect(Collectors.toCollection(ArrayList::new));
+
+		int totalPlayers = players.size();
+		int processedPlayers = 0;
 
 		if (rolesSorting) {
 			// Group by role
@@ -309,14 +320,17 @@ public class statslist extends ListenerAdapter {
 			boolean leadersExist = !admins.isEmpty() || !leaders.isEmpty() || !coleaders.isEmpty();
 			if (leadersExist) {
 				for (Player p : admins) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
 				for (Player p : leaders) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
 				for (Player p : coleaders) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
@@ -326,6 +340,7 @@ public class statslist extends ListenerAdapter {
 			// Add marked section
 			if (!marked.isEmpty()) {
 				for (Player p : marked) {
+					updateProgress(event, title, ++processedPlayers, totalPlayers);
 					content.append("#").append(counter++).append(" ");
 					content.append(formatPlayerLine(p, displayFields));
 				}
@@ -334,6 +349,7 @@ public class statslist extends ListenerAdapter {
 
 			// Add regular members
 			for (Player p : regular) {
+				updateProgress(event, title, ++processedPlayers, totalPlayers);
 				content.append("#").append(counter++).append(" ");
 				content.append(formatPlayerLine(p, displayFields));
 			}
@@ -341,6 +357,7 @@ public class statslist extends ListenerAdapter {
 			// No role sorting - just list in order
 			int counter = 1;
 			for (Player p : players) {
+				updateProgress(event, title, ++processedPlayers, totalPlayers);
 				content.append("#").append(counter++).append(" ");
 				content.append(formatPlayerLine(p, displayFields));
 			}
@@ -360,8 +377,11 @@ public class statslist extends ListenerAdapter {
 		players = players.stream().filter(p -> !p.isHiddenColeader())
 				.collect(Collectors.toCollection(ArrayList::new));
 
+		int totalPlayers = players.size();
+		int processedPlayers = 0;
 		int counter = 1;
 		for (Player p : players) {
+			updateProgress(event, title, ++processedPlayers, totalPlayers);
 			content.append("#").append(counter++).append(" ");
 			content.append(formatPlayerLine(p, displayFields));
 		}
@@ -681,5 +701,16 @@ public class statslist extends ListenerAdapter {
 		}
 
 		return choices;
+	}
+
+	private void updateProgress(SlashCommandInteractionEvent event, String title, int current, int total) {
+		// Update progress every 5 players or on last player to avoid rate limiting
+		if (current % 5 == 0 || current == total) {
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Lade Spielerdaten von API: " + current + " / " + total + " Spieler verarbeitet...",
+							MessageUtil.EmbedType.LOADING))
+					.queue();
+		}
 	}
 }
