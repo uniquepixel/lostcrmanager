@@ -140,12 +140,14 @@ public class playerinfo extends ListenerAdapter {
 			}
 			
 			// Send response with or without API file
-			if (getApiFileFinal && player != null && playertag != null) {
+			if (getApiFileFinal && playertag != null) {
 				// Fetch the API JSON for the player
 				String apiJson = APIUtil.getPlayerJson(playertag);
 				if (apiJson != null) {
 					ByteArrayInputStream inputStream = new ByteArrayInputStream(apiJson.getBytes(StandardCharsets.UTF_8));
-					String filename = playertag.replace("#", "") + "_api.json";
+					// Sanitize filename by removing all non-alphanumeric characters except underscore and hyphen
+					String sanitizedTag = playertag.replaceAll("[^a-zA-Z0-9_-]", "");
+					String filename = sanitizedTag + "_api.json";
 					event.getHook().editOriginal(inputStream, filename)
 							.setEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
 							.queue();
