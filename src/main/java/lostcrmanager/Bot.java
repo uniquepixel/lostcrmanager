@@ -47,6 +47,7 @@ import commands.reminders.remindersinfo;
 import commands.reminders.remindersremove;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
+import commands.util.statslist;
 import commands.wins.wins;
 import datautil.APIUtil;
 import datautil.DBUtil;
@@ -115,7 +116,7 @@ public class Bot extends ListenerAdapter {
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
 						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails(),
-						new remindersadd(), new remindersremove(), new remindersinfo(), new wins())
+						new remindersadd(), new remindersremove(), new remindersinfo(), new wins(), new statslist())
 				.build();
 	}
 
@@ -265,6 +266,19 @@ public class Bot extends ListenerAdapter {
 									.setAutoComplete(true).setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
 									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Liste ausgeschlossen")
+									.setAutoComplete(true).setRequired(false)),
+					Commands.slash("statslist", "Erstelle eine konfigurierbare Stats-Liste für einen Clan oder alle Clans.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan oder 'Alle Clans'", true)
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "display_fields",
+									"Anzuzeigende Felder (kommagetrennt, z.B. Wins,Trophies,PoLLeagueNumber)", true)
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "sort_fields",
+									"Sortierfelder (kommagetrennt, z.B. PoLLeagueNumber,Trophies). Standard: alphabetisch")
+									.setAutoComplete(true).setRequired(false))
+							.addOptions(new OptionData(OptionType.STRING, "roles_sorting",
+									"(Optional) 'true' für Rollen-Sortierung, 'clans' für Clans+Rollen-Sortierung")
 									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}
@@ -566,7 +580,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(_ -> {
+		channel.sendMessage(messages.get(index)).queue(success -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {
