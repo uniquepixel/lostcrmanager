@@ -74,7 +74,7 @@ public class statslist extends ListenerAdapter {
 			}
 			// Check if user has permission for this clan
 			Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
-			if (!(role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+			if (role == null || !(role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
 					|| role == Player.RoleType.COLEADER)) {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
 						"Du musst mindestens Vize-Anführer von Clan " + clan.getInfoStringDB() + " sein, um diesen Befehl ausführen zu können.",
@@ -733,8 +733,8 @@ public class statslist extends ListenerAdapter {
 			if (!alreadySelected.contains(clanTag)) {
 				// Check if user has permission for this clan
 				Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
-				if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-						|| role == Player.RoleType.COLEADER) {
+				if (role != null && (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+						|| role == Player.RoleType.COLEADER)) {
 					String displayValue = prefix.isEmpty() ? clan.getValue() : prefix + clan.getValue();
 					choices.add(new Command.Choice(clan.getName(), displayValue));
 					if (choices.size() >= 25) {
