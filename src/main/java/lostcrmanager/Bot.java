@@ -267,9 +267,9 @@ public class Bot extends ListenerAdapter {
 							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
 									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Liste ausgeschlossen")
 									.setAutoComplete(true).setRequired(false)),
-					Commands.slash("statslist", "Erstelle eine konfigurierbare Stats-Liste für einen Clan oder alle Clans.")
+					Commands.slash("statslist", "Erstelle eine konfigurierbare Stats-Liste für einen oder mehrere Clans.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
-									"Der Clan oder 'Alle Clans'", true)
+									"Clan(s) kommagetrennt, z.B. #CLANTAG1,#CLANTAG2", true)
 									.setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "display_fields",
 									"Anzuzeigende Felder (kommagetrennt, z.B. Wins,Trophies,PoLLeagueNumber)", true)
