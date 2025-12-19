@@ -55,6 +55,34 @@ public class statslist extends ListenerAdapter {
 		boolean rolesSorting = "true".equalsIgnoreCase(rolesSortingValue) || "clans".equalsIgnoreCase(rolesSortingValue);
 		boolean clanSorting = "clans".equalsIgnoreCase(rolesSortingValue);
 
+		// Parse clan tags
+		List<String> clansList = parseClanTags(clanInput);
+		if (clansList.isEmpty()) {
+			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+					"Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR)).queue();
+			return;
+		}
+
+		// Validate permissions for all specified clans
+		User userExecuted = new User(event.getUser().getId());
+		for (String clanTag : clansList) {
+			Clan clan = new Clan(clanTag);
+			if (!clan.ExistsDB()) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Clan " + clanTag + " existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+			// Check if user has permission for this clan
+			Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
+			if (role == null || !(role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+					|| role == Player.RoleType.COLEADER)) {
+				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+						"Du musst mindestens Vize-Anführer von Clan " + clan.getInfoStringDB() + " sein, um diesen Befehl ausführen zu können.",
+						MessageUtil.EmbedType.ERROR)).queue();
+				return;
+			}
+		}
+
 		// Parse display fields - now required
 		List<String> displayFields = new ArrayList<>();
 		if (displayFieldsOption != null) {
@@ -84,38 +112,8 @@ public class statslist extends ListenerAdapter {
 		}
 		// If no sort fields specified, default is alphabetical (empty list means sort by name)
 
-		// Get clans to process
-		ArrayList<String> clanTags = new ArrayList<>();
-		if (clanInput.equalsIgnoreCase("Alle Clans")) {
-			// Check permissions
-			User userExecuted = new User(event.getUser().getId());
-			boolean hasPermission = false;
-			for (String clantag : DBManager.getAllClans()) {
-				Player.RoleType role = userExecuted.getClanRoles().get(clantag);
-				if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-						|| role == Player.RoleType.COLEADER) {
-					hasPermission = true;
-					break;
-				}
-			}
-			if (!hasPermission) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer eines Clans sein, um diesen Befehl mit 'Alle Clans' ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
-				return;
-			}
-			clanTags = DBManager.getAllClans();
-		} else {
-			Clan c = new Clan(clanInput);
-			if (!c.ExistsDB()) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.",
-						MessageUtil.EmbedType.ERROR)).queue();
-				return;
-			}
-			clanTags.add(clanInput);
-		}
-
-		final ArrayList<String> clans = clanTags;
+		// Convert the List to ArrayList for compatibility with existing code
+		final ArrayList<String> clans = new ArrayList<>(clansList);
 		final List<String> finalDisplayFields = displayFields;
 		final List<String> finalSortFields = sortFields;
 		final boolean finalRolesSorting = rolesSorting;
@@ -132,7 +130,7 @@ public class statslist extends ListenerAdapter {
 					Clan c = new Clan(clans.get(0));
 					description += " für " + c.getInfoStringDB();
 				} else {
-					description += " für alle Clans";
+					description += " für " + clans.size() + " Clans";
 				}
 				description += ".";
 				event.getHook().editOriginal(inputStream, "StatsList.txt")
@@ -171,13 +169,13 @@ public class statslist extends ListenerAdapter {
 
 		// Sort players
 		if (rolesSorting && clanSorting && clanTags.size() > 1) {
-			// When roles_sorting with "clans" is enabled and "Alle Clans", organize by clan and role
+			// When roles_sorting with "clans" is enabled and multiple clans selected, organize by clan and role
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 
 			// Group by clan with role-based sections
 			content = generateRoleSortedContent(allPlayers, clanTags, displayFields, event, title);
 		} else if (rolesSorting) {
-			// Single clan with role sorting OR "Alle Clans" with role sorting but no clan grouping
+			// Single clan with role sorting OR multiple clans with role sorting but no clan grouping
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 			if (clanTags.size() > 1) {
 				// All clans with role sorting - show all players in one sorted list by role
@@ -379,7 +377,7 @@ public class statslist extends ListenerAdapter {
 	private String generateAllClansContent(ArrayList<Player> players, List<String> displayFields,
 			SlashCommandInteractionEvent event, String title) {
 		StringBuilder content = new StringBuilder();
-		content.append("Alle Clans - Sortiert nach gewählten Kriterien\n\n");
+		content.append("Mehrere Clans - Sortiert nach gewählten Kriterien\n\n");
 
 		// Filter out hidden coleaders
 		players = players.stream().filter(p -> !p.isHiddenColeader())
@@ -588,6 +586,23 @@ public class statslist extends ListenerAdapter {
 		return fields;
 	}
 
+	private List<String> parseClanTags(String input) {
+		List<String> clanTags = new ArrayList<>();
+		if (input == null || input.trim().isEmpty()) {
+			return clanTags;
+		}
+
+		String[] parts = input.split(",");
+		for (String part : parts) {
+			String trimmed = part.trim();
+			if (!trimmed.isEmpty()) {
+				clanTags.add(trimmed);
+			}
+		}
+
+		return clanTags;
+	}
+
 	@Override
 	public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
 		if (!event.getName().equals("statslist"))
@@ -597,32 +612,8 @@ public class statslist extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = new ArrayList<>();
-
-			// Check if user has permission for "Alle Clans"
-			User userExecuted = new User(event.getUser().getId());
-			boolean hasPermission = false;
-			for (String clantag : DBManager.getAllClans()) {
-				Player.RoleType role = userExecuted.getClanRoles().get(clantag);
-				if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-						|| role == Player.RoleType.COLEADER) {
-					hasPermission = true;
-					break;
-				}
-			}
-
-			if (hasPermission && "Alle Clans".toLowerCase().contains(input.toLowerCase())) {
-				choices.add(new Command.Choice("Alle Clans", "Alle Clans"));
-			}
-
-			// Add individual clans
-			choices.addAll(DBManager.getClansAutocomplete(input));
-
-			// Limit to 25 choices
-			if (choices.size() > 25) {
-				choices = choices.subList(0, 25);
-			}
-
+			// Handle comma-separated autocomplete similar to fields
+			List<Command.Choice> choices = getClanAutocomplete(input, event.getUser().getId());
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("display_fields") || focused.equals("sort_fields")) {
 			// Handle comma-separated autocomplete
@@ -691,6 +682,61 @@ public class statslist extends ListenerAdapter {
 				if (!alreadySelected.contains(field) && field.toLowerCase().contains(lastPart.toLowerCase())) {
 					String displayValue = prefix.isEmpty() ? field : prefix + field;
 					choices.add(new Command.Choice(displayValue, displayValue));
+					if (choices.size() >= 25) {
+						break;
+					}
+				}
+			}
+		}
+
+		return choices;
+	}
+
+	private List<Command.Choice> getClanAutocomplete(String input, String userId) {
+		List<Command.Choice> choices = new ArrayList<>();
+
+		// Split by comma and get the last part
+		String[] parts = input.split(",");
+		String prefix = "";
+		String lastPart = "";
+
+		if (parts.length > 0) {
+			lastPart = parts[parts.length - 1].trim();
+			// Build prefix from all parts except the last one
+			if (parts.length > 1) {
+				StringBuilder prefixBuilder = new StringBuilder();
+				for (int i = 0; i < parts.length - 1; i++) {
+					if (i > 0)
+						prefixBuilder.append(",");
+					prefixBuilder.append(parts[i].trim());
+				}
+				prefix = prefixBuilder.toString() + ",";
+			}
+		}
+
+		// Get already selected clans to avoid duplicates
+		List<String> alreadySelected = new ArrayList<>();
+		for (int i = 0; i < parts.length - 1; i++) {
+			String trimmed = parts[i].trim();
+			if (!trimmed.isEmpty()) {
+				alreadySelected.add(trimmed);
+			}
+		}
+
+		// Get clans from DBManager and filter
+		User userExecuted = new User(userId);
+		List<Command.Choice> allClans = DBManager.getClansAutocomplete(lastPart);
+
+		// Filter out already selected clans and add with prefix
+		for (Command.Choice clan : allClans) {
+			String clanTag = clan.getValue();
+			if (!alreadySelected.contains(clanTag)) {
+				// Check if user has permission for this clan
+				Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
+				if (role != null && (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+						|| role == Player.RoleType.COLEADER)) {
+					String displayValue = prefix.isEmpty() ? clan.getValue() : prefix + clan.getValue();
+					choices.add(new Command.Choice(clan.getName(), displayValue));
 					if (choices.size() >= 25) {
 						break;
 					}
