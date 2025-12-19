@@ -130,7 +130,7 @@ public class statslist extends ListenerAdapter {
 					Clan c = new Clan(clans.get(0));
 					description += " für " + c.getInfoStringDB();
 				} else {
-					description += " für alle Clans";
+					description += " für " + clans.size() + " Clans";
 				}
 				description += ".";
 				event.getHook().editOriginal(inputStream, "StatsList.txt")
@@ -169,13 +169,13 @@ public class statslist extends ListenerAdapter {
 
 		// Sort players
 		if (rolesSorting && clanSorting && clanTags.size() > 1) {
-			// When roles_sorting with "clans" is enabled and "Alle Clans", organize by clan and role
+			// When roles_sorting with "clans" is enabled and multiple clans selected, organize by clan and role
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 
 			// Group by clan with role-based sections
 			content = generateRoleSortedContent(allPlayers, clanTags, displayFields, event, title);
 		} else if (rolesSorting) {
-			// Single clan with role sorting OR "Alle Clans" with role sorting but no clan grouping
+			// Single clan with role sorting OR multiple clans with role sorting but no clan grouping
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 			if (clanTags.size() > 1) {
 				// All clans with role sorting - show all players in one sorted list by role
@@ -377,7 +377,7 @@ public class statslist extends ListenerAdapter {
 	private String generateAllClansContent(ArrayList<Player> players, List<String> displayFields,
 			SlashCommandInteractionEvent event, String title) {
 		StringBuilder content = new StringBuilder();
-		content.append("Alle Clans - Sortiert nach gewählten Kriterien\n\n");
+		content.append("Mehrere Clans - Sortiert nach gewählten Kriterien\n\n");
 
 		// Filter out hidden coleaders
 		players = players.stream().filter(p -> !p.isHiddenColeader())
