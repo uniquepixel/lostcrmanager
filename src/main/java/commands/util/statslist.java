@@ -29,8 +29,8 @@ import util.MessageUtil;
 public class statslist extends ListenerAdapter {
 
 	// Available stat fields
-	private static final String[] AVAILABLE_FIELDS = { "Wins", "Trophies", "UC-Trophies",
-			"Ranked-Liga", "Letzte Ranked-Liga", "Letzte UC-Trophies" };
+	private static final String[] AVAILABLE_FIELDS = { "Wins", "Trophies", "UC-Trophies", "Ranked-Liga",
+			"Letzte Ranked-Liga", "Letzte UC-Trophies" };
 
 	@Override
 	public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -45,21 +45,24 @@ public class statslist extends ListenerAdapter {
 		OptionMapping rolesSortingOption = event.getOption("roles_sorting");
 
 		if (clanOption == null) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Der Parameter Clan ist erforderlich!", MessageUtil.EmbedType.ERROR)).queue();
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Der Parameter Clan ist erforderlich!", MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
 		String clanInput = clanOption.getAsString();
 		String rolesSortingValue = rolesSortingOption != null ? rolesSortingOption.getAsString() : "false";
-		boolean rolesSorting = "true".equalsIgnoreCase(rolesSortingValue) || "clans".equalsIgnoreCase(rolesSortingValue);
+		boolean rolesSorting = "true".equalsIgnoreCase(rolesSortingValue)
+				|| "clans".equalsIgnoreCase(rolesSortingValue);
 		boolean clanSorting = "clans".equalsIgnoreCase(rolesSortingValue);
 
 		// Parse clan tags
 		List<String> clansList = parseClanTags(clanInput);
 		if (clansList.isEmpty()) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR)).queue();
+			event.getHook().editOriginalEmbeds(
+					MessageUtil.buildEmbed(title, "Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
@@ -76,9 +79,12 @@ public class statslist extends ListenerAdapter {
 			Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
 			if (role == null || !(role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
 					|| role == Player.RoleType.COLEADER)) {
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-						"Du musst mindestens Vize-Anführer von Clan " + clan.getInfoStringDB() + " sein, um diesen Befehl ausführen zu können.",
-						MessageUtil.EmbedType.ERROR)).queue();
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Du musst mindestens Vize-Anführer von Clan " + clan.getInfoStringDB()
+										+ " sein, um diesen Befehl ausführen zu können.",
+								MessageUtil.EmbedType.ERROR))
+						.queue();
 				return;
 			}
 		}
@@ -110,7 +116,8 @@ public class statslist extends ListenerAdapter {
 				return;
 			}
 		}
-		// If no sort fields specified, default is alphabetical (empty list means sort by name)
+		// If no sort fields specified, default is alphabetical (empty list means sort
+		// by name)
 
 		// Convert the List to ArrayList for compatibility with existing code
 		final ArrayList<String> clans = new ArrayList<>(clansList);
@@ -169,13 +176,15 @@ public class statslist extends ListenerAdapter {
 
 		// Sort players
 		if (rolesSorting && clanSorting && clanTags.size() > 1) {
-			// When roles_sorting with "clans" is enabled and multiple clans selected, organize by clan and role
+			// When roles_sorting with "clans" is enabled and multiple clans selected,
+			// organize by clan and role
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 
 			// Group by clan with role-based sections
 			content = generateRoleSortedContent(allPlayers, clanTags, displayFields, event, title);
 		} else if (rolesSorting) {
-			// Single clan with role sorting OR multiple clans with role sorting but no clan grouping
+			// Single clan with role sorting OR multiple clans with role sorting but no clan
+			// grouping
 			allPlayers = sortPlayersByRolesAndFields(allPlayers, sortFields);
 			if (clanTags.size() > 1) {
 				// All clans with role sorting - show all players in one sorted list by role
@@ -184,7 +193,8 @@ public class statslist extends ListenerAdapter {
 				content = generateSingleClanContent(allPlayers, clanTags.get(0), displayFields, true, event, title);
 			}
 		} else {
-			// No role sorting - just sort by specified fields (or alphabetically if no fields)
+			// No role sorting - just sort by specified fields (or alphabetically if no
+			// fields)
 			allPlayers = sortPlayersByFields(allPlayers, sortFields);
 			if (clanTags.size() > 1) {
 				// All clans without role sorting - show all players in one sorted list
@@ -292,8 +302,7 @@ public class statslist extends ListenerAdapter {
 		content.append(clan.getInfoStringDB()).append("\n\n");
 
 		// Filter out hidden coleaders
-		players = players.stream().filter(p -> !p.isHiddenColeader())
-				.collect(Collectors.toCollection(ArrayList::new));
+		players = players.stream().filter(p -> !p.isHiddenColeader()).collect(Collectors.toCollection(ArrayList::new));
 
 		int totalPlayers = players.size();
 		int processedPlayers = 0;
@@ -380,8 +389,7 @@ public class statslist extends ListenerAdapter {
 		content.append("Mehrere Clans - Sortiert nach gewählten Kriterien\n\n");
 
 		// Filter out hidden coleaders
-		players = players.stream().filter(p -> !p.isHiddenColeader())
-				.collect(Collectors.toCollection(ArrayList::new));
+		players = players.stream().filter(p -> !p.isHiddenColeader()).collect(Collectors.toCollection(ArrayList::new));
 
 		int totalPlayers = players.size();
 		int processedPlayers = 0;
@@ -729,13 +737,13 @@ public class statslist extends ListenerAdapter {
 
 		// Filter out already selected clans and add with prefix
 		for (Command.Choice clan : allClans) {
-			String clanTag = clan.getValue();
+			String clanTag = clan.getAsString();
 			if (!alreadySelected.contains(clanTag)) {
 				// Check if user has permission for this clan
 				Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
 				if (role != null && (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
 						|| role == Player.RoleType.COLEADER)) {
-					String displayValue = prefix.isEmpty() ? clan.getValue() : prefix + clan.getValue();
+					String displayValue = prefix.isEmpty() ? clan.getAsString() : prefix + clan.getAsString();
 					choices.add(new Command.Choice(clan.getName(), displayValue));
 					if (choices.size() >= 25) {
 						break;
