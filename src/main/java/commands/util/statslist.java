@@ -691,48 +691,92 @@ public class statslist extends ListenerAdapter {
 
 		// Split by comma and get the last part
 		String[] parts = input.split(",");
-		String prefix = "";
+		String displayPrefix = "";
+		String valuePrefix = "";
 		String lastPart = "";
 
-		if (parts.length > 0) {
-			lastPart = parts[parts.length - 1].trim();
-			// Build prefix from all parts except the last one
-			if (parts.length > 1) {
-				StringBuilder prefixBuilder = new StringBuilder();
-				for (int i = 0; i < parts.length - 1; i++) {
-					if (i > 0)
-						prefixBuilder.append(",");
-					prefixBuilder.append(parts[i].trim());
+		// Process all parts before the last comma
+		if (parts.length > 1) {
+			StringBuilder displayBuilder = new StringBuilder();
+			StringBuilder valueBuilder = new StringBuilder();
+
+			for (int i = 0; i < parts.length - 1; i++) {
+				String trimmed = parts[i].trim();
+				if (!trimmed.isEmpty()) {
+					if (i > 0) {
+						displayBuilder.append(", ");
+						valueBuilder.append(",");
+					}
+					// Add the display string as-is
+					displayBuilder.append(trimmed);
+					// Extract and add just the tag to value
+					String extractedTag = extractClanTag(trimmed);
+					valueBuilder.append(extractedTag);
 				}
-				prefix = prefixBuilder.toString() + ",";
 			}
+			displayPrefix = displayBuilder.toString();
+			valuePrefix = valueBuilder.toString();
 		}
 
-		// Get already selected clans to avoid duplicates
-		List<String> alreadySelected = new ArrayList<>();
+		// The last part is what user is currently typing
+		if (parts.length > 0) {
+			lastPart = parts[parts.length - 1].trim();
+		}
+
+		// Get already selected tags to avoid duplicates
+		List<String> alreadySelectedTags = new ArrayList<>();
 		for (int i = 0; i < parts.length - 1; i++) {
 			String trimmed = parts[i].trim();
 			if (!trimmed.isEmpty()) {
-				alreadySelected.add(trimmed);
+				String extractedTag = extractClanTag(trimmed);
+				if (!extractedTag.isEmpty()) {
+					alreadySelectedTags.add(extractedTag);
+				}
 			}
 		}
 
 		// Get clans from DBManager and filter
 		List<Command.Choice> allClans = DBManager.getClansAutocomplete(lastPart);
 
-		// Filter out already selected clans and add with prefix
+		// Build the autocomplete choices
 		for (Command.Choice clan : allClans) {
-			String clanTag = clan.getAsString();
-			if (!alreadySelected.contains(clanTag)) {
-				String displayValue = prefix.isEmpty() ? clan.getAsString() : prefix + clan.getAsString();
-				choices.add(new Command.Choice(clan.getName(), displayValue));
-				if (choices.size() >= 25) {
-					break;
-				}
+			String clanTag = clan.getAsString(); // Just the tag like #xxx
+			String clanDisplay = clan.getName(); // Full display like "LOST (#xxx)"
+
+			// Skip if already selected
+			if (alreadySelectedTags.contains(clanTag)) {
+				continue;
+			}
+
+			// Build the display name (what user sees)
+			String choiceName = displayPrefix.isEmpty() ? clanDisplay : displayPrefix + ", " + clanDisplay;
+
+			// Build the value (tags only, for command submission)
+			String choiceValue = valuePrefix.isEmpty() ? clanTag : valuePrefix + "," + clanTag;
+
+			choices.add(new Command.Choice(choiceName, choiceValue));
+
+			if (choices.size() >= 25) {
+				break;
 			}
 		}
 
 		return choices;
+	}
+
+	// Helper method to extract clan tag from display string
+	private String extractClanTag(String displayString) {
+		// Format is either "ClanName (#TAG)" or just "#TAG"
+		int startBracket = displayString.indexOf('(');
+		int endBracket = displayString.indexOf(')');
+
+		if (startBracket != -1 && endBracket != -1 && endBracket > startBracket) {
+			// Extract the tag from within parentheses
+			return displayString.substring(startBracket + 1, endBracket).trim();
+		}
+
+		// If no parentheses, assume the whole thing is the tag
+		return displayString.trim();
 	}
 
 	private void updateProgress(SlashCommandInteractionEvent event, String title, int current, int total) {
