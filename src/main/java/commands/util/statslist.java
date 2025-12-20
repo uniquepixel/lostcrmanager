@@ -18,7 +18,6 @@ import datautil.Connection;
 import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.Player;
-import datawrapper.User;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -66,25 +65,12 @@ public class statslist extends ListenerAdapter {
 			return;
 		}
 
-		// Validate permissions for all specified clans
-		User userExecuted = new User(event.getUser().getId());
+		// Validate that all specified clans exist
 		for (String clanTag : clansList) {
 			Clan clan = new Clan(clanTag);
 			if (!clan.ExistsDB()) {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
 						"Clan " + clanTag + " existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
-				return;
-			}
-			// Check if user has permission for this clan
-			Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
-			if (role == null || !(role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-					|| role == Player.RoleType.COLEADER)) {
-				event.getHook()
-						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-								"Du musst mindestens Vize-Anführer von Clan " + clan.getInfoStringDB()
-										+ " sein, um diesen Befehl ausführen zu können.",
-								MessageUtil.EmbedType.ERROR))
-						.queue();
 				return;
 			}
 		}
@@ -732,22 +718,16 @@ public class statslist extends ListenerAdapter {
 		}
 
 		// Get clans from DBManager and filter
-		User userExecuted = new User(userId);
 		List<Command.Choice> allClans = DBManager.getClansAutocomplete(lastPart);
 
 		// Filter out already selected clans and add with prefix
 		for (Command.Choice clan : allClans) {
 			String clanTag = clan.getAsString();
 			if (!alreadySelected.contains(clanTag)) {
-				// Check if user has permission for this clan
-				Player.RoleType role = userExecuted.getClanRoles().get(clanTag);
-				if (role != null && (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-						|| role == Player.RoleType.COLEADER)) {
-					String displayValue = prefix.isEmpty() ? clan.getAsString() : prefix + clan.getAsString();
-					choices.add(new Command.Choice(clan.getName(), displayValue));
-					if (choices.size() >= 25) {
-						break;
-					}
+				String displayValue = prefix.isEmpty() ? clan.getAsString() : prefix + clan.getAsString();
+				choices.add(new Command.Choice(clan.getName(), displayValue));
+				if (choices.size() >= 25) {
+					break;
 				}
 			}
 		}
