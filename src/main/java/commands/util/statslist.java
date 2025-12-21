@@ -525,6 +525,7 @@ public class statslist extends ListenerAdapter {
 		return players.stream().sorted(comparator).collect(Collectors.toCollection(ArrayList::new));
 	}
 
+	@SuppressWarnings("unused")
 	private Comparator<Player> getFieldComparator(String field) {
 		switch (field) {
 		case "Wins":
@@ -555,7 +556,7 @@ public class statslist extends ListenerAdapter {
 				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 			});
 		default:
-			return Comparator.comparingInt(p -> 0);
+			return Comparator.comparingInt(_ -> 0);
 		}
 	}
 
