@@ -91,7 +91,7 @@ public class kpclan extends ListenerAdapter {
 
 			LinkedHashMap<String, Integer> sorted = kpamounts.entrySet().stream()
 					.sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, _) -> e1, LinkedHashMap::new));
 
 			// Ausgabe sortiert
 			for (String key : sorted.keySet()) {
@@ -186,7 +186,7 @@ public class kpclan extends ListenerAdapter {
 
 				LinkedHashMap<String, Integer> sorted = kpamounts.entrySet().stream()
 						.sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).collect(Collectors
-								.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+								.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, _) -> e1, LinkedHashMap::new));
 
 				// Ausgabe sortiert
 				for (String key : sorted.keySet()) {
