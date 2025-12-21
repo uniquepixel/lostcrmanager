@@ -68,6 +68,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import webserver.LinkWebServer;
 
 public class Bot extends ListenerAdapter {
 
@@ -75,6 +76,7 @@ public class Bot extends ListenerAdapter {
 	private static final int MIN_LEVEL_FOR_PING = 30;
 
 	private static JDA jda;
+	private static LinkWebServer webServer;
 	public static String VERSION;
 	public static String guild_id;
 	public static String api_key;
@@ -108,6 +110,7 @@ public class Bot extends ListenerAdapter {
 		startLoadingLists();
 		startReminders();
 		startMonthlyWinsSave();
+		startWebServer();
 
 		JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MEMBERS)
 				.setMemberCachePolicy(MemberCachePolicy.ALL).setChunkingFilter(ChunkingFilter.ALL)
@@ -302,6 +305,7 @@ public class Bot extends ListenerAdapter {
 	@Override
 	public void onShutdown(ShutdownEvent event) {
 		stopScheduler();
+		stopWebServer();
 	}
 
 	public static void setJda(JDA instance) {
@@ -681,6 +685,26 @@ public class Bot extends ListenerAdapter {
 		} catch (SQLException e) {
 			System.err.println("Fehler beim Löschen alter Wins-Daten: " + e.getMessage());
 			e.printStackTrace();
+		}
+	}
+
+	public static void startWebServer() {
+		String webServerPortStr = System.getenv("CR_MANAGER_WEB_PORT");
+		int webServerPort = 8080; // default port
+		if (webServerPortStr != null && !webServerPortStr.isEmpty()) {
+			try {
+				webServerPort = Integer.parseInt(webServerPortStr);
+			} catch (NumberFormatException e) {
+				System.out.println("Invalid web server port, using default 8080");
+			}
+		}
+		webServer = new LinkWebServer(webServerPort);
+		webServer.start();
+	}
+
+	public static void stopWebServer() {
+		if (webServer != null) {
+			webServer.stop();
 		}
 	}
 
