@@ -7,14 +7,19 @@ import datautil.DBManager;
 import datautil.DBUtil;
 import datawrapper.Player;
 import datawrapper.User;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class LinkWebServer {
     
     private Javalin app;
     private int port;
+    private ExecutorService executorService;
     
     public LinkWebServer(int port) {
         this.port = port;
+        this.executorService = Executors.newCachedThreadPool();
     }
     
     public void start() {
@@ -37,6 +42,16 @@ public class LinkWebServer {
         if (app != null) {
             app.stop();
             System.out.println("Web server stopped");
+        }
+        if (executorService != null) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+            }
         }
     }
     
@@ -88,8 +103,8 @@ public class LinkWebServer {
             final String finalTag = tag;
             final String finalUserId = userId;
             
-            // Execute link logic in a separate thread (async)
-            new Thread(() -> {
+            // Execute link logic in executor service (async)
+            executorService.submit(() -> {
                 Player p = new Player(finalTag);
                 
                 if (p.AccExists()) {
@@ -105,11 +120,9 @@ public class LinkWebServer {
                                 finalTag, finalUserId, playername);
                         
                         // Save initial wins data for the newly linked player (async)
-                        Thread saveWinsThread = new Thread(() -> {
+                        executorService.submit(() -> {
                             wins.savePlayerWins(finalTag);
                         });
-                        saveWinsThread.setDaemon(true);
-                        saveWinsThread.start();
                         
                         System.out.println("Successfully linked player " + finalTag + " to user " + finalUserId);
                     } else {
@@ -118,7 +131,7 @@ public class LinkWebServer {
                 } else {
                     System.out.println("Player " + finalTag + " does not exist or API error occurred");
                 }
-            }).start();
+            });
             
             // Return immediate response
             ctx.json(new LinkResponse("Link request accepted and is being processed", finalTag, finalUserId));
