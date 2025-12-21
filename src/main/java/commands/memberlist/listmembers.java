@@ -69,7 +69,7 @@ public class listmembers extends ListenerAdapter {
 				if (!isHidden) {
 					clanSizeCount++;
 				}
-				
+
 				if (p.getRole() == Player.RoleType.ADMIN) {
 					adminlist += p.getInfoStringDB();
 					if (p.isMarked()) {
@@ -128,7 +128,8 @@ public class listmembers extends ListenerAdapter {
 				desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
 			}
 
-			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B")
+					.withEmoji(Emoji.fromUnicode("🔁"));
 
 			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
@@ -194,27 +195,15 @@ public class listmembers extends ListenerAdapter {
 				if (!isHidden) {
 					clanSizeCount++;
 				}
-				
+
 				if (p.getRole() == Player.RoleType.ADMIN) {
 					adminlist += p.getInfoStringDB();
-					if (p.isMarked()) {
-						adminlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						adminlist += " - " + note;
-					}
-					}
+
 					adminlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.LEADER) {
 					leaderlist += p.getInfoStringDB();
-					if (p.isMarked()) {
-						leaderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						leaderlist += " - " + note;
-					}
-					}
+
 					leaderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.COLEADER) {
@@ -222,35 +211,17 @@ public class listmembers extends ListenerAdapter {
 					if (isHidden) {
 						coleaderlist += " (versteckt)";
 					}
-					if (p.isMarked()) {
-						coleaderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						coleaderlist += " - " + note;
-					}
-					}
+
 					coleaderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.ELDER) {
 					elderlist += p.getInfoStringDB();
-					if (p.isMarked()) {
-						elderlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						elderlist += " - " + note;
-					}
-					}
+
 					elderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.MEMBER) {
 					memberlist += p.getInfoStringDB();
-					if (p.isMarked()) {
-						memberlist += " (✗)";
-					String note = p.getNote();
-					if (note != null && !note.trim().isEmpty()) {
-						memberlist += " - " + note;
-					}
-					}
+
 					memberlist += "\n";
 				}
 			}
@@ -273,7 +244,8 @@ public class listmembers extends ListenerAdapter {
 				desc += "\nInsgesamte Spieler auf der Warteliste: " + playerlist.size();
 			}
 
-			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+			Button refreshButton = Button.secondary("listmembers_" + clantag, "\u200B")
+					.withEmoji(Emoji.fromUnicode("🔁"));
 
 			ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
