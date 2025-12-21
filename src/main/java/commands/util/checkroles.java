@@ -79,9 +79,7 @@ public class checkroles extends ListenerAdapter {
 
 			if (focused.equals("clan")) {
 				List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
-				event.replyChoices(choices).queue(success -> {
-				}, error -> {
-				});
+				event.replyChoices(choices).queue();
 			}
 		}, "CheckRolesAutocomplete-" + event.getUser().getId()).start();
 	}
