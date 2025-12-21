@@ -198,12 +198,18 @@ public class listmembers extends ListenerAdapter {
 
 				if (p.getRole() == Player.RoleType.ADMIN) {
 					adminlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						adminlist += " (✗)";
 
+					}
 					adminlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.LEADER) {
 					leaderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						leaderlist += " (✗)";
 
+					}
 					leaderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.COLEADER) {
@@ -211,17 +217,26 @@ public class listmembers extends ListenerAdapter {
 					if (isHidden) {
 						coleaderlist += " (versteckt)";
 					}
+					if (p.isMarked()) {
+						coleaderlist += " (✗)";
 
+					}
 					coleaderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.ELDER) {
 					elderlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						elderlist += " (✗)";
 
+					}
 					elderlist += "\n";
 				}
 				if (p.getRole() == Player.RoleType.MEMBER) {
 					memberlist += p.getInfoStringDB();
+					if (p.isMarked()) {
+						memberlist += " (✗)";
 
+					}
 					memberlist += "\n";
 				}
 			}
