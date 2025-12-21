@@ -54,6 +54,7 @@ public class checkroles extends ListenerAdapter {
 			}
 
 			OptionMapping clanOption = event.getOption("clan");
+			OptionMapping ignoreHiddenColeadersOption = event.getOption("ignore_hiddencoleaders");
 
 			if (clanOption == null) {
 				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -62,8 +63,21 @@ public class checkroles extends ListenerAdapter {
 			}
 
 			String clantag = clanOption.getAsString();
+			
+			boolean ignoreHiddenColeaders = false;
+			if (ignoreHiddenColeadersOption != null) {
+				String ignoreHiddenColeadersValue = ignoreHiddenColeadersOption.getAsString();
+				if ("true".equalsIgnoreCase(ignoreHiddenColeadersValue)) {
+					ignoreHiddenColeaders = true;
+				} else {
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Der ignore_hiddencoleaders Parameter muss entweder \"true\" enthalten oder nicht angegeben sein (false).",
+							MessageUtil.EmbedType.ERROR)).queue();
+					return;
+				}
+			}
 
-			performRoleCheck(event.getHook(), event.getGuild(), title, clantag);
+			performRoleCheck(event.getHook(), event.getGuild(), title, clantag, ignoreHiddenColeaders);
 
 		}, "CheckRolesCommand-" + event.getUser().getId()).start();
 	}
@@ -81,6 +95,13 @@ public class checkroles extends ListenerAdapter {
 				List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
 				event.replyChoices(choices).queue();
 			}
+			if (focused.equals("ignore_hiddencoleaders")) {
+				List<Command.Choice> choices = new ArrayList<>();
+				if ("true".startsWith(input.toLowerCase())) {
+					choices.add(new Command.Choice("true", "true"));
+				}
+				event.replyChoices(choices).queue();
+			}
 		}, "CheckRolesAutocomplete-" + event.getUser().getId()).start();
 	}
 
@@ -92,20 +113,35 @@ public class checkroles extends ListenerAdapter {
 
 		event.deferEdit().queue();
 
-		String clantag = id.substring("checkroles_".length());
+		// Parse the button ID: checkroles_{clantag}_{ignoreHiddenColeaders}
+		String remainder = id.substring("checkroles_".length());
+		String clantag;
+		boolean ignoreHiddenColeaders = false;
+		
+		int lastUnderscore = remainder.lastIndexOf("_");
+		if (lastUnderscore != -1) {
+			clantag = remainder.substring(0, lastUnderscore);
+			String ignoreHiddenColeadersStr = remainder.substring(lastUnderscore + 1);
+			ignoreHiddenColeaders = "true".equals(ignoreHiddenColeadersStr);
+		} else {
+			// Fallback for old button IDs without ignore_hiddencoleaders
+			clantag = remainder;
+		}
+		
 		String title = "Rollen-Check";
 
 		event.getInteraction().getHook()
 				.editOriginalEmbeds(MessageUtil.buildEmbed(title, "Wird geladen...", MessageUtil.EmbedType.LOADING))
 				.queue();
 
+		final boolean ignoreHiddenColeadersFinal = ignoreHiddenColeaders;
 		new Thread(() -> {
-			performRoleCheck(event.getHook(), event.getGuild(), title, clantag);
+			performRoleCheck(event.getHook(), event.getGuild(), title, clantag, ignoreHiddenColeadersFinal);
 		}, "CheckRolesRefresh-" + event.getUser().getId()).start();
 	}
 
 	private void performRoleCheck(net.dv8tion.jda.api.interactions.InteractionHook hook, Guild guild, String title,
-			String clantag) {
+			String clantag, boolean ignoreHiddenColeaders) {
 
 		if (guild == null) {
 			hook.editOriginalEmbeds(MessageUtil.buildEmbed(title,
@@ -141,6 +177,12 @@ public class checkroles extends ListenerAdapter {
 				continue;
 			}
 
+			// Skip hidden coleaders if ignore_hiddencoleaders is true
+			if (ignoreHiddenColeaders && p.isHiddenColeader()) {
+				totalMembers--;  // Don't count them in total
+				continue;
+			}
+
 			User user = p.getUser();
 			if (user == null) {
 				unlinkedMembers++;
@@ -149,7 +191,10 @@ public class checkroles extends ListenerAdapter {
 
 			linkedMembers++;
 
-			// Get expected Discord role ID based on clan role
+			// Always check the MEMBER role first
+			String memberRoleId = clan.getRoleID(Clan.Role.MEMBER);
+			
+			// Get expected Discord role ID based on clan role (for higher roles)
 			String expectedRoleId = null;
 			switch (roleDB) {
 			case LEADER:
@@ -162,17 +207,13 @@ public class checkroles extends ListenerAdapter {
 				expectedRoleId = clan.getRoleID(Clan.Role.ELDER);
 				break;
 			case MEMBER:
-				expectedRoleId = clan.getRoleID(Clan.Role.MEMBER);
+				expectedRoleId = memberRoleId;
 				break;
 			default:
 				break;
 			}
 
-			if (expectedRoleId == null) {
-				continue; // Role not configured for this clan
-			}
-
-			// Check if Discord user has the expected role
+			// Check if Discord user has the expected role(s)
 			Member member = guild.getMemberById(user.getUserID());
 			if (member == null) {
 				// User is linked but not in the Discord server
@@ -180,17 +221,31 @@ public class checkroles extends ListenerAdapter {
 						getRoleDisplayName(roleDB), user.getUserID()));
 				membersWithoutRole++;
 			} else {
-				Role expectedRole = guild.getRoleById(expectedRoleId);
-				if (expectedRole == null) {
-					// Role doesn't exist in Discord server
-					missingRolesList.add(String.format("%s - **%s** - <@%s> (Rolle nicht konfiguriert)",
-							p.getInfoStringDB(), getRoleDisplayName(roleDB), user.getUserID()));
-					membersWithoutRole++;
-				} else if (!member.getRoles().contains(expectedRole)) {
-					// Member doesn't have the expected role
-					missingRolesList.add(String.format("%s - **%s** - <@%s> (fehlt: %s)", p.getInfoStringDB(),
-							getRoleDisplayName(roleDB), user.getUserID(), expectedRole.getAsMention()));
-					membersWithoutRole++;
+				// Check member role first (for everyone)
+				if (memberRoleId != null) {
+					Role memberRole = guild.getRoleById(memberRoleId);
+					if (memberRole != null && !member.getRoles().contains(memberRole)) {
+						missingRolesList.add(String.format("%s - **%s** - <@%s> (fehlt: %s)", p.getInfoStringDB(),
+								getRoleDisplayName(roleDB), user.getUserID(), memberRole.getAsMention()));
+						membersWithoutRole++;
+						continue; // Skip checking other roles if member role is missing
+					}
+				}
+				
+				// Check additional role for non-members (leader, coleader, elder)
+				if (expectedRoleId != null && !expectedRoleId.equals(memberRoleId)) {
+					Role expectedRole = guild.getRoleById(expectedRoleId);
+					if (expectedRole == null) {
+						// Role doesn't exist in Discord server
+						missingRolesList.add(String.format("%s - **%s** - <@%s> (Rolle nicht konfiguriert)",
+								p.getInfoStringDB(), getRoleDisplayName(roleDB), user.getUserID()));
+						membersWithoutRole++;
+					} else if (!member.getRoles().contains(expectedRole)) {
+						// Member doesn't have the expected role
+						missingRolesList.add(String.format("%s - **%s** - <@%s> (fehlt: %s)", p.getInfoStringDB(),
+								getRoleDisplayName(roleDB), user.getUserID(), expectedRole.getAsMention()));
+						membersWithoutRole++;
+					}
 				}
 			}
 		}
@@ -213,7 +268,7 @@ public class checkroles extends ListenerAdapter {
 		}
 
 		// Create refresh button
-		Button refreshButton = Button.secondary("checkroles_" + clantag, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
+		Button refreshButton = Button.secondary("checkroles_" + clantag + "_" + ignoreHiddenColeaders, "\u200B").withEmoji(Emoji.fromUnicode("🔁"));
 
 		// Add timestamp
 		ZonedDateTime jetzt = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
