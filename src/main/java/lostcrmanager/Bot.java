@@ -285,7 +285,10 @@ public class Bot extends ListenerAdapter {
 					Commands.slash("checkroles",
 							"Überprüfe, ob Clan-Mitglieder die korrekten Discord-Rollen haben.")
 							.addOptions(new OptionData(OptionType.STRING, "clan",
-									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true)))
+									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "ignore_hiddencoleaders",
+									"(Optional) Wenn 'true', werden versteckte Vize-Anführer ignoriert")
+									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}
 	}
