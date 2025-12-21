@@ -252,11 +252,12 @@ public class wins extends ListenerAdapter {
 			String startTimeFormatted = startRecord.recordedAt.atZoneSameInstant(zone).format(formatter);
 
 			if (isStartOfMonth(startRecord.recordedAt, startOfMonth)) {
-				return "Wins im " + monthName + " " + year + ": **" + winsThisMonth + "**\n" + "(Von "
-						+ startRecord.wins + " am Monatsanfang auf " + currentWins + " aktuell)\n";
+				return "### " + player.getInfoStringDB() + "\n" + "Wins im " + monthName + " " + year + ": **"
+						+ winsThisMonth + "**\n" + "(Von " + startRecord.wins + " am Monatsanfang auf " + currentWins
+						+ " aktuell)\n";
 			} else {
-				return "Wins seit " + startTimeFormatted + ": **" + winsThisMonth + "**\n" + "(Von " + startRecord.wins
-						+ " auf " + currentWins + " aktuell)\n"
+				return "### " + player.getInfoStringDB() + "\n" + "Wins seit " + startTimeFormatted + ": **"
+						+ winsThisMonth + "**\n" + "(Von " + startRecord.wins + " auf " + currentWins + " aktuell)\n"
 						+ "⚠️ Daten sind nicht vom Monatsanfang, sondern vom Zeitpunkt der Verlinkung.\n";
 			}
 		} else {
@@ -265,11 +266,13 @@ public class wins extends ListenerAdapter {
 			WinsRecord endRecord = getWinsAtOrAfter(player.getTag(), startOfNextMonth);
 
 			if (startRecord == null) {
-				return "Keine Daten für " + monthName + " " + year + " verfügbar.\n";
+				return "### " + player.getInfoStringDB() + "\n" + "Keine Daten für " + monthName + " " + year
+						+ " verfügbar.\n";
 			}
 
 			if (endRecord == null) {
-				return "Keine Enddaten für " + monthName + " " + year + " verfügbar.\n";
+				return "### " + player.getInfoStringDB() + "\n" + "Keine Enddaten für " + monthName + " " + year
+						+ " verfügbar.\n";
 			}
 
 			int winsInMonth = endRecord.wins - startRecord.wins;
