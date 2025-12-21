@@ -26,5 +26,15 @@
     	<artifactId>json</artifactId>
     <version>20230227</version>
 </dependency>
+	<dependency>
+	    <groupId>io.javalin</groupId>
+	    <artifactId>javalin</artifactId>
+	    <version>5.6.3</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.slf4j</groupId>
+	    <artifactId>slf4j-simple</artifactId>
+	    <version>2.0.7</version>
+	</dependency>
   </dependencies>
 </project>

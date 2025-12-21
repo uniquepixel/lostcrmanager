@@ -54,6 +54,7 @@ import datautil.APIUtil;
 import datautil.DBUtil;
 import datawrapper.Clan;
 import datawrapper.Player;
+import webserver.LinkWebServer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -104,6 +105,10 @@ public class Bot extends ListenerAdapter {
 		datautil.Connection.tablesExists();
 		datautil.Connection.migrateRemindersTable();
 		datautil.Connection.migrateClanMembersTable();
+		
+		// Start REST API server
+		LinkWebServer.start();
+		
 		startNameUpdates();
 		startLoadingLists();
 		startReminders();
@@ -301,6 +306,7 @@ public class Bot extends ListenerAdapter {
 
 	@Override
 	public void onShutdown(ShutdownEvent event) {
+		LinkWebServer.stop();
 		stopScheduler();
 	}
 
