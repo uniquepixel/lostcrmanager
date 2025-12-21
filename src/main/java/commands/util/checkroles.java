@@ -94,8 +94,7 @@ public class checkroles extends ListenerAdapter {
 			if (focused.equals("clan")) {
 				List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
 				event.replyChoices(choices).queue();
-			}
-			if (focused.equals("ignore_hiddencoleaders")) {
+			} else if (focused.equals("ignore_hiddencoleaders")) {
 				List<Command.Choice> choices = new ArrayList<>();
 				if ("true".startsWith(input.toLowerCase())) {
 					choices.add(new Command.Choice("true", "true"));
@@ -170,8 +169,6 @@ public class checkroles extends ListenerAdapter {
 		List<String> missingRolesList = new ArrayList<>();
 
 		for (Player p : playerlist) {
-			totalMembers++;
-
 			Player.RoleType roleDB = p.getRole();
 			if (roleDB == null || roleDB == Player.RoleType.NOTINCLAN) {
 				continue;
@@ -179,9 +176,10 @@ public class checkroles extends ListenerAdapter {
 
 			// Skip hidden coleaders if ignore_hiddencoleaders is true
 			if (ignoreHiddenColeaders && p.isHiddenColeader()) {
-				totalMembers--;  // Don't count them in total
 				continue;
 			}
+
+			totalMembers++;
 
 			User user = p.getUser();
 			if (user == null) {
