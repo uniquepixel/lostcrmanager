@@ -436,7 +436,12 @@ public class statslist extends ListenerAdapter {
 	private Object getFieldValue(Player p, String field) {
 		switch (field) {
 		case "Wins":
-			return getMonthlyWins(p);
+			WinsResult winsResult = getMonthlyWinsWithWarning(p);
+			String winsDisplay = String.valueOf(winsResult.wins);
+			if (winsResult.hasWarning) {
+				winsDisplay += " ⚠️";
+			}
+			return winsDisplay;
 		case "Trophies":
 			Integer trophies = p.getTrophies();
 			return trophies != null ? trophies : 0;
@@ -556,7 +561,7 @@ public class statslist extends ListenerAdapter {
 				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 			});
 		default:
-			return Comparator.comparingInt(_ -> 0);
+			return Comparator.comparingInt(p -> 0);
 		}
 	}
 
@@ -796,7 +801,7 @@ public class statslist extends ListenerAdapter {
 	}
 
 	// Helper method to get wins for the current month
-	private int getMonthlyWins(Player player) {
+	private WinsResult getMonthlyWinsWithWarning(Player player) {
 		ZoneId zone = ZoneId.of("Europe/Berlin");
 		ZonedDateTime now = ZonedDateTime.now(zone);
 		int year = now.getYear();
@@ -815,11 +820,17 @@ public class statslist extends ListenerAdapter {
 
 		Integer currentWins = player.getWinsAPI();
 		if (currentWins == null || startRecord == null) {
-			return 0;
+			return new WinsResult(0, true);
 		}
 
 		int winsThisMonth = currentWins - startRecord.wins;
-		return winsThisMonth > 0 ? winsThisMonth : 0;
+		boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
+		return new WinsResult(winsThisMonth > 0 ? winsThisMonth : 0, hasWarning);
+	}
+
+	// Helper method to get wins for the current month (backward compatibility)
+	private int getMonthlyWins(Player player) {
+		return getMonthlyWinsWithWarning(player).wins;
 	}
 
 	private boolean hasAnyWinsData(String playerTag) {
@@ -860,9 +871,28 @@ public class statslist extends ListenerAdapter {
 	// Helper class to hold wins record data
 	private static class WinsRecord {
 		int wins;
+		OffsetDateTime recordedAt;
 
 		WinsRecord(int wins, OffsetDateTime recordedAt) {
 			this.wins = wins;
+			this.recordedAt = recordedAt;
 		}
+	}
+
+	// Helper class to hold wins result with warning flag
+	private static class WinsResult {
+		int wins;
+		boolean hasWarning;
+
+		WinsResult(int wins, boolean hasWarning) {
+			this.wins = wins;
+			this.hasWarning = hasWarning;
+		}
+	}
+
+	private boolean isStartOfMonth(OffsetDateTime recordedAt, ZonedDateTime expectedStart) {
+		// Check if the recorded time is within the first day of the month
+		ZonedDateTime recordedZoned = recordedAt.atZoneSameInstant(expectedStart.getZone());
+		return recordedZoned.toLocalDate().equals(expectedStart.toLocalDate());
 	}
 }
