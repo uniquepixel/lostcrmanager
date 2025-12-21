@@ -45,6 +45,7 @@ import commands.memberlist.transfermember;
 import commands.reminders.remindersadd;
 import commands.reminders.remindersinfo;
 import commands.reminders.remindersremove;
+import commands.util.checkroles;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
 import commands.util.statslist;
@@ -116,7 +117,8 @@ public class Bot extends ListenerAdapter {
 						new kpaddreason(), new kpremovereason(), new kpeditreason(), new kpadd(), new kpmember(),
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
 						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails(),
-						new remindersadd(), new remindersremove(), new remindersinfo(), new wins(), new statslist())
+						new remindersadd(), new remindersremove(), new remindersinfo(), new wins(), new statslist(),
+						new checkroles())
 				.build();
 	}
 
@@ -279,7 +281,11 @@ public class Bot extends ListenerAdapter {
 									.setAutoComplete(true).setRequired(false))
 							.addOptions(new OptionData(OptionType.STRING, "roles_sorting",
 									"(Optional) 'true' für Rollen-Sortierung, 'clans' für Clans+Rollen-Sortierung")
-									.setAutoComplete(true).setRequired(false)))
+									.setAutoComplete(true).setRequired(false)),
+					Commands.slash("checkroles",
+							"Überprüfe, ob Clan-Mitglieder die korrekten Discord-Rollen haben.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true)))
 					.queue();
 		}
 	}
@@ -580,7 +586,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(_ -> {
+		channel.sendMessage(messages.get(index)).queue(success -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {
