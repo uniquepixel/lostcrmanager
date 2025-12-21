@@ -530,7 +530,6 @@ public class statslist extends ListenerAdapter {
 		return players.stream().sorted(comparator).collect(Collectors.toCollection(ArrayList::new));
 	}
 
-	@SuppressWarnings("unused")
 	private Comparator<Player> getFieldComparator(String field) {
 		switch (field) {
 		case "Wins":
