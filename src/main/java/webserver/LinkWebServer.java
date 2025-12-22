@@ -75,8 +75,9 @@ public class LinkWebServer {
 
 				System.out.println("[LinkAPI] Starting server on 0.0.0.0:" + port + "...");
 
-				// Start the server with explicit host binding
-				app.start("0.0.0.0", port);
+				// Start the server - using start() instead of start(host, port)
+				// to let Javalin use its default server configuration
+				app.start(port);
 
 				// If we get here, the server started successfully
 				System.out.println("========================================");
