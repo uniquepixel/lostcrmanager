@@ -595,7 +595,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(success -> {
+		channel.sendMessage(messages.get(index)).queue(_ -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {

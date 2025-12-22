@@ -560,7 +560,7 @@ public class statslist extends ListenerAdapter {
 				return lastLeagueTrophies != null ? lastLeagueTrophies : 0;
 			});
 		default:
-			return Comparator.comparingInt(unused -> 0);
+			return Comparator.comparingInt(_ -> 0);
 		}
 	}
 
