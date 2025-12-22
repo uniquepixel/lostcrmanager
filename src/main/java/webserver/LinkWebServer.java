@@ -185,6 +185,7 @@ public class LinkWebServer {
 			if (!tag.startsWith("#")) {
 				tag = "#" + tag;
 			}
+			tag = tag.replaceAll("O", "0").toUpperCase(); // Replace O with 0 and uppercase
 
 			final String finalTag = tag;
 			final String finalUserId = userId;
