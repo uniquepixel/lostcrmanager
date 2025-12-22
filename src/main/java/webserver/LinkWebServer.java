@@ -73,16 +73,16 @@ public class LinkWebServer {
 					handleLinkRequest(ctx);
 				});
 
-				System.out.println("[LinkAPI] Starting server on 0.0.0.0:" + port + "...");
+				System.out.println("[LinkAPI] Starting server on port " + port + "...");
 
-				// Start the server - using start() instead of start(host, port)
+				// Start the server - using start(port) instead of start(host, port)
 				// to let Javalin use its default server configuration
 				app.start(port);
 
 				// If we get here, the server started successfully
 				System.out.println("========================================");
 				System.out.println("[LinkAPI] ✓ REST API server RUNNING");
-				System.out.println("[LinkAPI] ✓ Listening on:  0.0.0.0:" + port);
+				System.out.println("[LinkAPI] ✓ Listening on port: " + port);
 				System.out.println("[LinkAPI] ✓ Health check: http://localhost:" + port + "/api/health");
 				System.out.println("[LinkAPI] ✓ Link endpoint: http://localhost:" + port + "/api/link");
 				System.out.println("========================================");
