@@ -111,6 +111,7 @@ public class LinkWebServer {
 		synchronized (lock) {
 			if (server != null) {
 				System.out.println("[LinkAPI] Stopping REST API server...");
+				// Stop with 2 second delay to allow ongoing exchanges to complete
 				server.stop(2);
 				server = null;
 				System.out.println("[LinkAPI] REST API server stopped");
