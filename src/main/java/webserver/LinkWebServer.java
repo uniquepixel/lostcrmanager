@@ -53,8 +53,7 @@ public class LinkWebServer {
 			System.out.println("[LinkAPI] Target port: " + port);
 
 			if (apiSecret == null || apiSecret.isEmpty()) {
-				System.out
-						.println("[LinkAPI] Warning: LOSTCRMANAGER_API_SECRET not set. API authentication disabled.");
+				System.out.println("[LinkAPI] Warning: LOSTCRMANAGER_API_SECRET not set. API authentication disabled.");
 			} else {
 				System.out.println("[LinkAPI] API authentication: enabled");
 			}
@@ -63,7 +62,7 @@ public class LinkWebServer {
 				// Create HttpServer instance
 				System.out.println("[LinkAPI] Creating HttpServer instance...");
 				server = HttpServer.create(new InetSocketAddress(port), 0);
-				
+
 				// Use default executor (creates a thread pool)
 				server.setExecutor(null);
 
@@ -126,17 +125,17 @@ public class LinkWebServer {
 		if (apiSecret == null || apiSecret.isEmpty()) {
 			return true; // No auth required if secret not set
 		}
-		
+
 		List<String> authHeaders = exchange.getRequestHeaders().get("Authorization");
 		if (authHeaders == null || authHeaders.isEmpty()) {
 			return false;
 		}
-		
+
 		String authHeader = authHeaders.get(0);
 		if (!authHeader.startsWith("Bearer ")) {
 			return false;
 		}
-		
+
 		String token = authHeader.substring(7);
 		return apiSecret.equals(token);
 	}
@@ -144,7 +143,8 @@ public class LinkWebServer {
 	/**
 	 * Send JSON response
 	 */
-	private static void sendJsonResponse(HttpExchange exchange, int statusCode, JSONObject response) throws IOException {
+	private static void sendJsonResponse(HttpExchange exchange, int statusCode, JSONObject response)
+			throws IOException {
 		byte[] responseBytes = response.toString().getBytes(StandardCharsets.UTF_8);
 		exchange.getResponseHeaders().set("Content-Type", "application/json");
 		exchange.sendResponseHeaders(statusCode, responseBytes.length);
@@ -170,7 +170,7 @@ public class LinkWebServer {
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
 			System.out.println("[LinkAPI] Health check request from " + exchange.getRemoteAddress());
-			
+
 			try {
 				// Check method
 				if (!"GET".equals(exchange.getRequestMethod())) {
@@ -180,18 +180,18 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 405, error);
 					return;
 				}
-				
+
 				JSONObject response = new JSONObject();
 				response.put("status", "ok");
 				response.put("service", "lostcrmanager");
 				response.put("port", port);
-				
+
 				sendJsonResponse(exchange, 200, response);
-				
+
 			} catch (Exception e) {
 				System.err.println("[LinkAPI] Error handling health check: " + e.getMessage());
 				e.printStackTrace();
-				
+
 				JSONObject error = new JSONObject();
 				error.put("success", false);
 				error.put("error", "Internal server error");
@@ -207,7 +207,7 @@ public class LinkWebServer {
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
 			System.out.println("[LinkAPI] Link request received from " + exchange.getRemoteAddress());
-			
+
 			try {
 				// Check method
 				if (!"POST".equals(exchange.getRequestMethod())) {
@@ -217,7 +217,7 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 405, error);
 					return;
 				}
-				
+
 				// Check authentication
 				if (!validateAuth(exchange)) {
 					System.out.println("[LinkAPI] Authentication failed for POST /api/link");
@@ -227,7 +227,7 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 401, error);
 					return;
 				}
-				
+
 				// Parse request body
 				String body = readRequestBody(exchange);
 				if (body == null || body.trim().isEmpty()) {
@@ -237,7 +237,7 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 400, error);
 					return;
 				}
-				
+
 				JSONObject requestData;
 				try {
 					requestData = new JSONObject(body);
@@ -248,12 +248,12 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 400, error);
 					return;
 				}
-				
+
 				// Extract parameters
 				String tag = requestData.optString("tag", null);
 				String userId = requestData.optString("userId", null);
 				String source = requestData.optString("source", "unknown");
-				
+
 				// Validate required parameters
 				if (tag == null || tag.isEmpty() || userId == null || userId.isEmpty()) {
 					JSONObject error = new JSONObject();
@@ -265,23 +265,24 @@ public class LinkWebServer {
 					sendJsonResponse(exchange, 400, error);
 					return;
 				}
-				
+
 				// Normalize tag (add # if missing)
 				if (!tag.startsWith("#")) {
 					tag = "#" + tag;
 				}
 				tag = tag.replaceAll("O", "0").toUpperCase(); // Replace O with 0 and uppercase
-				
+
 				final String finalTag = tag;
 				final String finalUserId = userId;
 				final String finalSource = source;
-				
-				System.out.println("[LinkAPI] Request from " + finalSource + ": tag=" + finalTag + ", userId=" + finalUserId);
-				
+
+				System.out.println(
+						"[LinkAPI] Request from " + finalSource + ": tag=" + finalTag + ", userId=" + finalUserId);
+
 				// Execute link logic
 				try {
 					Player p = new Player(finalTag);
-					
+
 					// Check if player account exists via CR API
 					if (!p.AccExists()) {
 						System.out.println("[LinkAPI] Failed to link " + finalTag + ": Player not found or API error");
@@ -292,11 +293,12 @@ public class LinkWebServer {
 						sendJsonResponse(exchange, 400, error);
 						return;
 					}
-					
+
 					// Check if player is already linked
 					if (p.IsLinked()) {
 						String linkedUserId = p.getUser().getUserID();
-						System.out.println("[LinkAPI] Failed to link " + finalTag + ": Already linked to user " + linkedUserId);
+						System.out.println(
+								"[LinkAPI] Failed to link " + finalTag + ": Already linked to user " + linkedUserId);
 						JSONObject error = new JSONObject();
 						error.put("success", false);
 						error.put("error", "Player already linked to another user");
@@ -305,7 +307,7 @@ public class LinkWebServer {
 						sendJsonResponse(exchange, 400, error);
 						return;
 					}
-					
+
 					// Get player name from API
 					String playerName = null;
 					try {
@@ -314,18 +316,18 @@ public class LinkWebServer {
 						System.err.println("[LinkAPI] Error getting player name: " + e.getMessage());
 						e.printStackTrace();
 					}
-					
+
 					// Insert into database
 					DBUtil.executeUpdate("INSERT INTO players (cr_tag, discord_id, name) VALUES (?, ?, ?)", finalTag,
 							finalUserId, playerName);
-					
+
 					// Save initial wins data asynchronously
 					Thread saveWinsThread = new Thread(() -> {
 						wins.savePlayerWins(finalTag);
 					});
 					saveWinsThread.setDaemon(true);
 					saveWinsThread.start();
-					
+
 					// Build success response
 					System.out.println("[LinkAPI] Successfully linked " + finalTag + " to user " + finalUserId
 							+ " (source: " + finalSource + ")");
@@ -337,9 +339,24 @@ public class LinkWebServer {
 					response.put("playerInfo", playerName + " (" + finalTag + ")");
 					response.put("source", finalSource);
 					response.put("message", "Player successfully linked");
-					
+
+					if (p.getClanDB() != null) {
+						System.out.println("[LinkAPI] Player " + p.getInfoStringAPI()
+								+ " already in a Clan. Cannot be added to Waitlist (again)" + " (source: " + finalSource
+								+ ")");
+						response.put("waitlistsuccess", false);
+					} else {
+						// Add to waitlist
+						DBUtil.executeUpdate(
+								"INSERT INTO clan_members (player_tag, clan_tag, clan_role) VALUES (?, ?, ?)", finalTag,
+								"warteliste", "member");
+						System.out.println("[LinkAPI] Player " + p.getInfoStringAPI()
+								+ " added to Waitlist after linking" + " (source: " + finalSource + ")");
+						response.put("waitlistsuccess", true);
+					}
+
 					sendJsonResponse(exchange, 200, response);
-					
+
 				} catch (Exception e) {
 					System.err.println("[LinkAPI] Failed to link " + finalTag + ": " + e.getMessage());
 					e.printStackTrace();
@@ -349,7 +366,7 @@ public class LinkWebServer {
 					error.put("tag", finalTag);
 					sendJsonResponse(exchange, 500, error);
 				}
-				
+
 			} catch (Exception e) {
 				System.err.println("[LinkAPI] Error handling link request: " + e.getMessage());
 				e.printStackTrace();
