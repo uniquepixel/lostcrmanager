@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import commands.wins.wins;
@@ -18,6 +19,8 @@ import datautil.Connection;
 import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.Player;
+import lostcrmanager.Bot;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -158,6 +161,26 @@ public class statslist extends ListenerAdapter {
 						.queue();
 				allPlayers.add(playerListClan.get(i));
 			}
+		}
+		int playerCount = 0;
+		int fieldCount = 0;
+		int fieldSize = displayFields.contains("Wins") ? displayFields.size() - 1 : displayFields.size();
+		for (Player p : allPlayers) {
+			playerCount++;
+			for (String field : displayFields) {
+				if (field.equals("Wins")) {
+					continue;
+				}
+				fieldCount++;
+				getFieldValue(p, field);
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Lade Feld " + fieldCount + "/" + fieldSize + " von Spieler " + playerCount + "/"
+										+ allPlayers.size() + " in den Cache...",
+								MessageUtil.EmbedType.LOADING))
+						.queue();
+			}
+			fieldCount = 0;
 		}
 
 		// Sort players
@@ -413,6 +436,25 @@ public class statslist extends ListenerAdapter {
 			}
 			status = "[" + role + " " + p.getClanDB().getNameDB() + "]";
 		}
+		String discordInfo = "Dc:";
+		if (p.getUser() != null) {
+			String discordID = p.getUser().getUserID();
+			Member member = null;
+			try {
+				member = Bot.getJda().getGuildById(Bot.guild_id)
+						.retrieveMember(Bot.getJda().retrieveUserById(discordID).submit().get()).submit().get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+			if (member != null) {
+				String nick = member.getEffectiveName();
+				String name = member.getUser().getAsTag().replace("#0000", "");
+				discordInfo += " " + nick + " (" + name + ")";
+			}
+			discordInfo += " <@" + discordID + ">";
+		}
 
 		String noteInfo = "";
 		if (isMarked) {
@@ -430,7 +472,8 @@ public class statslist extends ListenerAdapter {
 			fields.append(" ").append(getFieldDisplayName(field)).append(": ").append(value).append("\n");
 		}
 
-		return String.format("%s (%s) %s\n%s%s\n", p.getNameDB(), p.getTag(), status, noteInfo, fields.toString());
+		return String.format("%s (%s) %s %s\n%s%s\n", p.getNameDB(), p.getTag(), status, discordInfo, noteInfo,
+				fields.toString());
 	}
 
 	private Object getFieldValue(Player p, String field) {

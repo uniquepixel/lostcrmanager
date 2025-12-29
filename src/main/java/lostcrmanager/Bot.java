@@ -73,7 +73,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 public class Bot extends ListenerAdapter {
 
 	private final static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-	private static final int MIN_LEVEL_FOR_PING = 30;
+	private static final int MIN_LEVEL_FOR_PING = 45;
 
 	private static JDA jda;
 	public static String VERSION;

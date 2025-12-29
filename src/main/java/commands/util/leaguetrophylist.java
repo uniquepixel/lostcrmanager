@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import datawrapper.Clan;
 import datawrapper.Player;
 import datawrapper.User;
 import lostcrmanager.Bot;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -374,6 +376,25 @@ public class leaguetrophylist extends ListenerAdapter {
 			}
 			status = "[" + role + " " + p.getClanDB().getNameDB() + "]";
 		}
+		String discordInfo = "Dc:";
+		if (p.getUser() != null) {
+			String discordID = p.getUser().getUserID();
+			Member member = null;
+			try {
+				member = Bot.getJda().getGuildById(Bot.guild_id)
+						.retrieveMember(Bot.getJda().retrieveUserById(discordID).submit().get()).submit().get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+			if (member != null) {
+				String nick = member.getEffectiveName();
+				String name = member.getUser().getAsTag().replace("#0000", "");
+				discordInfo += " " + nick + " (" + name + ")";
+			}
+			discordInfo += " <@" + discordID + ">";
+		}
 		String noteInfo = "";
 		if (isMarked) {
 			status += " [MARKIERT]";
@@ -394,8 +415,8 @@ public class leaguetrophylist extends ListenerAdapter {
 
 		// Ausgabeformat wie im Beispiel
 		return String.format(
-				"%s (%s) %s\n%s LeagueNumber: %d\n Aktuelle PathOfLegendSeason-Trophäen: %d\n Aktuelle Seasonal-Trophy-Road-Trophäen: %d\n\n",
-				p.getNameDB(), p.getTag(), status, noteInfo, leagueNumber, poLTrophies, displayTrophies);
+				"%s (%s) %s %s\n%s LeagueNumber: %d\n Aktuelle PathOfLegendSeason-Trophäen: %d\n Aktuelle Seasonal-Trophy-Road-Trophäen: %d\n\n",
+				p.getNameDB(), p.getTag(), status, discordInfo, noteInfo, leagueNumber, poLTrophies, displayTrophies);
 	}
 
 	public static ArrayList<Player> sortPlayers(ArrayList<Player> players) {
@@ -463,7 +484,7 @@ public class leaguetrophylist extends ListenerAdapter {
 
 			for (int i = 0; i < allplayers.size(); i++) {
 				Player p = allplayers.get(i);
-				if(p.isHiddenColeader()) {
+				if (p.isHiddenColeader()) {
 					continue;
 				}
 				// Skip players without a clan to avoid NPE when calling getClanDB().getTag()
@@ -572,7 +593,7 @@ public class leaguetrophylist extends ListenerAdapter {
 				folder.mkdirs();
 			}
 			long millis = java.time.ZonedDateTime.now(ZoneId.of("Europe/Berlin")).toInstant().toEpochMilli();
-			
+
 			File file = new File(folder, "Liste_" + millis + ".txt");
 
 			// FileOutputStream zum Schreiben in die Datei
