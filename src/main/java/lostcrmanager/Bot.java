@@ -49,6 +49,7 @@ import commands.util.checkroles;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
 import commands.util.statslist;
+import commands.util.winsfails;
 import commands.wins.wins;
 import datautil.APIUtil;
 import datautil.DBUtil;
@@ -123,7 +124,7 @@ public class Bot extends ListenerAdapter {
 						new kpremove(), new kpedit(), new kpinfo(), new kpclan(), new clanconfig(),
 						new leaguetrophylist(), new transfermember(), new togglemark(), new cwfails(),
 						new remindersadd(), new remindersremove(), new remindersinfo(), new wins(), new statslist(),
-						new checkroles())
+						new checkroles(), new winsfails())
 				.build();
 	}
 
@@ -293,6 +294,24 @@ public class Bot extends ListenerAdapter {
 									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true))
 							.addOptions(new OptionData(OptionType.STRING, "ignore_hiddencoleaders",
 									"(Optional) Wenn 'true', werden versteckte Vize-Anführer ignoriert")
+									.setAutoComplete(true).setRequired(false)),
+					Commands.slash("winsfails",
+							"Überprüfe einen Clan auf monatliche Wins mit einer Hürde, die zu überwinden gilt.")
+							.addOptions(new OptionData(OptionType.STRING, "clan",
+									"Der Clan, welcher überprüft werden soll.", true).setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "month",
+									"Der Monat, für den die Wins überprüft werden sollen.", true)
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "threshold",
+									"Die Hürde, welche jeder Spieler überwunden haben sollte", true))
+							.addOptions(new OptionData(OptionType.STRING, "kpreason",
+									"(Optional) Der Kickpunkt-Grund für jeden Spieler, der die Hürde nicht erreicht hat.")
+									.setAutoComplete(true))
+							.addOptions(new OptionData(OptionType.STRING, "min_threshold",
+									"(Optional) Minimale Wins - Spieler darunter werden nicht angezeigt")
+									.setRequired(false))
+							.addOptions(new OptionData(OptionType.STRING, "exclude_leaders",
+									"(Optional) Wenn 'true', werden Leader, Co-Leader und Admins von der Prüfung ausgeschlossen")
 									.setAutoComplete(true).setRequired(false)))
 					.queue();
 		}
@@ -595,7 +614,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(_ -> {
+		channel.sendMessage(messages.get(index)).queue(success -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {
