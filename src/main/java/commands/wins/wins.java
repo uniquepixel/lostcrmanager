@@ -427,21 +427,8 @@ public class wins extends ListenerAdapter {
 			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.ALL);
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("clan")) {
-			List<Command.Choice> choices = new ArrayList<>();
-			
-			// Add "Alle Lost Clans" option first
-			String allClansDisplay = "Alle Lost Clans";
-			if (allClansDisplay.toLowerCase().contains(input.toLowerCase())) {
-				choices.add(new Command.Choice(allClansDisplay, "all"));
-			}
-			
-			// Add regular clan choices
-			List<Command.Choice> clanChoices = DBManager.getClansAutocomplete(input);
-			for (Command.Choice choice : clanChoices) {
-				if (choices.size() >= 25) break;
-				choices.add(choice);
-			}
-			
+			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
+			choices.add(new Command.Choice("Alle Lost Clans", "all"));
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("month")) {
 			List<Command.Choice> choices = getMonthAutocomplete(input);
