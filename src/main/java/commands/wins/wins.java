@@ -220,8 +220,7 @@ public class wins extends ListenerAdapter {
 						sb.append(MessageUtil.unformat(result.playerInfo));
 						// Add clan name in brackets if multiple clans
 						if (clansList.size() > 1) {
-							// Extract clan name from playerInfo
-							Player p = new Player(result.playerInfo.split("\\(")[1].split("\\)")[0]); // Extract tag
+							Player p = new Player(result.playerTag);
 							if (p.getClanDB() != null) {
 								sb.append(" [" + p.getClanDB().getNameDB() + "]");
 							}
@@ -608,9 +607,7 @@ public class wins extends ListenerAdapter {
 						sb.append(MessageUtil.unformat(result.playerInfo));
 						// Add clan name in brackets if multiple clans
 						if (clansList.size() > 1) {
-							// Extract tag from playerInfo
-							String playerTag = result.playerInfo.split("\\(")[1].split("\\)")[0];
-							Player p = new Player(playerTag);
+							Player p = new Player(result.playerTag);
 							if (p.getClanDB() != null) {
 								sb.append(" [" + p.getClanDB().getNameDB() + "]");
 							}
@@ -687,11 +684,13 @@ public class wins extends ListenerAdapter {
 	// Helper class to hold compact player wins result for clan display
 	private static class PlayerWinsResult {
 		String playerInfo;
+		String playerTag;
 		int wins;
 		boolean hasWarning;
 
-		PlayerWinsResult(String playerInfo, int wins, boolean hasWarning) {
+		PlayerWinsResult(String playerInfo, String playerTag, int wins, boolean hasWarning) {
 			this.playerInfo = playerInfo;
+			this.playerTag = playerTag;
 			this.wins = wins;
 			this.hasWarning = hasWarning;
 		}
@@ -702,6 +701,7 @@ public class wins extends ListenerAdapter {
 			ZonedDateTime startOfMonth, ZonedDateTime startOfNextMonth, ZoneId zone) {
 
 		String playerInfo = player.getInfoStringDB();
+		String playerTag = player.getTag();
 
 		// Check if any data exists for this player, if not save current data first
 		if (!hasAnyWinsData(player.getTag())) {
@@ -714,19 +714,19 @@ public class wins extends ListenerAdapter {
 
 			Integer currentWins = player.getWinsAPI();
 			if (currentWins == null || startRecord == null) {
-				return new PlayerWinsResult(playerInfo, 0, true);
+				return new PlayerWinsResult(playerInfo, playerTag, 0, true);
 			}
 
 			int winsThisMonth = currentWins - startRecord.wins;
 			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			return new PlayerWinsResult(playerInfo, winsThisMonth, hasWarning);
+			return new PlayerWinsResult(playerInfo, playerTag, winsThisMonth, hasWarning);
 		} else {
 			// Past month: get data from start of month and start of next month
 			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
 			WinsRecord endRecord = getWinsAtOrAfter(player.getTag(), startOfNextMonth);
 
 			if (startRecord == null || endRecord == null) {
-				return new PlayerWinsResult(playerInfo, 0, true);
+				return new PlayerWinsResult(playerInfo, playerTag, 0, true);
 			}
 
 			int winsInMonth = endRecord.wins - startRecord.wins;
@@ -734,7 +734,7 @@ public class wins extends ListenerAdapter {
 			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
 			boolean hasWarning = !startIsMonthStart || !endIsMonthStart;
 
-			return new PlayerWinsResult(playerInfo, winsInMonth, hasWarning);
+			return new PlayerWinsResult(playerInfo, playerTag, winsInMonth, hasWarning);
 		}
 	}
 
