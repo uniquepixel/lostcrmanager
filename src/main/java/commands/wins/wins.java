@@ -142,151 +142,116 @@ public class wins extends ListenerAdapter {
 							"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 				} else {
 					// Clan mode
-					String clanTag = clanOption.getAsString();
+					String clanInput = clanOption.getAsString();
 					
-					// Check if "Alle Lost Clans" option is selected
-					if (clanTag.equals("all")) {
-						// Get all clans (excluding waitlist)
-						ArrayList<String> allClanTags = DBManager.getAllClans();
-						ArrayList<Player> allPlayers = new ArrayList<>();
-						
-						for (String tag : allClanTags) {
-							if (!tag.equals("warteliste")) {
-								Clan clan = new Clan(tag);
-								if (clan.ExistsDB()) {
-									ArrayList<Player> clanPlayers = clan.getPlayersDB();
-									allPlayers.addAll(clanPlayers);
-								}
-							}
-						}
-						
-						if (allPlayers.isEmpty()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-									"Keine Mitglieder in den Lost Clans gefunden.", MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-						
-						// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-						filterPlayersForClanWins(allPlayers, excludeLeadersFinal);
-						
-						// Collect wins data for all players with compact format
-						int i = 0;
-						ArrayList<PlayerWinsResult> results = new ArrayList<>();
-						for (Player player : allPlayers) {
-							i++;
-							PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
-									startOfMonth, startOfNextMonth, zone);
-							results.add(result);
-							event.getHook()
-									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-											"Wins werden geladen: Spieler " + i + "/" + allPlayers.size(),
-											MessageUtil.EmbedType.LOADING))
-									.setActionRows().queue();
-						}
-						
-						// Sort by wins descending
-						results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
-						
-						StringBuilder sb = new StringBuilder();
-						String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-						sb.append("**Wins für Alle Lost Clans im " + monthName + " " + yearFinal + ":**\n\n");
-						
-						for (PlayerWinsResult result : results) {
-							sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
-							if (result.hasWarning) {
-								sb.append(" ⚠️");
-							}
-							sb.append("\n");
-						}
-						
-						// Split message if too long
-						String fullMessage = sb.toString();
-						if (fullMessage.length() > 4000) {
-							fullMessage = fullMessage.substring(0, 3997) + "...";
-						}
-						
-						// Create refresh button with clan, month and exclude_leaders info
-						Button refreshButton = Button
-								.secondary("wins_clan_all_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
-								.withEmoji(Emoji.fromUnicode("🔁"));
-						
-						ZonedDateTime jetzt = ZonedDateTime.now(zone);
-						DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-						String formatiert = jetzt.format(buttonFormatter);
-						
-						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
-								MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
-								.setActionRow(refreshButton).queue();
-					} else {
-						// Single clan mode
-						Clan clan = new Clan(clanTag);
-
-						if (!clan.ExistsDB()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.",
-									MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-
-						ArrayList<Player> players = clan.getPlayersDB();
-						if (players.isEmpty()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-									"Dieser Clan hat keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-
-						// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-						filterPlayersForClanWins(players, excludeLeadersFinal);
-
-						// Collect wins data for all players with compact format
-						int i = 0;
-						ArrayList<PlayerWinsResult> results = new ArrayList<>();
-						for (Player player : players) {
-							i++;
-							PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
-									startOfMonth, startOfNextMonth, zone);
-							results.add(result);
-							event.getHook()
-									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-											"Wins werden geladen: Spieler " + i + "/" + players.size(),
-											MessageUtil.EmbedType.LOADING))
-									.setActionRows().queue();
-						}
-
-						// Sort by wins descending
-						results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
-
-						StringBuilder sb = new StringBuilder();
-						String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-						sb.append(
-								"**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
-
-						for (PlayerWinsResult result : results) {
-							sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
-							if (result.hasWarning) {
-								sb.append(" ⚠️");
-							}
-							sb.append("\n");
-						}
-
-						// Split message if too long
-						String fullMessage = sb.toString();
-						if (fullMessage.length() > 4000) {
-							fullMessage = fullMessage.substring(0, 3997) + "...";
-						}
-
-						// Create refresh button with clan, month and exclude_leaders info
-						Button refreshButton = Button
-								.secondary("wins_clan_" + clanTag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
-								.withEmoji(Emoji.fromUnicode("🔁"));
-
-						ZonedDateTime jetzt = ZonedDateTime.now(zone);
-						DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-						String formatiert = jetzt.format(buttonFormatter);
-
-						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
-								MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
-								.setActionRow(refreshButton).queue();
+					// Parse comma-separated clan tags
+					List<String> clansList = parseClanTags(clanInput);
+					if (clansList.isEmpty()) {
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR))
+								.queue();
+						return;
 					}
+					
+					// Validate all clans exist
+					for (String clanTag : clansList) {
+						Clan clan = new Clan(clanTag);
+						if (!clan.ExistsDB()) {
+							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, 
+									"Clan " + clanTag + " existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
+							return;
+						}
+					}
+					
+					// Collect players from all selected clans
+					ArrayList<Player> allPlayers = new ArrayList<>();
+					for (String clanTag : clansList) {
+						Clan clan = new Clan(clanTag);
+						ArrayList<Player> clanPlayers = clan.getPlayersDB();
+						allPlayers.addAll(clanPlayers);
+					}
+					
+					if (allPlayers.isEmpty()) {
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Die angegebenen Clans haben keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
+						return;
+					}
+					
+					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
+					filterPlayersForClanWins(allPlayers, excludeLeadersFinal);
+
+					// Collect wins data for all players with compact format
+					int i = 0;
+					ArrayList<PlayerWinsResult> results = new ArrayList<>();
+					for (Player player : allPlayers) {
+						i++;
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
+								startOfMonth, startOfNextMonth, zone);
+						results.add(result);
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Wins werden geladen: Spieler " + i + "/" + allPlayers.size(),
+										MessageUtil.EmbedType.LOADING))
+								.setActionRows().queue();
+					}
+
+					// Sort by wins descending
+					results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
+
+					StringBuilder sb = new StringBuilder();
+					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
+					
+					// Build clan display for title
+					String clanDisplay;
+					if (clansList.size() == 1) {
+						Clan c = new Clan(clansList.get(0));
+						clanDisplay = c.getInfoStringDB();
+					} else {
+						clanDisplay = clansList.size() + " Clans (" + 
+							String.join(", ", clansList.stream()
+								.map(tag -> new Clan(tag).getNameDB())
+								.toArray(String[]::new)) + ")";
+					}
+					
+					sb.append("**Wins für " + clanDisplay + " im " + monthName + " " + yearFinal + ":**\n\n");
+
+					for (PlayerWinsResult result : results) {
+						sb.append(MessageUtil.unformat(result.playerInfo));
+						// Add clan name in brackets if multiple clans
+						if (clansList.size() > 1) {
+							// Extract clan name from playerInfo
+							Player p = new Player(result.playerInfo.split("\\(")[1].split("\\)")[0]); // Extract tag
+							if (p.getClanDB() != null) {
+								sb.append(" [" + p.getClanDB().getNameDB() + "]");
+							}
+						}
+						sb.append(": **" + result.wins + "**");
+						if (result.hasWarning) {
+							sb.append(" ⚠️");
+						}
+						sb.append("\n");
+					}
+
+					// Split message if too long
+					String fullMessage = sb.toString();
+					if (fullMessage.length() > 4000) {
+						fullMessage = fullMessage.substring(0, 3997) + "...";
+					}
+
+					// Create refresh button - encode multiple clans in button ID
+					String clansEncoded = String.join(",", clansList);
+					Button refreshButton = Button
+							.secondary("wins_clan_" + clansEncoded + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
+							MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton).queue();
 				}
 			} catch (Exception e) {
 				System.err.println("Fehler beim Verarbeiten des Wins-Befehls: " + e.getMessage());
@@ -427,8 +392,8 @@ public class wins extends ListenerAdapter {
 			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.ALL);
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
-			choices.add(new Command.Choice("Alle Lost Clans", "all"));
+			// Handle comma-separated autocomplete similar to statslist (no "Alle Clans")
+			List<Command.Choice> choices = getClanAutocomplete(input, event.getUser().getId());
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("month")) {
 			List<Command.Choice> choices = getMonthAutocomplete(input);
@@ -491,37 +456,19 @@ public class wins extends ListenerAdapter {
 		String monthValue;
 		boolean excludeLeaders = false;
 		
-		// Check for "all" clans special case
-		if (id.startsWith("wins_clan_all_")) {
-			type = "clan";
-			tag = "all";
-			
-			// Parse the rest: <year-month>_<excludeLeaders>
-			String rest = id.substring("wins_clan_all_".length());
-			String[] restParts = rest.split("_");
-			if (restParts.length >= 1) {
-				monthValue = restParts[0];
-			} else {
-				return;
-			}
-			if (restParts.length >= 2) {
-				excludeLeaders = "true".equals(restParts[1]);
-			}
-		} else {
-			// Regular parsing
-			String[] parts = id.split("_", 5);
-			if (parts.length < 4) {
-				return;
-			}
+		// Regular parsing for player or clan
+		String[] parts = id.split("_", 5);
+		if (parts.length < 4) {
+			return;
+		}
 
-			type = parts[1];
-			tag = parts[2];
-			monthValue = parts[3];
+		type = parts[1];
+		tag = parts[2];
+		monthValue = parts[3];
 
-			// Parse exclude_leaders for clan buttons (5th part if present)
-			if (type.equals("clan") && parts.length >= 5) {
-				excludeLeaders = "true".equals(parts[4]);
-			}
+		// Parse exclude_leaders for clan buttons (5th part if present)
+		if (type.equals("clan") && parts.length >= 5) {
+			excludeLeaders = "true".equals(parts[4]);
 		}
 
 		int year;
@@ -586,150 +533,114 @@ public class wins extends ListenerAdapter {
 					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, result, MessageUtil.EmbedType.INFO,
 							"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 				} else if (type.equals("clan")) {
-					// Check if "Alle Lost Clans" option is selected
-					if (tag.equals("all")) {
-						// Get all clans (excluding waitlist)
-						ArrayList<String> allClanTags = DBManager.getAllClans();
-						ArrayList<Player> allPlayers = new ArrayList<>();
-						
-						for (String clanTag : allClanTags) {
-							if (!clanTag.equals("warteliste")) {
-								Clan clan = new Clan(clanTag);
-								if (clan.ExistsDB()) {
-									ArrayList<Player> clanPlayers = clan.getPlayersDB();
-									allPlayers.addAll(clanPlayers);
-								}
-							}
-						}
-						
-						if (allPlayers.isEmpty()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-									"Keine Mitglieder in den Lost Clans gefunden.", MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-						
-						// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-						filterPlayersForClanWins(allPlayers, excludeLeadersFinal);
-						
-						// Collect wins data for all players with compact format
-						ArrayList<PlayerWinsResult> results = new ArrayList<>();
-						int i = 0;
-						for (Player player : allPlayers) {
-							i++;
-							PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
-									startOfMonth, startOfNextMonth, zone);
-							results.add(result);
-							
-							event.getHook()
-									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-											"Wins werden geladen: Spieler " + i + "/" + allPlayers.size(),
-											MessageUtil.EmbedType.LOADING))
-									.setActionRows().queue();
-						}
-						
-						// Sort by wins descending
-						results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
-						
-						StringBuilder sb = new StringBuilder();
-						String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-						sb.append("**Wins für Alle Lost Clans im " + monthName + " " + yearFinal + ":**\n\n");
-						
-						for (PlayerWinsResult result : results) {
-							sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
-							if (result.hasWarning) {
-								sb.append(" ⚠️");
-							}
-							sb.append("\n");
-						}
-						
-						// Split message if too long
-						String fullMessage = sb.toString();
-						if (fullMessage.length() > 4000) {
-							fullMessage = fullMessage.substring(0, 3997) + "...";
-						}
-						
-						// Create refresh button with clan, month and exclude_leaders info
-						Button refreshButton = Button
-								.secondary("wins_clan_all_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
-								.withEmoji(Emoji.fromUnicode("🔁"));
-						
-						ZonedDateTime jetzt = ZonedDateTime.now(zone);
-						DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-						String formatiert = jetzt.format(buttonFormatter);
-						
-						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
-								MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
-								.setActionRow(refreshButton).queue();
-					} else {
-						// Single clan mode
-						Clan clan = new Clan(tag);
-
-						if (!clan.ExistsDB()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.",
-									MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-
-						ArrayList<Player> players = clan.getPlayersDB();
-						if (players.isEmpty()) {
-							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-									"Dieser Clan hat keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
-							return;
-						}
-						// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
-						filterPlayersForClanWins(players, excludeLeadersFinal);
-
-						// Collect wins data for all players with compact format
-						ArrayList<PlayerWinsResult> results = new ArrayList<>();
-						int i = 0;
-						for (Player player : players) {
-							i++;
-							PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
-									startOfMonth, startOfNextMonth, zone);
-							results.add(result);
-
-							event.getHook()
-									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-											"Wins werden geladen: Spieler " + i + "/" + players.size(),
-											MessageUtil.EmbedType.LOADING))
-									.setActionRows().queue();
-						}
-
-						// Sort by wins descending
-						results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
-
-						StringBuilder sb = new StringBuilder();
-						String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-						sb.append(
-								"**Wins für " + clan.getInfoStringDB() + " im " + monthName + " " + yearFinal + ":**\n\n");
-
-						for (PlayerWinsResult result : results) {
-							sb.append(MessageUtil.unformat(result.playerInfo) + ": **" + result.wins + "**");
-							if (result.hasWarning) {
-								sb.append(" ⚠️");
-							}
-							sb.append("\n");
-						}
-
-						// Split message if too long
-						String fullMessage = sb.toString();
-						if (fullMessage.length() > 4000) {
-							fullMessage = fullMessage.substring(0, 3997) + "...";
-						}
-
-						// Create refresh button with clan, month and exclude_leaders info
-						Button refreshButton = Button
-								.secondary("wins_clan_" + tag + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
-								.withEmoji(Emoji.fromUnicode("🔁"));
-
-						ZonedDateTime jetzt = ZonedDateTime.now(zone);
-						DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
-						String formatiert = jetzt.format(buttonFormatter);
-
-						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
-								MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
-								.setActionRow(refreshButton).queue();
+					// Parse comma-separated clan tags from button tag parameter
+					List<String> clansList = parseClanTags(tag);
+					if (clansList.isEmpty()) {
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR)).queue();
+						return;
 					}
+					
+					// Validate all clans exist
+					for (String clanTag : clansList) {
+						Clan clan = new Clan(clanTag);
+						if (!clan.ExistsDB()) {
+							event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, 
+									"Clan " + clanTag + " existiert nicht.", MessageUtil.EmbedType.ERROR)).queue();
+							return;
+						}
+					}
+					
+					// Collect players from all selected clans
+					ArrayList<Player> allPlayers = new ArrayList<>();
+					for (String clanTag : clansList) {
+						Clan clan = new Clan(clanTag);
+						ArrayList<Player> clanPlayers = clan.getPlayersDB();
+						allPlayers.addAll(clanPlayers);
+					}
+					
+					if (allPlayers.isEmpty()) {
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Die angegebenen Clans haben keine Mitglieder.", MessageUtil.EmbedType.ERROR)).queue();
+						return;
+					}
+					
+					// Filter out hidden coleaders and optionally exclude leaders/coleaders/admins
+					filterPlayersForClanWins(allPlayers, excludeLeadersFinal);
+
+					// Collect wins data for all players with compact format
+					ArrayList<PlayerWinsResult> results = new ArrayList<>();
+					int i = 0;
+					for (Player player : allPlayers) {
+						i++;
+						PlayerWinsResult result = getPlayerWinsCompact(player, yearFinal, monthFinal, isCurrentMonth,
+								startOfMonth, startOfNextMonth, zone);
+						results.add(result);
+						
+						event.getHook()
+								.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+										"Wins werden geladen: Spieler " + i + "/" + allPlayers.size(),
+										MessageUtil.EmbedType.LOADING))
+								.setActionRows().queue();
+					}
+
+					// Sort by wins descending
+					results.sort(Comparator.comparingInt((PlayerWinsResult r) -> r.wins).reversed());
+
+					StringBuilder sb = new StringBuilder();
+					String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
+					
+					// Build clan display for title
+					String clanDisplay;
+					if (clansList.size() == 1) {
+						Clan c = new Clan(clansList.get(0));
+						clanDisplay = c.getInfoStringDB();
+					} else {
+						clanDisplay = clansList.size() + " Clans (" + 
+							String.join(", ", clansList.stream()
+								.map(clanTag -> new Clan(clanTag).getNameDB())
+								.toArray(String[]::new)) + ")";
+					}
+					
+					sb.append("**Wins für " + clanDisplay + " im " + monthName + " " + yearFinal + ":**\n\n");
+
+					for (PlayerWinsResult result : results) {
+						sb.append(MessageUtil.unformat(result.playerInfo));
+						// Add clan name in brackets if multiple clans
+						if (clansList.size() > 1) {
+							// Extract tag from playerInfo
+							String playerTag = result.playerInfo.split("\\(")[1].split("\\)")[0];
+							Player p = new Player(playerTag);
+							if (p.getClanDB() != null) {
+								sb.append(" [" + p.getClanDB().getNameDB() + "]");
+							}
+						}
+						sb.append(": **" + result.wins + "**");
+						if (result.hasWarning) {
+							sb.append(" ⚠️");
+						}
+						sb.append("\n");
+					}
+
+					// Split message if too long
+					String fullMessage = sb.toString();
+					if (fullMessage.length() > 4000) {
+						fullMessage = fullMessage.substring(0, 3997) + "...";
+					}
+
+					// Create refresh button - encode multiple clans in button ID
+					String clansEncoded = String.join(",", clansList);
+					Button refreshButton = Button
+							.secondary("wins_clan_" + clansEncoded + "_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+							.withEmoji(Emoji.fromUnicode("🔁"));
+
+					ZonedDateTime jetzt = ZonedDateTime.now(zone);
+					DateTimeFormatter buttonFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm 'Uhr'");
+					String formatiert = jetzt.format(buttonFormatter);
+
+					event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, fullMessage,
+							MessageUtil.EmbedType.INFO, "Zuletzt aktualisiert am " + formatiert))
+							.setActionRow(refreshButton).queue();
 				}
 			} catch (Exception e) {
 				System.err.println("Fehler beim Verarbeiten des Wins-Refresh-Befehls: " + e.getMessage());
@@ -859,5 +770,115 @@ public class wins extends ListenerAdapter {
 				System.err.println("Fehler beim Speichern der Wins für " + tag + ": " + e.getMessage());
 			}
 		}
+	}
+	
+	private List<String> parseClanTags(String input) {
+		List<String> clanTags = new ArrayList<>();
+		if (input == null || input.trim().isEmpty()) {
+			return clanTags;
+		}
+
+		String[] parts = input.split(",");
+		for (String part : parts) {
+			String trimmed = part.trim();
+			if (!trimmed.isEmpty()) {
+				clanTags.add(trimmed);
+			}
+		}
+
+		return clanTags;
+	}
+
+	private List<Command.Choice> getClanAutocomplete(String input, String userId) {
+		List<Command.Choice> choices = new ArrayList<>();
+
+		// Split by comma and get the last part
+		String[] parts = input.split(",");
+		String displayPrefix = "";
+		String valuePrefix = "";
+		String lastPart = "";
+
+		// Process all parts before the last comma
+		if (parts.length > 1) {
+			StringBuilder displayBuilder = new StringBuilder();
+			StringBuilder valueBuilder = new StringBuilder();
+
+			for (int i = 0; i < parts.length - 1; i++) {
+				String trimmed = parts[i].trim();
+				if (!trimmed.isEmpty()) {
+					if (i > 0) {
+						displayBuilder.append(", ");
+						valueBuilder.append(",");
+					}
+					// Add the display string as-is
+					displayBuilder.append(trimmed);
+					// Extract and add just the tag to value
+					String extractedTag = extractClanTag(trimmed);
+					valueBuilder.append(extractedTag);
+				}
+			}
+			displayPrefix = displayBuilder.toString();
+			valuePrefix = valueBuilder.toString();
+		}
+
+		// The last part is what user is currently typing
+		if (parts.length > 0) {
+			lastPart = parts[parts.length - 1].trim();
+		}
+
+		// Get already selected tags to avoid duplicates
+		List<String> alreadySelectedTags = new ArrayList<>();
+		for (int i = 0; i < parts.length - 1; i++) {
+			String trimmed = parts[i].trim();
+			if (!trimmed.isEmpty()) {
+				String extractedTag = extractClanTag(trimmed);
+				if (!extractedTag.isEmpty()) {
+					alreadySelectedTags.add(extractedTag);
+				}
+			}
+		}
+
+		// Get clans from DBManager and filter
+		List<Command.Choice> allClans = DBManager.getClansAutocomplete(lastPart);
+
+		// Build the autocomplete choices
+		for (Command.Choice clan : allClans) {
+			String clanTag = clan.getAsString(); // Just the tag like #xxx
+			String clanDisplay = clan.getName(); // Full display like "LOST (#xxx)"
+
+			// Skip if already selected
+			if (alreadySelectedTags.contains(clanTag)) {
+				continue;
+			}
+
+			// Build the display name (what user sees)
+			String choiceName = displayPrefix.isEmpty() ? clanDisplay : displayPrefix + ", " + clanDisplay;
+
+			// Build the value (tags only, for command submission)
+			String choiceValue = valuePrefix.isEmpty() ? clanTag : valuePrefix + "," + clanTag;
+
+			choices.add(new Command.Choice(choiceName, choiceValue));
+
+			if (choices.size() >= 25) {
+				break;
+			}
+		}
+
+		return choices;
+	}
+
+	// Helper method to extract clan tag from display string
+	private String extractClanTag(String displayString) {
+		// Format is either "ClanName (#TAG)" or just "#TAG"
+		int startBracket = displayString.indexOf('(');
+		int endBracket = displayString.indexOf(')');
+
+		if (startBracket != -1 && endBracket != -1 && endBracket > startBracket) {
+			// Extract the tag from within parentheses
+			return displayString.substring(startBracket + 1, endBracket).trim();
+		}
+
+		// If no parentheses, assume the whole thing is the tag
+		return displayString.trim();
 	}
 }
