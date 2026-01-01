@@ -304,4 +304,41 @@ public class DBManager {
 		return choices;
 	}
 
+	public static List<Command.Choice> getPlayerlistAutocompleteAllLostClans(String input) {
+		List<Command.Choice> choices = new ArrayList<>();
+
+		String sql = "SELECT players.cr_tag AS tag, players.name AS player_name, clans.name AS clan_name, clans.tag AS clan_tag "
+				+ "FROM players "
+				+ "LEFT JOIN clan_members ON clan_members.player_tag = players.cr_tag "
+				+ "LEFT JOIN clans ON clans.tag = clan_members.clan_tag "
+				+ "WHERE clans.tag IS NOT NULL AND clans.tag != 'warteliste'";
+
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					String tag = rs.getString("tag");
+					String clanName = rs.getString("clan_name");
+
+					String display = new Player(tag).getInfoStringDB();
+					if (clanName != null && !clanName.isEmpty()) {
+						display += " [" + clanName + "]";
+					}
+
+					// Filter with input
+					if (display.toLowerCase().contains(input.toLowerCase())
+							|| tag.toLowerCase().startsWith(input.toLowerCase())) {
+						choices.add(new Command.Choice(display, tag));
+						if (choices.size() == 25) {
+							break;
+						}
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return choices;
+	}
+
 }

@@ -347,7 +347,7 @@ public class wins extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("player")) {
-			List<Command.Choice> choices = DBManager.getPlayerlistAutocomplete(input, DBManager.InClanType.ALL);
+			List<Command.Choice> choices = DBManager.getPlayerlistAutocompleteAllLostClans(input);
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("clan")) {
 			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
