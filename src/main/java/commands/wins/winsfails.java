@@ -1,4 +1,4 @@
-package commands.util;
+package commands.wins;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

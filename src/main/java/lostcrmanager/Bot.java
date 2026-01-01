@@ -49,8 +49,8 @@ import commands.util.checkroles;
 import commands.util.cwfails;
 import commands.util.leaguetrophylist;
 import commands.util.statslist;
-import commands.util.winsfails;
 import commands.wins.wins;
+import commands.wins.winsfails;
 import datautil.APIUtil;
 import datautil.DBUtil;
 import datawrapper.Clan;
@@ -614,7 +614,7 @@ public class Bot extends ListenerAdapter {
 			return;
 		}
 
-		channel.sendMessage(messages.get(index)).queue(success -> {
+		channel.sendMessage(messages.get(index)).queue(_ -> {
 			// Send next message
 			sendMessagesSequentially(channel, messages, index + 1, reminderId, clantag);
 		}, error -> {

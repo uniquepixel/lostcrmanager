@@ -685,14 +685,12 @@ public class wins extends ListenerAdapter {
 	private static class PlayerWinsResult {
 		String playerInfo;
 		String playerTag;
-		String clanName;
 		int wins;
 		boolean hasWarning;
 
 		PlayerWinsResult(String playerInfo, String playerTag, String clanName, int wins, boolean hasWarning) {
 			this.playerInfo = playerInfo;
 			this.playerTag = playerTag;
-			this.clanName = clanName;
 			this.wins = wins;
 			this.hasWarning = hasWarning;
 		}
