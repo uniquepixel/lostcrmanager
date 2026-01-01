@@ -145,7 +145,7 @@ public class wins extends ListenerAdapter {
 					String clanTag = clanOption.getAsString();
 					
 					// Check if "Alle Lost Clans" option is selected
-					if (clanTag.equals("alle_lost_clans")) {
+					if (clanTag.equals("all")) {
 						// Get all clans (excluding waitlist)
 						ArrayList<String> allClanTags = DBManager.getAllClans();
 						ArrayList<Player> allPlayers = new ArrayList<>();
@@ -207,7 +207,7 @@ public class wins extends ListenerAdapter {
 						
 						// Create refresh button with clan, month and exclude_leaders info
 						Button refreshButton = Button
-								.secondary("wins_clan_alle_lost_clans_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+								.secondary("wins_clan_all_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
 								.withEmoji(Emoji.fromUnicode("🔁"));
 						
 						ZonedDateTime jetzt = ZonedDateTime.now(zone);
@@ -432,7 +432,7 @@ public class wins extends ListenerAdapter {
 			// Add "Alle Lost Clans" option first
 			String allClansDisplay = "Alle Lost Clans";
 			if (allClansDisplay.toLowerCase().contains(input.toLowerCase())) {
-				choices.add(new Command.Choice(allClansDisplay, "alle_lost_clans"));
+				choices.add(new Command.Choice(allClansDisplay, "all"));
 			}
 			
 			// Add regular clan choices
@@ -498,20 +498,19 @@ public class wins extends ListenerAdapter {
 
 		// Parse the button ID: wins_player_<tag>_<year-month> or
 		// wins_clan_<tag>_<year-month>_<excludeLeaders>
-		// Special case: wins_clan_alle_lost_clans_<year-month>_<excludeLeaders>
 		
 		String type;
 		String tag;
 		String monthValue;
 		boolean excludeLeaders = false;
 		
-		// Check for "alle_lost_clans" special case
-		if (id.startsWith("wins_clan_alle_lost_clans_")) {
+		// Check for "all" clans special case
+		if (id.startsWith("wins_clan_all_")) {
 			type = "clan";
-			tag = "alle_lost_clans";
+			tag = "all";
 			
 			// Parse the rest: <year-month>_<excludeLeaders>
-			String rest = id.substring("wins_clan_alle_lost_clans_".length());
+			String rest = id.substring("wins_clan_all_".length());
 			String[] restParts = rest.split("_");
 			if (restParts.length >= 1) {
 				monthValue = restParts[0];
@@ -601,7 +600,7 @@ public class wins extends ListenerAdapter {
 							"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 				} else if (type.equals("clan")) {
 					// Check if "Alle Lost Clans" option is selected
-					if (tag.equals("alle_lost_clans")) {
+					if (tag.equals("all")) {
 						// Get all clans (excluding waitlist)
 						ArrayList<String> allClanTags = DBManager.getAllClans();
 						ArrayList<Player> allPlayers = new ArrayList<>();
@@ -664,7 +663,7 @@ public class wins extends ListenerAdapter {
 						
 						// Create refresh button with clan, month and exclude_leaders info
 						Button refreshButton = Button
-								.secondary("wins_clan_alle_lost_clans_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
+								.secondary("wins_clan_all_" + monthValue + "_" + excludeLeadersFinal, "\u200B")
 								.withEmoji(Emoji.fromUnicode("🔁"));
 						
 						ZonedDateTime jetzt = ZonedDateTime.now(zone);
