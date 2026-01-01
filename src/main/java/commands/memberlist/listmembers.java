@@ -50,7 +50,7 @@ public class listmembers extends ListenerAdapter {
 			}).start();
 			return;
 		}
-		
+
 		Clan c = new Clan(clantag);
 
 		new Thread(() -> {
@@ -162,7 +162,7 @@ public class listmembers extends ListenerAdapter {
 
 		if (focused.equals("clan")) {
 			List<Command.Choice> choices = DBManager.getClansAutocomplete(input);
-
+			choices.add(new Command.Choice("Kein Clan zugewiesen", "noclan"));
 			event.replyChoices(choices).queue();
 		}
 	}
@@ -177,7 +177,7 @@ public class listmembers extends ListenerAdapter {
 
 		String title = "Memberliste";
 		String clantag = id.substring("listmembers_".length());
-		
+
 		// Handle "noclan" option specially
 		if (clantag.equals("noclan")) {
 			new Thread(() -> {
@@ -185,7 +185,7 @@ public class listmembers extends ListenerAdapter {
 			}).start();
 			return;
 		}
-		
+
 		Clan c = new Clan(clantag);
 
 		new Thread(() -> {
@@ -303,12 +303,12 @@ public class listmembers extends ListenerAdapter {
 		// Get all linked players
 		String sql = "SELECT cr_tag FROM players";
 		ArrayList<String> allPlayerTags = DBUtil.getArrayListFromSQL(sql, String.class);
-		
+
 		// Filter players without clan and build output
 		StringBuilder desc = new StringBuilder();
 		desc.append("## Kein Clan zugewiesen\n\n");
 		desc.append("**Spieler ohne Clan:**\n");
-		
+
 		int count = 0;
 		for (String tag : allPlayerTags) {
 			Player p = new Player(tag);
@@ -321,15 +321,15 @@ public class listmembers extends ListenerAdapter {
 				desc.append("\n");
 			}
 		}
-		
+
 		if (count == 0) {
 			desc.append("Keine Spieler ohne Clan gefunden.\n");
 		} else {
 			desc.append("\nInsgesamt ").append(count).append(" Spieler ohne Clan.");
 		}
-		
+
 		String finalDesc = desc.toString();
-		
+
 		// Check if message exceeds 4000 characters
 		if (finalDesc.length() > 4000) {
 			// Send as text file
@@ -339,8 +339,7 @@ public class listmembers extends ListenerAdapter {
 					.setEmbeds(MessageUtil.buildEmbed(title, description, MessageUtil.EmbedType.INFO)).queue();
 		} else {
 			// Send as embed
-			hook.editOriginalEmbeds(MessageUtil.buildEmbed(title, finalDesc, MessageUtil.EmbedType.INFO))
-					.queue();
+			hook.editOriginalEmbeds(MessageUtil.buildEmbed(title, finalDesc, MessageUtil.EmbedType.INFO)).queue();
 		}
 	}
 

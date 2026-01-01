@@ -78,14 +78,6 @@ public class DBManager {
 
 		List<Command.Choice> choices = new ArrayList<>();
 		
-		// Add special "Kein Clan zugewiesen" option
-		String noClanOption = "Kein Clan zugewiesen";
-		String noClanTag = "noclan";
-		if (noClanOption.toLowerCase().contains(input.toLowerCase())
-				|| noClanTag.toLowerCase().startsWith(input.toLowerCase())) {
-			choices.add(new Command.Choice(noClanOption, noClanTag));
-		}
-		
 		for (Tuple<String, String> available : clans) {
 			String display = available.getFirst();
 			String tag = available.getSecond();
