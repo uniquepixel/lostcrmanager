@@ -317,9 +317,10 @@ public class DBManager {
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
 					String tag = rs.getString("tag");
+					String playerName = rs.getString("player_name");
 					String clanName = rs.getString("clan_name");
 
-					String display = new Player(tag).getInfoStringDB();
+					String display = playerName + " (" + tag + ")";
 					if (clanName != null && !clanName.isEmpty()) {
 						display += " [" + clanName + "]";
 					}
