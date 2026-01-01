@@ -54,26 +54,42 @@ public class winsfails extends ListenerAdapter {
 			return;
 		}
 
-		String clantag = clanOption.getAsString();
-
-		if (clantag.equals("warteliste")) {
+		String clanInput = clanOption.getAsString();
+		
+		// Parse comma-separated clan tags
+		List<String> clansList = parseClanTags(clanInput);
+		if (clansList.isEmpty()) {
 			event.getHook()
 					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+							"Keine gültigen Clans angegeben!", MessageUtil.EmbedType.ERROR))
 					.queue();
 			return;
 		}
+		
+		// Check for waitlist in any clan
+		for (String clantag : clansList) {
+			if (clantag.equals("warteliste")) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Diesen Befehl kannst du nicht auf die Warteliste ausführen.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
+		}
 
+		// Check permissions for all clans
 		User userexecuted = new User(event.getUser().getId());
-		if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
-				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
-				|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
-			event.getHook()
-					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-							"Du musst mindestens Vize-Anführer des Clans sein, um diesen Befehl ausführen zu können.",
-							MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
+		for (String clantag : clansList) {
+			if (!(userexecuted.getClanRoles().get(clantag) == Player.RoleType.ADMIN
+					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.LEADER
+					|| userexecuted.getClanRoles().get(clantag) == Player.RoleType.COLEADER)) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+								"Du musst mindestens Vize-Anführer aller angegebenen Clans sein, um diesen Befehl ausführen zu können.",
+								MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
 		}
 
 		int threshold = thresholdOption.getAsInt();
@@ -129,9 +145,10 @@ public class winsfails extends ListenerAdapter {
 		boolean addkp;
 		String kpreasonstring;
 		KickpointReason kpreason = null;
+		// For KP reasons, only validate against the first clan
 		if (kpreasonOption != null) {
 			kpreasonstring = kpreasonOption.getAsString();
-			kpreason = new KickpointReason(kpreasonstring, clantag);
+			kpreason = new KickpointReason(kpreasonstring, clansList.get(0));
 			if (!kpreason.Exists()) {
 				event.getHook().editOriginalEmbeds(
 						MessageUtil.buildEmbed(title, "Diese Begründung existiert nicht.", MessageUtil.EmbedType.ERROR))
@@ -143,17 +160,20 @@ public class winsfails extends ListenerAdapter {
 			addkp = false;
 		}
 
-		Clan c = new Clan(clantag);
-
-		if (!c.ExistsDB()) {
-			event.getHook()
-					.editOriginalEmbeds(
-							MessageUtil.buildEmbed(title, "Dieser Clan existiert nicht.", MessageUtil.EmbedType.ERROR))
-					.queue();
-			return;
+		// Validate all clans exist
+		for (String clantag : clansList) {
+			Clan c = new Clan(clantag);
+			if (!c.ExistsDB()) {
+				event.getHook()
+						.editOriginalEmbeds(MessageUtil.buildEmbed(title, 
+								"Clan " + clantag + " existiert nicht.", MessageUtil.EmbedType.ERROR))
+						.queue();
+				return;
+			}
 		}
 
 		final KickpointReason kpreasontemp = kpreason;
+		final List<String> clansListFinal = clansList;
 		final Integer minThresholdFinal = minThreshold;
 		final boolean excludeLeadersFinal = excludeLeaders;
 		final int yearFinal = year;
@@ -173,7 +193,20 @@ public class winsfails extends ListenerAdapter {
 				ZonedDateTime startOfNextMonth = startOfMonth.plusMonths(1);
 
 				String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
-				String desc = "## Eine Liste aller Spieler, welche unter " + threshold + " Wins im " + monthName + " "
+				
+				// Build clan display for title
+				String clanDisplay;
+				if (clansListFinal.size() == 1) {
+					Clan c = new Clan(clansListFinal.get(0));
+					clanDisplay = c.getInfoStringDB();
+				} else {
+					clanDisplay = clansListFinal.size() + " Clans (" + 
+						String.join(", ", clansListFinal.stream()
+							.map(tag -> new Clan(tag).getNameDB())
+							.toArray(String[]::new)) + ")";
+				}
+				
+				String desc = "## Eine Liste aller Spieler aus " + clanDisplay + ", welche unter " + threshold + " Wins im " + monthName + " "
 						+ yearFinal + " haben.\n";
 
 				if (addkp) {
@@ -182,13 +215,19 @@ public class winsfails extends ListenerAdapter {
 
 				boolean listempty = true;
 
-				ArrayList<Player> clanplayerlist = c.getPlayersDB();
+				// Collect all players from all clans
+				ArrayList<Player> allPlayers = new ArrayList<>();
+				for (String clantag : clansListFinal) {
+					Clan c = new Clan(clantag);
+					ArrayList<Player> clanplayerlist = c.getPlayersDB();
+					allPlayers.addAll(clanplayerlist);
+				}
 
 				// Calculate wins for each player
 				HashMap<String, Integer> tagToWins = new HashMap<>();
 				HashMap<String, Boolean> tagToHasWarning = new HashMap<>();
 
-				for (Player p : clanplayerlist) {
+				for (Player p : allPlayers) {
 					// Skip leaders/coleaders/admins if exclude_leaders is true
 					if (excludeLeadersFinal) {
 						Player.RoleType role = p.getRole();
@@ -207,7 +246,7 @@ public class winsfails extends ListenerAdapter {
 
 				ArrayList<Player> playerdonewrong = new ArrayList<>();
 
-				for (Player p : clanplayerlist) {
+				for (Player p : allPlayers) {
 					// Skip leaders/coleaders/admins if exclude_leaders is true
 					if (excludeLeadersFinal) {
 						Player.RoleType role = p.getRole();
@@ -226,7 +265,12 @@ public class winsfails extends ListenerAdapter {
 							// Apply min_threshold check - only display and add KP if wins are >=
 							// min_threshold
 							if (minThresholdFinal == null || playerWins >= minThresholdFinal) {
-								desc += "**" + p.getInfoStringDB() + "**:\n";
+								// Display with clan name if multiple clans
+								String playerDisplay = p.getInfoStringDB();
+								if (clansListFinal.size() > 1 && p.getClanDB() != null) {
+									playerDisplay += " [" + p.getClanDB().getNameDB() + "]";
+								}
+								desc += "**" + playerDisplay + "**:\n";
 								desc += " - Wins: " + playerWins;
 								boolean playerhaswarning = false;
 								if (tagToHasWarning.get(playertag)) {
@@ -285,11 +329,15 @@ public class winsfails extends ListenerAdapter {
 		String input = event.getFocusedOption().getValue();
 
 		if (focused.equals("clan")) {
-			List<Command.Choice> choices = DBManager.getClansAutocompleteNoWaitlist(input);
+			// Handle comma-separated autocomplete similar to statslist
+			List<Command.Choice> choices = getClanAutocomplete(input, event.getUser().getId());
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("kpreason")) {
-			List<Command.Choice> choices = DBManager.getKPReasonsAutocomplete(input,
-					event.getOption("clan").getAsString());
+			// For KP reasons, use the first clan from the input
+			String clanInput = event.getOption("clan") != null ? event.getOption("clan").getAsString() : "";
+			List<String> clansList = parseClanTags(clanInput);
+			String firstClan = clansList.isEmpty() ? "" : clansList.get(0);
+			List<Command.Choice> choices = DBManager.getKPReasonsAutocomplete(input, firstClan);
 			event.replyChoices(choices).queue();
 		} else if (focused.equals("exclude_leaders")) {
 			List<Command.Choice> choices = new ArrayList<>();
@@ -445,5 +493,115 @@ public class winsfails extends ListenerAdapter {
 			}
 		}
 		return choices;
+	}
+	
+	private List<String> parseClanTags(String input) {
+		List<String> clanTags = new ArrayList<>();
+		if (input == null || input.trim().isEmpty()) {
+			return clanTags;
+		}
+
+		String[] parts = input.split(",");
+		for (String part : parts) {
+			String trimmed = part.trim();
+			if (!trimmed.isEmpty()) {
+				clanTags.add(trimmed);
+			}
+		}
+
+		return clanTags;
+	}
+
+	private List<Command.Choice> getClanAutocomplete(String input, String userId) {
+		List<Command.Choice> choices = new ArrayList<>();
+
+		// Split by comma and get the last part
+		String[] parts = input.split(",");
+		String displayPrefix = "";
+		String valuePrefix = "";
+		String lastPart = "";
+
+		// Process all parts before the last comma
+		if (parts.length > 1) {
+			StringBuilder displayBuilder = new StringBuilder();
+			StringBuilder valueBuilder = new StringBuilder();
+
+			for (int i = 0; i < parts.length - 1; i++) {
+				String trimmed = parts[i].trim();
+				if (!trimmed.isEmpty()) {
+					if (i > 0) {
+						displayBuilder.append(", ");
+						valueBuilder.append(",");
+					}
+					// Add the display string as-is
+					displayBuilder.append(trimmed);
+					// Extract and add just the tag to value
+					String extractedTag = extractClanTag(trimmed);
+					valueBuilder.append(extractedTag);
+				}
+			}
+			displayPrefix = displayBuilder.toString();
+			valuePrefix = valueBuilder.toString();
+		}
+
+		// The last part is what user is currently typing
+		if (parts.length > 0) {
+			lastPart = parts[parts.length - 1].trim();
+		}
+
+		// Get already selected tags to avoid duplicates
+		List<String> alreadySelectedTags = new ArrayList<>();
+		for (int i = 0; i < parts.length - 1; i++) {
+			String trimmed = parts[i].trim();
+			if (!trimmed.isEmpty()) {
+				String extractedTag = extractClanTag(trimmed);
+				if (!extractedTag.isEmpty()) {
+					alreadySelectedTags.add(extractedTag);
+				}
+			}
+		}
+
+		// Get clans from DBManager and filter (excluding waitlist)
+		List<Command.Choice> allClans = DBManager.getClansAutocompleteNoWaitlist(lastPart);
+
+		// Build the autocomplete choices
+		for (Command.Choice clan : allClans) {
+			String clanTag = clan.getAsString(); // Just the tag like #xxx
+			String clanDisplay = clan.getName(); // Full display like "LOST (#xxx)"
+
+			// Skip if already selected
+			if (alreadySelectedTags.contains(clanTag)) {
+				continue;
+			}
+
+			// Build the display name (what user sees)
+			String choiceName = displayPrefix.isEmpty() ? clanDisplay : displayPrefix + ", " + clanDisplay;
+
+			// Build the value (tags only, for command submission)
+			String choiceValue = valuePrefix.isEmpty() ? clanTag : valuePrefix + "," + clanTag;
+
+			choices.add(new Command.Choice(choiceName, choiceValue));
+
+			if (choices.size() >= 25) {
+				break;
+			}
+		}
+
+		return choices;
+	}
+
+	// Helper method to extract clan tag from display string
+	private String extractClanTag(String displayString) {
+		// Format is either "ClanName (#TAG)" or just "#TAG"
+		int startBracket = displayString.indexOf('(');
+		int endBracket = displayString.indexOf(')');
+
+		if (startBracket != -1 && endBracket != -1 && endBracket > startBracket) {
+			// Extract the tag from within parentheses
+			return displayString.substring(startBracket + 1, endBracket).trim();
+		}
+
+		// If no parentheses, assume the whole thing is the tag
+		return displayString.trim();
 	}
 }
