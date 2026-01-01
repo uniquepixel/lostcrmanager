@@ -47,8 +47,10 @@ public class winsfails extends ListenerAdapter {
 		OptionMapping excludeLeadersOption = event.getOption("exclude_leaders");
 
 		if (clanOption == null || thresholdOption == null || monthOption == null) {
-			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title,
-					"Die Parameter Clan, Threshold & Month sind verpflichtend!", MessageUtil.EmbedType.ERROR)).queue();
+			event.getHook()
+					.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+							"Die Parameter Clan, Threshold & Month sind verpflichtend!", MessageUtil.EmbedType.ERROR))
+					.queue();
 			return;
 		}
 
@@ -226,13 +228,15 @@ public class winsfails extends ListenerAdapter {
 							if (minThresholdFinal == null || playerWins >= minThresholdFinal) {
 								desc += "**" + p.getInfoStringDB() + "**:\n";
 								desc += " - Wins: " + playerWins;
+								boolean playerhaswarning = false;
 								if (tagToHasWarning.get(playertag)) {
+									playerhaswarning = true;
 									desc += " ⚠️";
 								}
 								desc += "\n";
 								if (listempty)
 									listempty = false;
-								if (addkp)
+								if (addkp && !playerhaswarning)
 									playerdonewrong.add(p);
 							}
 						}
