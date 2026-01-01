@@ -1,5 +1,7 @@
 package commands.memberlist;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -8,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import datautil.DBManager;
+import datautil.DBUtil;
 import datawrapper.Clan;
 import datawrapper.Player;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -40,6 +43,14 @@ public class listmembers extends ListenerAdapter {
 
 		String clantag = clanOption.getAsString();
 
+		// Handle "noclan" option specially
+		if (clantag.equals("noclan")) {
+			new Thread(() -> {
+				handleNoClanOptionForSlashCommand(event, title);
+			}).start();
+			return;
+		}
+		
 		Clan c = new Clan(clantag);
 
 		new Thread(() -> {
@@ -166,6 +177,15 @@ public class listmembers extends ListenerAdapter {
 
 		String title = "Memberliste";
 		String clantag = id.substring("listmembers_".length());
+		
+		// Handle "noclan" option specially
+		if (clantag.equals("noclan")) {
+			new Thread(() -> {
+				handleNoClanOptionForButtonEvent(event, title);
+			}).start();
+			return;
+		}
+		
 		Clan c = new Clan(clantag);
 
 		new Thread(() -> {
@@ -269,6 +289,59 @@ public class listmembers extends ListenerAdapter {
 			event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO,
 					"Zuletzt aktualisiert am " + formatiert)).setActionRow(refreshButton).queue();
 		}).start();
+	}
+
+	private void handleNoClanOptionForSlashCommand(SlashCommandInteractionEvent event, String title) {
+		handleNoClanOptionGeneric(event.getHook(), title);
+	}
+
+	private void handleNoClanOptionForButtonEvent(ButtonInteractionEvent event, String title) {
+		handleNoClanOptionGeneric(event.getHook(), title);
+	}
+
+	private void handleNoClanOptionGeneric(net.dv8tion.jda.api.interactions.InteractionHook hook, String title) {
+		// Get all linked players
+		String sql = "SELECT cr_tag FROM players";
+		ArrayList<String> allPlayerTags = DBUtil.getArrayListFromSQL(sql, String.class);
+		
+		// Filter players without clan and build output
+		StringBuilder desc = new StringBuilder();
+		desc.append("## Kein Clan zugewiesen\n\n");
+		desc.append("**Spieler ohne Clan:**\n");
+		
+		int count = 0;
+		for (String tag : allPlayerTags) {
+			Player p = new Player(tag);
+			if (p.getClanDB() == null) {
+				count++;
+				desc.append(p.getInfoStringDB());
+				if (p.getUser() != null) {
+					desc.append(" <@").append(p.getUser().getUserID()).append(">");
+				}
+				desc.append("\n");
+			}
+		}
+		
+		if (count == 0) {
+			desc.append("Keine Spieler ohne Clan gefunden.\n");
+		} else {
+			desc.append("\nInsgesamt ").append(count).append(" Spieler ohne Clan.");
+		}
+		
+		String finalDesc = desc.toString();
+		
+		// Check if message exceeds 4000 characters
+		if (finalDesc.length() > 4000) {
+			// Send as text file
+			ByteArrayInputStream inputStream = new ByteArrayInputStream(finalDesc.getBytes(StandardCharsets.UTF_8));
+			String description = "Hier ist die Liste der Spieler ohne Clanzugehörigkeit. Die Liste wurde als Datei gesendet, da sie zu lang für eine Nachricht ist.";
+			hook.editOriginal(inputStream, "Spieler_ohne_Clan.txt")
+					.setEmbeds(MessageUtil.buildEmbed(title, description, MessageUtil.EmbedType.INFO)).queue();
+		} else {
+			// Send as embed
+			hook.editOriginalEmbeds(MessageUtil.buildEmbed(title, finalDesc, MessageUtil.EmbedType.INFO))
+					.queue();
+		}
 	}
 
 }
