@@ -268,6 +268,7 @@ public class winsfails extends ListenerAdapter {
 						"Ein Fehler ist aufgetreten: " + e.getMessage(), MessageUtil.EmbedType.ERROR)).queue();
 			}
 		});
+		thread.setName("winsfails-command-" + event.getUser().getId());
 		thread.start();
 	}
 
@@ -407,24 +408,8 @@ public class winsfails extends ListenerAdapter {
 	}
 
 	private void savePlayerWins(String playerTag) {
-		try {
-			Player player = new Player(playerTag);
-			Integer wins = player.getWinsAPI();
-			if (wins != null) {
-				OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Europe/Berlin"));
-				String sql = "INSERT INTO player_wins (player_tag, recorded_at, wins) VALUES (?, ?, ?) "
-						+ "ON CONFLICT (player_tag, recorded_at) DO UPDATE SET wins = ?";
-				try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-					pstmt.setString(1, playerTag);
-					pstmt.setObject(2, now);
-					pstmt.setInt(3, wins);
-					pstmt.setInt(4, wins);
-					pstmt.executeUpdate();
-				}
-			}
-		} catch (Exception e) {
-			System.err.println("Fehler beim Speichern der Wins für " + playerTag + ": " + e.getMessage());
-		}
+		// Reuse the static method from wins command to maintain consistency
+		commands.wins.wins.savePlayerWins(playerTag);
 	}
 
 	private List<Command.Choice> getMonthAutocomplete(String input) {
