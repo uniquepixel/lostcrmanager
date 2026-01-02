@@ -238,12 +238,18 @@ public class winsfails extends ListenerAdapter {
 
 					currentPlayer++;
 					
-					// Update progress message
-					event.getHook()
-							.editOriginalEmbeds(MessageUtil.buildEmbed(title,
-									"Berechne Wins für Spieler " + currentPlayer + " / " + totalPlayers + "...",
-									MessageUtil.EmbedType.LOADING))
-							.queue();
+					// Update progress message (every 5 players or on last player to avoid rate limiting)
+					if (currentPlayer % 5 == 0 || currentPlayer == totalPlayers) {
+						try {
+							event.getHook()
+									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+											"Berechne Wins für Spieler " + currentPlayer + " / " + totalPlayers + "...",
+											MessageUtil.EmbedType.LOADING))
+									.queue();
+						} catch (Exception e) {
+							// Silently continue if progress update fails - don't interrupt calculation
+						}
+					}
 
 					// Calculate monthly wins for this player
 					Player.WinsData winsData = getPlayerMonthlyWins(p.getTag(), yearFinal, monthFinal, isCurrentMonth,
