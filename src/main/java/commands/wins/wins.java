@@ -1,10 +1,6 @@
 package commands.wins;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Month;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,7 +10,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import datautil.Connection;
 import datautil.DBManager;
 import datautil.DBUtil;
 import datawrapper.Clan;

@@ -16,6 +16,7 @@ import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.KickpointReason;
 import datawrapper.Player;
+import datawrapper.Player.WinsData;
 import datawrapper.User;
 import lostcrmanager.Bot;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
@@ -352,11 +353,6 @@ public class winsfails extends ListenerAdapter {
 
 		Player player = new Player(playerTag);
 		return player.getMonthlyWins(year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
-	}
-
-	private void savePlayerWins(String playerTag) {
-		// Reuse the static method from wins command to maintain consistency
-		commands.wins.wins.savePlayerWins(playerTag);
 	}
 
 	private List<Command.Choice> getMonthAutocomplete(String input) {
