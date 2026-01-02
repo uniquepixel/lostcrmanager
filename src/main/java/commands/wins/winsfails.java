@@ -189,27 +189,6 @@ public class winsfails extends ListenerAdapter {
 
 				String monthName = Month.of(monthFinal).getDisplayName(TextStyle.FULL, Locale.GERMAN);
 				
-				// Build clan display for title
-				String clanDisplay;
-				if (clansListFinal.size() == 1) {
-					Clan c = new Clan(clansListFinal.get(0));
-					clanDisplay = c.getInfoStringDB();
-				} else {
-					clanDisplay = clansListFinal.size() + " Clans (" + 
-						String.join(", ", clansListFinal.stream()
-							.map(tag -> new Clan(tag).getNameDB())
-							.toArray(String[]::new)) + ")";
-				}
-				
-				String desc = "## Eine Liste aller Spieler aus " + clanDisplay + ", welche unter " + threshold + " Wins im " + monthName + " "
-						+ yearFinal + " haben.\n";
-
-				if (addkp) {
-					desc += "### Da ein Kickpunkt-Grund ausgewählt wurde, wird dieser auf jeden Spieler der Liste angewandt.\n";
-				}
-
-				boolean listempty = true;
-
 				// Collect all players from all clans
 				ArrayList<Player> allPlayers = new ArrayList<>();
 				for (String clantag : clansListFinal) {
@@ -261,59 +240,83 @@ public class winsfails extends ListenerAdapter {
 					tagToHasWarning.put(p.getTag(), winsData.hasWarning);
 				}
 
-				ArrayList<Player> playerdonewrong = new ArrayList<>();
+				// Process each clan separately if multiple clans
+				boolean isFirstClan = true;
+				for (String clantag : clansListFinal) {
+					Clan c = new Clan(clantag);
+					String clanDisplay = c.getInfoStringDB();
+					
+					String desc = "## Eine Liste aller Spieler aus " + clanDisplay + ", welche unter " + threshold + " Wins im " + monthName + " "
+							+ yearFinal + " haben.\n";
 
-				for (Player p : allPlayers) {
-					// Skip leaders/coleaders/admins if exclude_leaders is true
-					if (excludeLeadersFinal) {
-						Player.RoleType role = p.getRole();
-						if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
-								|| role == Player.RoleType.COLEADER) {
-							continue;
-						}
+					if (addkp) {
+						desc += "### Da ein Kickpunkt-Grund ausgewählt wurde, wird dieser auf jeden Spieler der Liste angewandt.\n";
 					}
 
-					String playertag = p.getTag();
+					boolean listempty = true;
+					ArrayList<Player> playerdonewrong = new ArrayList<>();
 
-					if (tagToWins.containsKey(playertag)) {
-						int playerWins = tagToWins.get(playertag);
+					// Filter players for this specific clan
+					for (Player p : allPlayers) {
+						// Check if player belongs to current clan
+						if (p.getClanDB() == null || !p.getClanDB().getTag().equals(clantag)) {
+							continue;
+						}
 
-						if (playerWins < threshold) {
-							// Apply min_threshold check - only display and add KP if wins are >=
-							// min_threshold
-							if (minThresholdFinal == null || playerWins >= minThresholdFinal) {
-								// Display with clan name if multiple clans
-								String playerDisplay = p.getInfoStringDB();
-								if (clansListFinal.size() > 1 && p.getClanDB() != null) {
-									playerDisplay += " [" + p.getClanDB().getNameDB() + "]";
+						// Skip leaders/coleaders/admins if exclude_leaders is true
+						if (excludeLeadersFinal) {
+							Player.RoleType role = p.getRole();
+							if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
+									|| role == Player.RoleType.COLEADER) {
+								continue;
+							}
+						}
+
+						String playertag = p.getTag();
+
+						if (tagToWins.containsKey(playertag)) {
+							int playerWins = tagToWins.get(playertag);
+
+							if (playerWins < threshold) {
+								// Apply min_threshold check - only display and add KP if wins are >=
+								// min_threshold
+								if (minThresholdFinal == null || playerWins >= minThresholdFinal) {
+									String playerDisplay = p.getInfoStringDB();
+									desc += "**" + playerDisplay + "**:\n";
+									desc += " - Wins: " + playerWins;
+									boolean playerhaswarning = false;
+									if (tagToHasWarning.get(playertag)) {
+										playerhaswarning = true;
+										desc += " ⚠️";
+									}
+									desc += "\n";
+									if (listempty)
+										listempty = false;
+									if (addkp && !playerhaswarning)
+										playerdonewrong.add(p);
 								}
-								desc += "**" + playerDisplay + "**:\n";
-								desc += " - Wins: " + playerWins;
-								boolean playerhaswarning = false;
-								if (tagToHasWarning.get(playertag)) {
-									playerhaswarning = true;
-									desc += " ⚠️";
-								}
-								desc += "\n";
-								if (listempty)
-									listempty = false;
-								if (addkp && !playerhaswarning)
-									playerdonewrong.add(p);
 							}
 						}
 					}
-				}
 
-				if (listempty) {
-					desc += "**Keine Fehler anzuzeigen.**";
-				}
+					if (listempty) {
+						desc += "**Keine Fehler anzuzeigen.**";
+					}
 
-				event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
-						.queue();
+					// Send first clan result as reply, others as separate messages
+					if (isFirstClan) {
+						event.getHook().editOriginalEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
+								.queue();
+						isFirstClan = false;
+					} else {
+						event.getChannel()
+								.sendMessageEmbeds(MessageUtil.buildEmbed(title, desc, MessageUtil.EmbedType.INFO))
+								.queue();
+					}
 
-				if (!listempty) {
-					if (addkp) {
-						String kpmessagedesc = "### Hinzugefügte Kickpunkte:\n";
+					// Send kickpoint message for this clan if applicable
+					if (!listempty && addkp && !playerdonewrong.isEmpty()) {
+						String kpmessagedesc = "### Hinzugefügte Kickpunkte für " + clanDisplay + ":\n";
 						for (Player p : playerdonewrong) {
 							int id = kpadd.addKPtoDB(p.getTag(), Timestamp.from(Instant.now()), kpreasontemp,
 									Bot.getJda().getSelfUser().getId());
