@@ -222,20 +222,23 @@ public class winsfails extends ListenerAdapter {
 				HashMap<String, Integer> tagToWins = new HashMap<>();
 				HashMap<String, Boolean> tagToHasWarning = new HashMap<>();
 
-				int currentPlayer = 0;
-				int totalPlayers = allPlayers.size();
-				
+				// Filter players first if exclude_leaders is enabled
+				ArrayList<Player> playersToProcess = new ArrayList<>();
 				for (Player p : allPlayers) {
-					// Skip leaders/coleaders/admins if exclude_leaders is true
 					if (excludeLeadersFinal) {
 						Player.RoleType role = p.getRole();
 						if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
 								|| role == Player.RoleType.COLEADER) {
-							totalPlayers--;
 							continue;
 						}
 					}
+					playersToProcess.add(p);
+				}
 
+				int currentPlayer = 0;
+				int totalPlayers = playersToProcess.size();
+				
+				for (Player p : playersToProcess) {
 					currentPlayer++;
 					
 					// Update progress message (every 5 players or on last player to avoid rate limiting)
