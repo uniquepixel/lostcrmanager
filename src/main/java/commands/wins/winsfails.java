@@ -223,8 +223,9 @@ public class winsfails extends ListenerAdapter {
 				HashMap<String, Integer> tagToWins = new HashMap<>();
 				HashMap<String, Boolean> tagToHasWarning = new HashMap<>();
 
+				// Filter players first if exclude_leaders is enabled
+				ArrayList<Player> playersToProcess = new ArrayList<>();
 				for (Player p : allPlayers) {
-					// Skip leaders/coleaders/admins if exclude_leaders is true
 					if (excludeLeadersFinal) {
 						Player.RoleType role = p.getRole();
 						if (role == Player.RoleType.ADMIN || role == Player.RoleType.LEADER
@@ -232,9 +233,30 @@ public class winsfails extends ListenerAdapter {
 							continue;
 						}
 					}
+					playersToProcess.add(p);
+				}
+
+				int currentPlayer = 0;
+				int totalPlayers = playersToProcess.size();
+				
+				for (Player p : playersToProcess) {
+					currentPlayer++;
+					
+					// Update progress message (every 5 players or on last player to avoid rate limiting)
+					if (currentPlayer % 5 == 0 || currentPlayer == totalPlayers) {
+						try {
+							event.getHook()
+									.editOriginalEmbeds(MessageUtil.buildEmbed(title,
+											"Berechne Wins für Spieler " + currentPlayer + " / " + totalPlayers + "...",
+											MessageUtil.EmbedType.LOADING))
+									.queue();
+						} catch (Exception e) {
+							// Silently continue if progress update fails - don't interrupt calculation
+						}
+					}
 
 					// Calculate monthly wins for this player
-					WinsData winsData = getPlayerMonthlyWins(p.getTag(), yearFinal, monthFinal, isCurrentMonth,
+					Player.WinsData winsData = getPlayerMonthlyWins(p.getTag(), yearFinal, monthFinal, isCurrentMonth,
 							startOfMonth, startOfNextMonth, zone);
 					tagToWins.put(p.getTag(), winsData.wins);
 					tagToHasWarning.put(p.getTag(), winsData.hasWarning);
