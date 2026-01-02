@@ -269,42 +269,36 @@ public class wins extends ListenerAdapter {
 		String monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.GERMAN);
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-		// Check if any data exists for this player, if not save current data first
-		if (!hasAnyWinsData(player.getTag())) {
-			savePlayerWins(player.getTag());
-		}
+		// Use centralized wins calculation from Player object
+		Player.WinsData winsData = player.getMonthlyWins(year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
 
 		if (isCurrentMonth) {
-			// Current month: get start of month data and fetch current wins from API
-			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
-
 			Integer currentWins = player.getWinsAPI();
 			if (currentWins == null) {
 				return "Fehler beim Abrufen der aktuellen Wins von der API.\n";
 			}
 
+			// Get start record for display purposes
+			Player.WinsRecord startRecord = player.getWinsAtOrAfter(startOfMonth);
 			if (startRecord == null) {
-				// No data at start of month - should not happen now since we save on first
-				// request
 				return "Keine Daten für den Monatsanfang verfügbar. Aktuelle Wins: " + currentWins + "\n";
 			}
 
-			int winsThisMonth = currentWins - startRecord.wins;
 			String startTimeFormatted = startRecord.recordedAt.atZoneSameInstant(zone).format(formatter);
 
-			if (isStartOfMonth(startRecord.recordedAt, startOfMonth)) {
+			if (!winsData.hasWarning) {
 				return "### " + player.getInfoStringDB() + "\n" + "Wins im " + monthName + " " + year + ": **"
-						+ winsThisMonth + "**\n" + "(Von " + startRecord.wins + " am Monatsanfang auf " + currentWins
+						+ winsData.wins + "**\n" + "(Von " + startRecord.wins + " am Monatsanfang auf " + currentWins
 						+ " aktuell)\n";
 			} else {
 				return "### " + player.getInfoStringDB() + "\n" + "Wins seit " + startTimeFormatted + ": **"
-						+ winsThisMonth + "**\n" + "(Von " + startRecord.wins + " auf " + currentWins + " aktuell)\n"
+						+ winsData.wins + "**\n" + "(Von " + startRecord.wins + " auf " + currentWins + " aktuell)\n"
 						+ "⚠️ Daten sind nicht vom Monatsanfang, sondern vom Zeitpunkt der Verlinkung.\n";
 			}
 		} else {
-			// Past month: get data from start of month and start of next month
-			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
-			WinsRecord endRecord = getWinsAtOrAfter(player.getTag(), startOfNextMonth);
+			// Past month
+			Player.WinsRecord startRecord = player.getWinsAtOrAfter(startOfMonth);
+			Player.WinsRecord endRecord = player.getWinsAtOrAfter(startOfNextMonth);
 
 			if (startRecord == null) {
 				return "### " + player.getInfoStringDB() + "\n" + "Keine Daten für " + monthName + " " + year
@@ -316,15 +310,14 @@ public class wins extends ListenerAdapter {
 						+ " verfügbar.\n";
 			}
 
-			int winsInMonth = endRecord.wins - startRecord.wins;
 			String startTimeFormatted = startRecord.recordedAt.atZoneSameInstant(zone).format(formatter);
 			String endTimeFormatted = endRecord.recordedAt.atZoneSameInstant(zone).format(formatter);
 
-			boolean startIsMonthStart = isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
+			boolean startIsMonthStart = player.isStartOfMonth(startRecord.recordedAt, startOfMonth);
+			boolean endIsMonthStart = player.isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
 
 			StringBuilder result = new StringBuilder();
-			result.append("Wins im " + monthName + " " + year + ": **" + winsInMonth + "**\n");
+			result.append("Wins im " + monthName + " " + year + ": **" + winsData.wins + "**\n");
 			result.append("(Von " + startRecord.wins + " auf " + endRecord.wins + ")\n");
 
 			if (!startIsMonthStart) {
@@ -336,47 +329,6 @@ public class wins extends ListenerAdapter {
 
 			return result.toString();
 		}
-	}
-
-	private boolean hasAnyWinsData(String playerTag) {
-		String sql = "SELECT 1 FROM player_wins WHERE player_tag = ? LIMIT 1";
-		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-			pstmt.setString(1, playerTag);
-			try (ResultSet rs = pstmt.executeQuery()) {
-				return rs.next();
-			}
-		} catch (SQLException e) {
-			System.err.println("Fehler beim Prüfen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
-			e.printStackTrace();
-		}
-		return false;
-	}
-
-	private boolean isStartOfMonth(OffsetDateTime recordedAt, ZonedDateTime expectedStart) {
-		// Check if the recorded time is within the first day of the month
-		ZonedDateTime recordedZoned = recordedAt.atZoneSameInstant(expectedStart.getZone());
-		return recordedZoned.toLocalDate().equals(expectedStart.toLocalDate());
-	}
-
-	private WinsRecord getWinsAtOrAfter(String playerTag, ZonedDateTime dateTime) {
-		String sql = "SELECT wins, recorded_at FROM player_wins WHERE player_tag = ? AND recorded_at >= ? ORDER BY recorded_at ASC LIMIT 1";
-
-		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-			pstmt.setString(1, playerTag);
-			pstmt.setObject(2, dateTime.toOffsetDateTime());
-
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					int wins = rs.getInt("wins");
-					OffsetDateTime recordedAt = rs.getObject("recorded_at", OffsetDateTime.class);
-					return new WinsRecord(wins, recordedAt);
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Fehler beim Abrufen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	@Override
@@ -670,17 +622,6 @@ public class wins extends ListenerAdapter {
 		}
 	}
 
-	// Helper class to hold wins record data
-	private static class WinsRecord {
-		int wins;
-		OffsetDateTime recordedAt;
-
-		WinsRecord(int wins, OffsetDateTime recordedAt) {
-			this.wins = wins;
-			this.recordedAt = recordedAt;
-		}
-	}
-
 	// Helper class to hold compact player wins result for clan display
 	private static class PlayerWinsResult {
 		String playerInfo;
@@ -704,57 +645,17 @@ public class wins extends ListenerAdapter {
 		String playerTag = player.getTag();
 		String clanName = player.getClanDB() != null ? player.getClanDB().getNameDB() : "";
 
-		// Check if any data exists for this player, if not save current data first
-		if (!hasAnyWinsData(player.getTag())) {
-			savePlayerWins(player.getTag());
-		}
+		// Use centralized wins calculation from Player object
+		Player.WinsData winsData = player.getMonthlyWins(year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
 
-		if (isCurrentMonth) {
-			// Current month: get start of month data and fetch current wins from API
-			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
-
-			Integer currentWins = player.getWinsAPI();
-			if (currentWins == null || startRecord == null) {
-				return new PlayerWinsResult(playerInfo, playerTag, clanName, 0, true);
-			}
-
-			int winsThisMonth = currentWins - startRecord.wins;
-			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			return new PlayerWinsResult(playerInfo, playerTag, clanName, winsThisMonth, hasWarning);
-		} else {
-			// Past month: get data from start of month and start of next month
-			WinsRecord startRecord = getWinsAtOrAfter(player.getTag(), startOfMonth);
-			WinsRecord endRecord = getWinsAtOrAfter(player.getTag(), startOfNextMonth);
-
-			if (startRecord == null || endRecord == null) {
-				return new PlayerWinsResult(playerInfo, playerTag, clanName, 0, true);
-			}
-
-			int winsInMonth = endRecord.wins - startRecord.wins;
-			boolean startIsMonthStart = isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
-			boolean hasWarning = !startIsMonthStart || !endIsMonthStart;
-
-			return new PlayerWinsResult(playerInfo, playerTag, clanName, winsInMonth, hasWarning);
-		}
+		return new PlayerWinsResult(playerInfo, playerTag, clanName, winsData.wins, winsData.hasWarning);
 	}
 
 	// Static method to save wins for a player (called from scheduler and link
 	// command)
 	public static void savePlayerWins(String playerTag) {
-		try {
-			Player player = new Player(playerTag);
-			Integer wins = player.getWinsAPI();
-			if (wins != null) {
-				OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Europe/Berlin"));
-				String sql = "INSERT INTO player_wins (player_tag, recorded_at, wins) VALUES (?, ?, ?) "
-						+ "ON CONFLICT (player_tag, recorded_at) DO UPDATE SET wins = ?";
-				DBUtil.executeUpdate(sql, playerTag, now, wins, wins);
-				System.out.println("Wins gespeichert für " + playerTag + ": " + wins);
-			}
-		} catch (Exception e) {
-			System.err.println("Fehler beim Speichern der Wins für " + playerTag + ": " + e.getMessage());
-		}
+		Player player = new Player(playerTag);
+		player.savePlayerWins();
 	}
 
 	// Static method to save wins for all linked players (called from scheduler)

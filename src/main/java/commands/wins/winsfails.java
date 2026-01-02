@@ -1,12 +1,8 @@
 package commands.wins;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.Month;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
@@ -16,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 
 import commands.kickpoints.kpadd;
-import datautil.Connection;
 import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.KickpointReason;
@@ -351,112 +346,12 @@ public class winsfails extends ListenerAdapter {
 		}
 	}
 
-	// Helper class to hold wins data
-	private static class WinsData {
-		int wins;
-		boolean hasWarning;
-
-		WinsData(int wins, boolean hasWarning) {
-			this.wins = wins;
-			this.hasWarning = hasWarning;
-		}
-	}
-
-	// Helper class to hold wins record data
-	private static class WinsRecord {
-		int wins;
-		OffsetDateTime recordedAt;
-
-		WinsRecord(int wins, OffsetDateTime recordedAt) {
-			this.wins = wins;
-			this.recordedAt = recordedAt;
-		}
-	}
-
 	// Calculate monthly wins for a player
-	private WinsData getPlayerMonthlyWins(String playerTag, int year, int month, boolean isCurrentMonth,
+	private Player.WinsData getPlayerMonthlyWins(String playerTag, int year, int month, boolean isCurrentMonth,
 			ZonedDateTime startOfMonth, ZonedDateTime startOfNextMonth, ZoneId zone) {
 
-		// Check if any data exists for this player
-		if (!hasAnyWinsData(playerTag)) {
-			// Try to save current data
-			savePlayerWins(playerTag);
-		}
-
-		if (isCurrentMonth) {
-			// Current month: get start of month data and fetch current wins from API
-			WinsRecord startRecord = getWinsAtOrAfter(playerTag, startOfMonth);
-
-			if (startRecord == null) {
-				return new WinsData(0, true);
-			}
-
-			Player player = new Player(playerTag);
-			Integer currentWins = player.getWinsAPI();
-			if (currentWins == null) {
-				return new WinsData(0, true);
-			}
-
-			int winsThisMonth = currentWins - startRecord.wins;
-			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			return new WinsData(winsThisMonth, hasWarning);
-		} else {
-			// Past month: get data from start of month and start of next month
-			WinsRecord startRecord = getWinsAtOrAfter(playerTag, startOfMonth);
-			WinsRecord endRecord = getWinsAtOrAfter(playerTag, startOfNextMonth);
-
-			if (startRecord == null || endRecord == null) {
-				return new WinsData(0, true);
-			}
-
-			int winsInMonth = endRecord.wins - startRecord.wins;
-			boolean startIsMonthStart = isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
-			boolean hasWarning = !startIsMonthStart || !endIsMonthStart;
-
-			return new WinsData(winsInMonth, hasWarning);
-		}
-	}
-
-	private boolean hasAnyWinsData(String playerTag) {
-		String sql = "SELECT 1 FROM player_wins WHERE player_tag = ? LIMIT 1";
-		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-			pstmt.setString(1, playerTag);
-			try (ResultSet rs = pstmt.executeQuery()) {
-				return rs.next();
-			}
-		} catch (SQLException e) {
-			System.err.println("Fehler beim Prüfen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
-			e.printStackTrace();
-		}
-		return false;
-	}
-
-	private boolean isStartOfMonth(OffsetDateTime recordedAt, ZonedDateTime expectedStart) {
-		// Check if the recorded time is within the first day of the month
-		ZonedDateTime recordedZoned = recordedAt.atZoneSameInstant(expectedStart.getZone());
-		return recordedZoned.toLocalDate().equals(expectedStart.toLocalDate());
-	}
-
-	private WinsRecord getWinsAtOrAfter(String playerTag, ZonedDateTime dateTime) {
-		String sql = "SELECT wins, recorded_at FROM player_wins WHERE player_tag = ? AND recorded_at >= ? ORDER BY recorded_at ASC LIMIT 1";
-
-		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
-			pstmt.setString(1, playerTag);
-			pstmt.setObject(2, dateTime.toOffsetDateTime());
-
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					int wins = rs.getInt("wins");
-					OffsetDateTime recordedAt = rs.getObject("recorded_at", OffsetDateTime.class);
-					return new WinsRecord(wins, recordedAt);
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Fehler beim Abrufen der Wins-Daten für Spieler " + playerTag + ": " + e.getMessage());
-			e.printStackTrace();
-		}
-		return null;
+		Player player = new Player(playerTag);
+		return player.getMonthlyWins(year, month, isCurrentMonth, startOfMonth, startOfNextMonth, zone);
 	}
 
 	private void savePlayerWins(String playerTag) {
