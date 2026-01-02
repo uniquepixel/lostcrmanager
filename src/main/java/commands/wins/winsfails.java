@@ -16,7 +16,6 @@ import datautil.DBManager;
 import datawrapper.Clan;
 import datawrapper.KickpointReason;
 import datawrapper.Player;
-import datawrapper.Player.WinsData;
 import datawrapper.User;
 import lostcrmanager.Bot;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
