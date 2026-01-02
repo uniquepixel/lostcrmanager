@@ -522,4 +522,176 @@ public class Player {
 		return expLevel;
 	}
 
+	// ============================================================
+	// Centralized Wins Calculation Methods
+	// ============================================================
+
+	/**
+	 * Helper class to hold wins data with warning flag
+	 */
+	public static class WinsData {
+		public final int wins;
+		public final boolean hasWarning;
+
+		public WinsData(int wins, boolean hasWarning) {
+			this.wins = wins;
+			this.hasWarning = hasWarning;
+		}
+	}
+
+	/**
+	 * Helper class to hold wins record from database
+	 */
+	public static class WinsRecord {
+		public final int wins;
+		public final OffsetDateTime recordedAt;
+
+		public WinsRecord(int wins, OffsetDateTime recordedAt) {
+			this.wins = wins;
+			this.recordedAt = recordedAt;
+		}
+	}
+
+	/**
+	 * Calculate monthly wins for a specific month and year
+	 * 
+	 * @param year           The year
+	 * @param month          The month (1-12)
+	 * @param isCurrentMonth Whether this is the current month
+	 * @param startOfMonth   Start of the month
+	 * @param startOfNextMonth Start of the next month
+	 * @param zone           Time zone
+	 * @return WinsData containing wins count and warning flag
+	 */
+	public WinsData getMonthlyWins(int year, int month, boolean isCurrentMonth, 
+			java.time.ZonedDateTime startOfMonth, java.time.ZonedDateTime startOfNextMonth, 
+			java.time.ZoneId zone) {
+
+		// Check if any data exists for this player, if not save current data first
+		if (!hasAnyWinsData()) {
+			savePlayerWins();
+		}
+
+		if (isCurrentMonth) {
+			// Current month: get start of month data and fetch current wins from API
+			WinsRecord startRecord = getWinsAtOrAfter(startOfMonth);
+
+			Integer currentWins = getWinsAPI();
+			if (currentWins == null || startRecord == null) {
+				return new WinsData(0, true);
+			}
+
+			int winsThisMonth = currentWins - startRecord.wins;
+			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
+			return new WinsData(winsThisMonth > 0 ? winsThisMonth : 0, hasWarning);
+		} else {
+			// Past month: get data from start of month and start of next month
+			WinsRecord startRecord = getWinsAtOrAfter(startOfMonth);
+			WinsRecord endRecord = getWinsAtOrAfter(startOfNextMonth);
+
+			if (startRecord == null || endRecord == null) {
+				return new WinsData(0, true);
+			}
+
+			int winsInMonth = endRecord.wins - startRecord.wins;
+			boolean startIsMonthStart = isStartOfMonth(startRecord.recordedAt, startOfMonth);
+			boolean endIsMonthStart = isStartOfMonth(endRecord.recordedAt, startOfNextMonth);
+			boolean hasWarning = !startIsMonthStart || !endIsMonthStart;
+
+			return new WinsData(winsInMonth, hasWarning);
+		}
+	}
+
+	/**
+	 * Get wins for the current month
+	 * 
+	 * @return WinsData containing wins count and warning flag
+	 */
+	public WinsData getCurrentMonthWins() {
+		java.time.ZoneId zone = java.time.ZoneId.of("Europe/Berlin");
+		java.time.ZonedDateTime now = java.time.ZonedDateTime.now(zone);
+		int year = now.getYear();
+		int month = now.getMonthValue();
+
+		java.time.ZonedDateTime startOfMonth = java.time.ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, zone);
+
+		return getMonthlyWins(year, month, true, startOfMonth, startOfMonth.plusMonths(1), zone);
+	}
+
+	/**
+	 * Check if any wins data exists for this player in the database
+	 * 
+	 * @return true if data exists, false otherwise
+	 */
+	private boolean hasAnyWinsData() {
+		String sql = "SELECT 1 FROM player_wins WHERE player_tag = ? LIMIT 1";
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, tag);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Prüfen der Wins-Daten für Spieler " + tag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	/**
+	 * Get wins record at or after a specific date/time
+	 * 
+	 * @param dateTime The date/time to search from
+	 * @return WinsRecord or null if not found
+	 */
+	public WinsRecord getWinsAtOrAfter(java.time.ZonedDateTime dateTime) {
+		String sql = "SELECT wins, recorded_at FROM player_wins WHERE player_tag = ? AND recorded_at >= ? ORDER BY recorded_at ASC LIMIT 1";
+
+		try (PreparedStatement pstmt = Connection.getConnection().prepareStatement(sql)) {
+			pstmt.setString(1, tag);
+			pstmt.setObject(2, dateTime.toOffsetDateTime());
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					int wins = rs.getInt("wins");
+					OffsetDateTime recordedAt = rs.getObject("recorded_at", OffsetDateTime.class);
+					return new WinsRecord(wins, recordedAt);
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Fehler beim Abrufen der Wins-Daten für Spieler " + tag + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * Check if a recorded time is at the start of a month
+	 * 
+	 * @param recordedAt The recorded time
+	 * @param expectedStart The expected start of month
+	 * @return true if recorded time is on the first day of the month
+	 */
+	public boolean isStartOfMonth(OffsetDateTime recordedAt, java.time.ZonedDateTime expectedStart) {
+		java.time.ZonedDateTime recordedZoned = recordedAt.atZoneSameInstant(expectedStart.getZone());
+		return recordedZoned.toLocalDate().equals(expectedStart.toLocalDate());
+	}
+
+	/**
+	 * Save current wins for this player to the database
+	 */
+	public void savePlayerWins() {
+		try {
+			Integer wins = getWinsAPI();
+			if (wins != null) {
+				OffsetDateTime now = OffsetDateTime.now(java.time.ZoneId.of("Europe/Berlin"));
+				String sql = "INSERT INTO player_wins (player_tag, recorded_at, wins) VALUES (?, ?, ?) "
+						+ "ON CONFLICT (player_tag, recorded_at) DO UPDATE SET wins = ?";
+				DBUtil.executeUpdate(sql, tag, now, wins, wins);
+				System.out.println("Wins gespeichert für " + tag + ": " + wins);
+			}
+		} catch (Exception e) {
+			System.err.println("Fehler beim Speichern der Wins für " + tag + ": " + e.getMessage());
+		}
+	}
+
 }
