@@ -583,7 +583,7 @@ public class Player {
 
 			int winsThisMonth = currentWins - startRecord.wins;
 			boolean hasWarning = !isStartOfMonth(startRecord.recordedAt, startOfMonth);
-			return new WinsData(winsThisMonth > 0 ? winsThisMonth : 0, hasWarning);
+			return new WinsData(Math.max(winsThisMonth, 0), hasWarning);
 		} else {
 			// Past month: get data from start of month and start of next month
 			WinsRecord startRecord = getWinsAtOrAfter(startOfMonth);
